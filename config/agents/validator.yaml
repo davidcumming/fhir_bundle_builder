@@ -1,0 +1,30 @@
+role_id: validator
+name: Validator Agent
+profile_markdown: docs/agents/validator-agent-profile.md
+
+model:
+  provider: openai
+  model_name: gpt-5.4
+  temperature: 0.2
+
+memory:
+  type: openviking
+  namespace: agents/validator/memory
+
+context:
+  roots:
+    - agents/validator/profile
+    - bundles/psca/validation-guidance
+
+tools:
+  allowed:
+    - fhir_validator
+    - terminology_lookup
+    - artifact_reader
+
+output:
+  primary_artifact: ValidationResult
+
+behavior:
+  narrate_progress: false
+  expose_delegation_trace: false

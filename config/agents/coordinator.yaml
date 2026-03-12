@@ -1,0 +1,31 @@
+role_id: coordinator
+name: Coordinator Agent
+profile_markdown: docs/agents/coordinator-agent-profile.md
+
+model:
+  provider: openai
+  model_name: gpt-5.4
+  temperature: 0.2
+
+memory:
+  type: openviking
+  namespace: agents/coordinator/memory
+
+context:
+  roots:
+    - agents/coordinator/profile
+    - bundles/psca/overview
+    - platform/coordinator/guidance
+
+tools:
+  allowed:
+    - workflow_status_reader
+    - delivery_package_summarizer
+    - execution_trace_formatter
+
+output:
+  primary_artifact: DeliveryPackage
+
+behavior:
+  narrate_progress: true
+  expose_delegation_trace: true
