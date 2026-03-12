@@ -1,0 +1,2337 @@
+{
+  "resourceType": "Bundle",
+  "id": "Bundle-PSCA-2.0.0-AllProfiles",
+  "meta": {
+    "profile": [
+      "http://fhir.infoway-inforoute.ca/io/psca/StructureDefinition/bundle-ca-ps"
+    ],
+    "lastUpdated": "2021-12-11T14:30:00+01:00"
+  },
+  "identifier": {
+    "system": "http://ex-ps-identifier-system.org",
+    "value": "urn:uuid:175bd032-8b00-4728-b2dc-748bb1501aed"
+  },
+  "type": "document",
+  "timestamp": "2021-12-11T14:30:00+01:00",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:c5aa5a1c-7e76-4ea2-a489-226059c84be3",
+      "resource": {
+        "resourceType": "Composition",
+        "id": "c5aa5a1c-7e76-4ea2-a489-226059c84be3",
+        "meta": {
+          "profile": [
+            "http://fhir.infoway-inforoute.ca/io/psca/StructureDefinition/composition-ca-ps"
+          ]
+        },
+        "text": {
+          "status": "additional",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Primary Problem: Roberta is a normally well-controlled Type 2 diabetic with well-managed hypertension. She experiences occassional gout attacks. Significant Clinical Event Requiring Patient Summary: Roberta has been been experiencing some neuropathy she is assuming is caused by her diabetes, and her gout is flaring up. She needs to see a GP in Yellowknife and may need a referral. Dr Allan GP (Prac ID 9600), Roberta's most responsible GP in Ontario, is wanting to communicate Roberta's clinical information to Dr Smith (Prac ID 2222) a GP in Alberta where Roberta is working.</div>"
+        },
+        "status": "final",
+        "identifier": {
+          "system": "urn:oid:2.16.724.4.8.10.200.10",
+          "value": "ee5ac342-23d9-4ff1-9ea7-264323866d80"
+        },
+        "type": {
+          "coding": [
+            {
+              "code": "60591-5",
+              "system": "http://loinc.org",
+              "display": "Patient summary Document"
+            }
+          ]
+        },
+        "subject": {
+          "reference": "urn:uuid:d520ecd1-76a0-4894-b895-b8a5a971954e"
+        },
+        "date": "2021-12-11T14:30:00+01:00",
+        "author": [
+          {
+            "reference": "urn:uuid:b5cf9ac3-c323-490e-87e4-88fbf65b9888"
+          }
+        ],
+        "title": "Patient Summary as of December 11, 2021 14:30",
+        "attester": [
+          {
+            "mode": "legal",
+            "time": "2023-04-17T18:20:00-06:00",
+            "party": {
+              "reference": "urn:uuid:a3cf9ac3-c323-490e-87e4-88fbf65b9600"
+            }
+          }
+        ],
+        "custodian": {
+          "reference": "urn:uuid:d931f072-38f9-46ac-98b5-d470404e5aa0"
+        },
+        "relatesTo": [
+          {
+            "code": "replaces",
+            "targetIdentifier": {
+              "assigner": {
+                "display": "Previous Composition being replaced"
+              }
+            }
+          }
+        ],
+        "event": [
+          {
+            "code": [
+              {
+                "coding": [
+                  {
+                    "code": "PCPR",
+                    "system": "http://terminology.hl7.org/CodeSystem/v3-ActClass",
+                    "display": "Care Provision"
+                  }
+                ]
+              }
+            ],
+            "period": {
+              "start": "2024-10-01"
+            }
+          }
+        ],
+        "encounter": {
+          "reference": "urn:uuid:1ec435ad-dd4c-48cf-8f28-24f8768e5cfa"
+        },
+        "section": [
+          {
+            "title": "Medications",
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/StructureDefinition/note",
+                "valueAnnotation": {
+                  "time": "2024-10-02T12:12:12-06:00",
+                  "text": "Annotation in markdown format"
+                }
+              }
+            ],
+            "code": {
+              "coding": [
+                {
+                  "code": "10160-0",
+                  "system": "http://loinc.org"
+                }
+              ]
+            },
+            "text": {
+              "status": "additional",
+              "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Medications</div>"
+            },
+            "entry": [
+              {
+                "reference": "urn:uuid:03cd9a05-597b-4d34-a203-ac5d8134eabd"
+              },
+              {
+                "reference": "urn:uuid:407c998a-d316-4172-a01f-21f5849113ee"
+              },
+              {
+                "reference": "urn:uuid:10d9bfce-8f9a-4f3e-9a94-f5be9a55b6bd"
+              },
+              {
+                "reference": "urn:uuid:c999b842-6111-4fbb-8296-1b4638506668"
+              }
+            ]
+          },
+          {
+            "title": "Allergies and Intolerances",
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/StructureDefinition/note",
+                "valueAnnotation": {
+                  "time": "2024-10-02T12:12:12-06:00",
+                  "text": "Annotation in markdown format"
+                }
+              }
+            ],
+            "code": {
+              "coding": [
+                {
+                  "code": "48765-2",
+                  "system": "http://loinc.org"
+                }
+              ]
+            },
+            "text": {
+              "status": "additional",
+              "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Allergies and Intolerances</div>"
+            },
+            "entry": [
+              {
+                "reference": "urn:uuid:ceea9c48-759d-4636-a11e-0a067b32973a"
+              }
+            ]
+          },
+          {
+            "title": "Active Problems",
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/StructureDefinition/note",
+                "valueAnnotation": {
+                  "time": "2024-10-02T12:12:12-06:00",
+                  "text": "Annotation in markdown format"
+                }
+              }
+            ],
+            "code": {
+              "coding": [
+                {
+                  "code": "11450-4",
+                  "system": "http://loinc.org"
+                }
+              ]
+            },
+            "text": {
+              "status": "additional",
+              "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Current list of problems</div>"
+            },
+            "entry": [
+              {
+                "reference": "urn:uuid:3ea95c2b-cd7d-4ad4-b5f7-10c6563180e7"
+              }
+            ]
+          },
+          {
+            "title": "History of Procedures",
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/StructureDefinition/note",
+                "valueAnnotation": {
+                  "time": "2024-10-02T12:12:12-06:00",
+                  "text": "Annotation in markdown format"
+                }
+              }
+            ],
+            "code": {
+              "coding": [
+                {
+                  "code": "47519-4",
+                  "system": "http://loinc.org"
+                }
+              ]
+            },
+            "text": {
+              "status": "additional",
+              "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">History of Procedures</div>"
+            },
+            "entry": [
+              {
+                "reference": "urn:uuid:ef5afbe1-eaee-4b44-afa7-69fe21bedeb9"
+              }
+            ]
+          },
+          {
+            "title": "Immunizations",
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/StructureDefinition/note",
+                "valueAnnotation": {
+                  "time": "2024-10-02T12:12:12-06:00",
+                  "text": "Annotation in markdown format"
+                }
+              }
+            ],
+            "code": {
+              "coding": [
+                {
+                  "code": "11369-6",
+                  "system": "http://loinc.org"
+                }
+              ]
+            },
+            "entry": [
+              {
+                "reference": "urn:uuid:c718d089-e7bb-47fb-9547-4b56c9d05da8"
+              },
+              {
+                "reference": "urn:uuid:674942fb-69a2-4f2a-8f66-807ef1512f27"
+              },
+              {
+                "reference": "urn:uuid:4b979c1f-c8cb-4eee-acc8-367cc140631e"
+              }
+            ],
+            "text": {
+              "status": "generated",
+              "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"><p>Immunizations</p></div>"
+            }
+          },
+          {
+            "title": "Medical Devices",
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/StructureDefinition/note",
+                "valueAnnotation": {
+                  "time": "2024-10-02T12:12:12-06:00",
+                  "text": "Annotation in markdown format"
+                }
+              }
+            ],
+            "code": {
+              "coding": [
+                {
+                  "code": "46264-8",
+                  "system": "http://loinc.org"
+                }
+              ]
+            },
+            "entry": [
+              {
+                "reference": "urn:uuid:e8269a7e-c843-4703-a4d2-4aa6cf32a8e3"
+              },
+              {
+                "reference": "urn:uuid:9f5d9258-6cc3-49ed-8fee-f38c9ff684da"
+              }
+            ],
+            "text": {
+              "status": "generated",
+              "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"><p>Medical Devices</p></div>"
+            }
+          },
+          {
+            "title": "Results",
+            "code": {
+              "coding": [
+                {
+                  "code": "30954-2",
+                  "system": "http://loinc.org"
+                }
+              ]
+            },
+            "entry": [
+              {
+                "reference": "urn:uuid:a0261df5-9df8-49fc-a137-0cbd3d929c02"
+              },
+              {
+                "reference": "urn:uuid:523afbfe-0842-4060-93c1-297ae2a34223"
+              },
+              {
+                "reference": "urn:uuid:ea37d521-e8ac-4aec-b9bd-a34cb6f42d49"
+              },
+              {
+                "reference": "urn:uuid:e211f7f5-a818-4144-9a43-efbc70dced3c"
+              },
+              {
+                "reference": "urn:uuid:37ddfe07-0ec1-4f23-bcda-57c523282a78"
+              }
+            ],
+            "text": {
+              "status": "generated",
+              "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"><p>Results</p></div>"
+            }
+          },
+          {
+            "title": "Vital Signs",
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/StructureDefinition/note",
+                "valueAnnotation": {
+                  "time": "2024-10-02T12:12:12-06:00",
+                  "text": "Annotation in markdown format"
+                }
+              }
+            ],
+            "code": {
+              "coding": [
+                {
+                  "code": "8716-3",
+                  "system": "http://loinc.org"
+                }
+              ]
+            },
+            "entry": [
+              {
+                "reference": "urn:uuid:6c4b6a3e-2c64-4de3-b23e-e435347052e6"
+              },
+              {
+                "reference": "urn:uuid:dab22b4c-518c-48a8-9220-8c74f56ad896"
+              },
+              {
+                "reference": "urn:uuid:77537ea0-85a1-40d0-88e7-9f488a3ba174"
+              },
+              {
+                "reference": "urn:uuid:9a9891a6-aaa8-4c66-88d2-bb67800d36d0"
+              },
+              {
+                "reference": "urn:uuid:e526a79d-2afc-4240-b2fb-2d36b09f7f6b"
+              },
+              {
+                "reference": "urn:uuid:5d882fe0-dcdd-47ca-85f2-ccfc90159bde"
+              },
+              {
+                "reference": "urn:uuid:b59874ac-db9f-4d45-8397-70c507d48cd8"
+              },
+              {
+                "reference": "urn:uuid:41d33a71-a265-45b9-82bd-a787ad0ec23c"
+              },
+              {
+                "reference": "urn:uuid:3a6d98f3-3bd0-4c0c-b58e-3db7427804a1"
+              },
+              {
+                "reference": "urn:uuid:e04b6a9f-4a2c-4b57-8f55-4811984cc222"
+              }
+            ],
+            "text": {
+              "status": "generated",
+              "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"><p>Results</p></div>"
+            }
+          },
+          {
+            "title": "Past History of Illness",
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/StructureDefinition/note",
+                "valueAnnotation": {
+                  "time": "2024-10-02T12:12:12-06:00",
+                  "text": "Annotation in markdown format"
+                }
+              }
+            ],
+            "code": {
+              "coding": [
+                {
+                  "code": "11348-0",
+                  "system": "http://loinc.org"
+                }
+              ]
+            },
+            "entry": [
+              {
+                "reference": "urn:uuid:81d9c649-6896-4572-bd05-74b9a9bd227a"
+              }
+            ],
+            "text": {
+              "status": "generated",
+              "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"><p>Past History of Illness</p></div>"
+            }
+          },
+          {
+            "title": "Functional Status",
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/StructureDefinition/note",
+                "valueAnnotation": {
+                  "time": "2024-10-02T12:12:12-06:00",
+                  "text": "Annotation in markdown format"
+                }
+              }
+            ],
+            "code": {
+              "coding": [
+                {
+                  "code": "47420-5",
+                  "system": "http://loinc.org"
+                }
+              ]
+            },
+            "entry": [
+              {
+                "reference": "urn:uuid:0ceb29b9-6156-45a0-9a0e-ae1d7e3ac53a"
+              }
+            ],
+            "text": {
+              "status": "generated",
+              "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"><p>Functional Status</p></div>"
+            }
+          },
+          {
+            "title": "Plan of Care",
+            "code": {
+              "coding": [
+                {
+                  "code": "18776-5",
+                  "system": "http://loinc.org"
+                }
+              ]
+            },
+            "emptyReason": {
+              "coding": [
+                {
+                  "code": "unavailable",
+                  "system": "http://terminology.hl7.org/CodeSystem/list-empty-reason",
+                  "display": "Unavailable"
+                }
+              ],
+              "text": "Unavailable"
+            },
+            "text": {
+              "status": "generated",
+              "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"><p>There is no plan of care because ...</p></div>"
+            }
+          },
+          {
+            "title": "Social History",
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/StructureDefinition/note",
+                "valueAnnotation": {
+                  "time": "2024-10-02T12:12:12-06:00",
+                  "text": "Annotation in markdown format"
+                }
+              }
+            ],
+            "code": {
+              "coding": [
+                {
+                  "code": "29762-2",
+                  "system": "http://loinc.org"
+                }
+              ]
+            },
+            "entry": [
+              {
+                "reference": "urn:uuid:6f01c38b-043b-4c91-8131-835c7009b3fd"
+              },
+              {
+                "reference": "urn:uuid:7cd8f128-23a4-4f97-9986-d778b7aa8c95"
+              },
+              {
+                "reference": "urn:uuid:2df99df4-465e-4bab-9313-fbe9117f1d37"
+              }
+            ],
+            "text": {
+              "status": "generated",
+              "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"><p>Social History</p></div>"
+            }
+          },
+          {
+            "title": "Family History",
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/StructureDefinition/note",
+                "valueAnnotation": {
+                  "time": "2024-10-02T12:12:12-06:00",
+                  "text": "Annotation in markdown format"
+                }
+              }
+            ],
+            "code": {
+              "coding": [
+                {
+                  "code": "10157-6",
+                  "system": "http://loinc.org"
+                }
+              ]
+            },
+            "entry": [
+              {
+                "reference": "urn:uuid:6be80d8c-4c63-41f1-b9b2-b06cb144afb1"
+              }
+            ],
+            "text": {
+              "status": "generated",
+              "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"><p>Family History</p></div>"
+            }
+          },
+          {
+            "title": "Pregnancy History",
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/StructureDefinition/note",
+                "valueAnnotation": {
+                  "time": "2024-10-02T12:12:12-06:00",
+                  "text": "Annotation in markdown format"
+                }
+              }
+            ],
+            "code": {
+              "coding": [
+                {
+                  "code": "10162-6",
+                  "system": "http://loinc.org"
+                }
+              ]
+            },
+            "entry": [
+              {
+                "reference": "urn:uuid:4f786ae4-0de8-45f8-bbed-167a136870e1"
+              }
+            ],
+            "text": {
+              "status": "generated",
+              "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"><p>Pregnancy History</p></div>"
+            }
+          },
+          {
+            "title": "Advance Directives",
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/StructureDefinition/note",
+                "valueAnnotation": {
+                  "time": "2024-10-02T12:12:12-06:00",
+                  "text": "Annotation in markdown format"
+                }
+              }
+            ],
+            "code": {
+              "coding": [
+                {
+                  "code": "42348-3",
+                  "system": "http://loinc.org"
+                }
+              ]
+            },
+            "entry": [
+              {
+                "reference": "urn:uuid:8c6ddad7-6c5a-48b4-b2a3-97f449334b87"
+              }
+            ],
+            "text": {
+              "status": "generated",
+              "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"><p>Advance Directives</p></div>"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:a3cf9ac3-c323-490e-87e4-88fbf65b9600",
+      "resource": {
+        "resourceType": "Practitioner",
+        "id": "a3cf9ac3-c323-490e-87e4-88fbf65b9600",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/ca/baseline/StructureDefinition/profile-practitioner"
+          ]
+        },
+        "identifier": [
+          {
+            "system": "http://first-system-uri.ca",
+            "value": "practitioner-id"
+          }
+        ],
+        "name": [
+          {
+            "family": "Allan",
+            "given": [
+              "Howard"
+            ]
+          }
+        ],
+        "text": {
+          "status": "additional",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Narrative goes here</div>"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:b5cf9ac3-c323-490e-87e4-88fbf65b9888",
+      "resource": {
+        "resourceType": "PractitionerRole",
+        "id": "b5cf9ac3-c323-490e-87e4-88fbf65b9888",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/ca/baseline/StructureDefinition/profile-practitionerrole"
+          ]
+        },
+        "practitioner": {
+          "reference": "urn:uuid:a3cf9ac3-c323-490e-87e4-88fbf65b9600"
+        },
+        "specialty": [
+          {
+            "text": "Primary Care"
+          }
+        ],
+        "telecom": [
+          {
+            "system": "phone",
+            "value": "555-555-3477"
+          }
+        ],
+        "text": {
+          "status": "additional",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Narrative goes here</div>"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:d931f072-38f9-46ac-98b5-d470404e5aa0",
+      "resource": {
+        "resourceType": "Organization",
+        "id": "d931f072-38f9-46ac-98b5-d470404e5aa0",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/ca/baseline/StructureDefinition/profile-organization"
+          ]
+        },
+        "name": "Fictional Custodian Organization",
+        "text": {
+          "status": "additional",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Narrative goes here</div>"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:d520ecd1-76a0-4894-b895-b8a5a971954e",
+      "resource": {
+        "resourceType": "Patient",
+        "id": "d520ecd1-76a0-4894-b895-b8a5a971954e",
+        "meta": {
+          "profile": [
+            "http://fhir.infoway-inforoute.ca/io/psca/StructureDefinition/patient-ca-ps"
+          ]
+        },
+        "identifier": [
+          {
+            "system": "http://first-system-uri.ca",
+            "value": "570191"
+          }
+        ],
+        "name": [
+          {
+            "text": "Roberta Gray",
+            "family": "Gray",
+            "given": [
+              "Roberta"
+            ]
+          }
+        ],
+        "gender": "female",
+        "birthDate": "1961-07-23",
+        "extension": [
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/individual-recordedSexOrGender",
+            "extension": [
+              {
+                "url": "value",
+                "valueCodeableConcept": {
+                  "coding": [
+                    {
+                      "code": "female",
+                      "system": "http://hl7.org/fhir/administrative-gender"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ],
+        "text": {
+          "status": "additional",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Narrative goes here</div>"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:03cd9a05-597b-4d34-a203-ac5d8134eabd",
+      "resource": {
+        "resourceType": "MedicationStatement",
+        "id": "03cd9a05-597b-4d34-a203-ac5d8134eabd",
+        "meta": {
+          "profile": [
+            "http://fhir.infoway-inforoute.ca/io/psca/StructureDefinition/medicationstatement-ca-ps"
+          ]
+        },
+        "status": "active",
+        "medicationReference": {
+          "reference": "urn:uuid:5d1928a7-947e-416d-a121-0005f8a2887a"
+        },
+        "subject": {
+          "reference": "urn:uuid:d520ecd1-76a0-4894-b895-b8a5a971954e"
+        },
+        "effectiveDateTime": "2022-01-05T04:03:22-06:00",
+        "dosage": [
+          {
+            "text": "1 bid"
+          }
+        ],
+        "text": {
+          "status": "additional",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Narrative goes here</div>"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:407c998a-d316-4172-a01f-21f5849113ee",
+      "resource": {
+        "resourceType": "MedicationStatement",
+        "id": "407c998a-d316-4172-a01f-21f5849113ee",
+        "meta": {
+          "profile": [
+            "http://fhir.infoway-inforoute.ca/io/psca/StructureDefinition/medicationstatement-ca-ps"
+          ]
+        },
+        "status": "completed",
+        "medicationCodeableConcept": {
+          "coding": [
+            {
+              "code": "9000540",
+              "system": "https://fhir.infoway-inforoute.ca/CodeSystem/canadianclinicaldrugdataset",
+              "display": "perindopril"
+            }
+          ],
+          "text": "perindopril erbumine 4 mg oral tablet"
+        },
+        "subject": {
+          "reference": "urn:uuid:d520ecd1-76a0-4894-b895-b8a5a971954e"
+        },
+        "dosage": [
+          {
+            "text": "1 qd"
+          }
+        ],
+        "text": {
+          "status": "additional",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Narrative goes here</div>"
+        },
+        "_effectiveDateTime": {
+          "extension": [
+            {
+              "url": "http://hl7.org/fhir/StructureDefinition/data-absent-reason",
+              "valueCode": "unknown"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:10d9bfce-8f9a-4f3e-9a94-f5be9a55b6bd",
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "id": "10d9bfce-8f9a-4f3e-9a94-f5be9a55b6bd",
+        "meta": {
+          "profile": [
+            "http://fhir.infoway-inforoute.ca/io/psca/StructureDefinition/medicationrequest-ca-ps"
+          ]
+        },
+        "status": "active",
+        "intent": "order",
+        "medicationReference": {
+          "reference": "urn:uuid:5d1928a7-947e-416d-a121-0005f8a2887a"
+        },
+        "subject": {
+          "reference": "urn:uuid:d520ecd1-76a0-4894-b895-b8a5a971954e"
+        },
+        "authoredOn": "2022-01-05T04:03:22-06:00",
+        "dosageInstruction": [
+          {
+            "text": "1 bid"
+          }
+        ],
+        "text": {
+          "status": "additional",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Narrative goes here</div>"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:c999b842-6111-4fbb-8296-1b4638506668",
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "id": "c999b842-6111-4fbb-8296-1b4638506668",
+        "meta": {
+          "profile": [
+            "http://fhir.infoway-inforoute.ca/io/psca/StructureDefinition/medicationrequest-ca-ps"
+          ]
+        },
+        "status": "unknown",
+        "intent": "order",
+        "medicationCodeableConcept": {
+          "coding": [
+            {
+              "code": "9000152",
+              "system": "https://fhir.infoway-inforoute.ca/CodeSystem/canadianclinicaldrugdataset",
+              "display": "indomethacin 50 mg oral capsule"
+            }
+          ],
+          "text": "indomethacin 50 mg oral capsule"
+        },
+        "subject": {
+          "reference": "urn:uuid:d520ecd1-76a0-4894-b895-b8a5a971954e"
+        },
+        "authoredOn": "2021-12-22T20:38:41-06:00",
+        "dosageInstruction": [
+          {
+            "text": "tid prn for gout attacks"
+          }
+        ],
+        "text": {
+          "status": "additional",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Narrative goes here</div>"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:5d1928a7-947e-416d-a121-0005f8a2887a",
+      "resource": {
+        "resourceType": "Medication",
+        "id": "5d1928a7-947e-416d-a121-0005f8a2887a",
+        "meta": {
+          "profile": [
+            "http://fhir.infoway-inforoute.ca/io/psca/StructureDefinition/medication-ca-ps"
+          ]
+        },
+        "code": {
+          "text": "gliclazide",
+          "coding": [
+            {
+              "code": "2287072",
+              "system": "https://fhir.infoway-inforoute.ca/CodeSystem/canadianclinicaldrugdataset",
+              "display": "GLICLAZIDE"
+            }
+          ]
+        },
+        "form": {
+          "text": "Oral Tablet"
+        },
+        "text": {
+          "status": "additional",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Narrative goes here</div>"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:ceea9c48-759d-4636-a11e-0a067b32973a",
+      "resource": {
+        "resourceType": "AllergyIntolerance",
+        "id": "ceea9c48-759d-4636-a11e-0a067b32973a",
+        "meta": {
+          "profile": [
+            "http://fhir.infoway-inforoute.ca/io/psca/StructureDefinition/allergyintolerance-ca-ps"
+          ]
+        },
+        "clinicalStatus": {
+          "coding": [
+            {
+              "code": "active",
+              "system": "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
+              "display": "Active"
+            }
+          ]
+        },
+        "verificationStatus": {
+          "coding": [
+            {
+              "code": "unconfirmed",
+              "system": "http://terminology.hl7.org/CodeSystem/allergyintolerance-verification",
+              "display": "Unconfirmed"
+            }
+          ]
+        },
+        "code": {
+          "text": "Metformin (substance)",
+          "coding": [
+            {
+              "code": "372567009",
+              "system": "http://snomed.info/sct",
+              "display": "Metformin"
+            }
+          ]
+        },
+        "patient": {
+          "reference": "urn:uuid:d520ecd1-76a0-4894-b895-b8a5a971954e"
+        },
+        "onsetDateTime": "1993-03-07T10:53:50-06:00",
+        "reaction": [
+          {
+            "manifestation": [
+              {
+                "text": "Sneezing"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "status": "additional",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Narrative goes here</div>"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:3ea95c2b-cd7d-4ad4-b5f7-10c6563180e7",
+      "resource": {
+        "resourceType": "Condition",
+        "id": "3ea95c2b-cd7d-4ad4-b5f7-10c6563180e7",
+        "meta": {
+          "profile": [
+            "http://fhir.infoway-inforoute.ca/io/psca/StructureDefinition/condition-ca-ps"
+          ]
+        },
+        "clinicalStatus": {
+          "coding": [
+            {
+              "code": "active",
+              "system": "http://terminology.hl7.org/CodeSystem/condition-clinical"
+            }
+          ]
+        },
+        "code": {
+          "text": "Diabetes mellitus type 2 (disorder)",
+          "coding": [
+            {
+              "code": "44054006",
+              "system": "http://snomed.info/sct",
+              "display": "Diabetes mellitus type 2 (disorder)"
+            }
+          ]
+        },
+        "subject": {
+          "reference": "urn:uuid:d520ecd1-76a0-4894-b895-b8a5a971954e"
+        },
+        "onsetDateTime": "2012-12-06",
+        "text": {
+          "status": "additional",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Narrative goes here</div>"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:ef5afbe1-eaee-4b44-afa7-69fe21bedeb9",
+      "resource": {
+        "resourceType": "Procedure",
+        "id": "ef5afbe1-eaee-4b44-afa7-69fe21bedeb9",
+        "meta": {
+          "profile": [
+            "http://fhir.infoway-inforoute.ca/io/psca/StructureDefinition/procedure-ca-ps"
+          ]
+        },
+        "status": "completed",
+        "code": {
+          "text": "Colonoscopy",
+          "coding": [
+            {
+              "code": "73761001",
+              "system": "http://snomed.info/sct"
+            }
+          ]
+        },
+        "subject": {
+          "reference": "urn:uuid:d520ecd1-76a0-4894-b895-b8a5a971954e"
+        },
+        "performedDateTime": "2022-02-04",
+        "text": {
+          "status": "additional",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Narrative goes here</div>"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:674942fb-69a2-4f2a-8f66-807ef1512f27",
+      "resource": {
+        "resourceType": "Immunization",
+        "id": "674942fb-69a2-4f2a-8f66-807ef1512f27",
+        "meta": {
+          "profile": [
+            "http://fhir.infoway-inforoute.ca/io/psca/StructureDefinition/immunization-ca-ps"
+          ]
+        },
+        "status": "completed",
+        "vaccineCode": {
+          "text": "Pneu-P-23 Pneumovax 23 MC"
+        },
+        "patient": {
+          "reference": "urn:uuid:d520ecd1-76a0-4894-b895-b8a5a971954e"
+        },
+        "occurrenceDateTime": "2015-01-11",
+        "text": {
+          "status": "additional",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Narrative goes here</div>"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:c718d089-e7bb-47fb-9547-4b56c9d05da8",
+      "resource": {
+        "resourceType": "Immunization",
+        "id": "c718d089-e7bb-47fb-9547-4b56c9d05da8",
+        "meta": {
+          "profile": [
+            "http://fhir.infoway-inforoute.ca/io/psca/StructureDefinition/immunization-ca-ps"
+          ]
+        },
+        "status": "completed",
+        "vaccineCode": {
+          "coding": [
+            {
+              "version": "http://snomed.info/sct/20611000087101",
+              "code": "7891000087104",
+              "system": "http://snomed.info/sct",
+              "display": "Adult vaccine product containing only tetanus + diphtheria low dose + acellular pertussis low dose + inactivated human poliovirus antigens (medicinal product)"
+            }
+          ],
+          "text": "Tetanus + Diphtheria + Pertussis + Polio"
+        },
+        "patient": {
+          "reference": "urn:uuid:d520ecd1-76a0-4894-b895-b8a5a971954e"
+        },
+        "occurrenceDateTime": "1998-06-04T00:00:00+02:00",
+        "text": {
+          "status": "additional",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Narrative goes here</div>"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:4b979c1f-c8cb-4eee-acc8-367cc140631e",
+      "resource": {
+        "resourceType": "Immunization",
+        "id": "4b979c1f-c8cb-4eee-acc8-367cc140631e",
+        "meta": {
+          "profile": [
+            "http://fhir.infoway-inforoute.ca/io/psca/StructureDefinition/immunization-ca-ps"
+          ]
+        },
+        "status": "completed",
+        "vaccineCode": {
+          "text": "Inf influenza trivalent unspecified"
+        },
+        "patient": {
+          "reference": "urn:uuid:d520ecd1-76a0-4894-b895-b8a5a971954e"
+        },
+        "occurrenceDateTime": "2015-01-11",
+        "text": {
+          "status": "additional",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Narrative goes here</div>"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:a0261df5-9df8-49fc-a137-0cbd3d929c02",
+      "resource": {
+        "resourceType": "DiagnosticReport",
+        "id": "a0261df5-9df8-49fc-a137-0cbd3d929c02",
+        "meta": {
+          "profile": [
+            "http://fhir.infoway-inforoute.ca/io/psca/StructureDefinition/diagnosticreport-ca-ps"
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "code": "LAB",
+                "system": "http://terminology.hl7.org/CodeSystem/v2-0074"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "code": "11502-2",
+              "system": "http://loinc.org"
+            }
+          ]
+        },
+        "subject": {
+          "reference": "urn:uuid:d520ecd1-76a0-4894-b895-b8a5a971954e"
+        },
+        "effectiveDateTime": "2024-02-01",
+        "performer": [
+          {
+            "reference": "urn:uuid:28641359-1fe4-4763-9c70-5b857543007e"
+          }
+        ],
+        "result": [
+          {
+            "reference": "urn:uuid:523afbfe-0842-4060-93c1-297ae2a34223"
+          }
+        ],
+        "text": {
+          "status": "additional",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Narrative goes here</div>"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:523afbfe-0842-4060-93c1-297ae2a34223",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "523afbfe-0842-4060-93c1-297ae2a34223",
+        "meta": {
+          "profile": [
+            "http://fhir.infoway-inforoute.ca/io/psca/StructureDefinition/observation-results-laboratory-pathology-ca-ps"
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "code": "laboratory",
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "code": "17856-6",
+              "system": "http://loinc.org"
+            }
+          ]
+        },
+        "subject": {
+          "reference": "urn:uuid:d520ecd1-76a0-4894-b895-b8a5a971954e"
+        },
+        "effectiveDateTime": "2024-02-01",
+        "performer": [
+          {
+            "reference": "urn:uuid:28641359-1fe4-4763-9c70-5b857543007e"
+          }
+        ],
+        "valueQuantity": {
+          "value": 8.1,
+          "code": "%",
+          "system": "http://unitsofmeasure.org",
+          "unit": "%"
+        },
+        "text": {
+          "status": "additional",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Narrative goes here</div>"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:28641359-1fe4-4763-9c70-5b857543007e",
+      "resource": {
+        "resourceType": "Organization",
+        "id": "28641359-1fe4-4763-9c70-5b857543007e",
+        "meta": {
+          "profile": [
+            "http://fhir.infoway-inforoute.ca/io/psca/StructureDefinition/organization-lab-ca-ps"
+          ]
+        },
+        "name": "Happy Healthness Wellness Centre",
+        "text": {
+          "status": "additional",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Narrative goes here</div>"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:ea37d521-e8ac-4aec-b9bd-a34cb6f42d49",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "ea37d521-e8ac-4aec-b9bd-a34cb6f42d49",
+        "meta": {
+          "profile": [
+            "http://fhir.infoway-inforoute.ca/io/psca/StructureDefinition/observation-results-radiology-ca-ps"
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "code": "imaging",
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "code": "79103-8",
+              "system": "http://loinc.org"
+            }
+          ]
+        },
+        "subject": {
+          "reference": "urn:uuid:d520ecd1-76a0-4894-b895-b8a5a971954e"
+        },
+        "effectiveDateTime": "2020-03-20",
+        "performer": [
+          {
+            "reference": "urn:uuid:4330bd48-d003-45d1-863b-3c6621f709b6"
+          }
+        ],
+        "valueString": "5cm peptic ulcer present on the the anterior of the duodenum.",
+        "text": {
+          "status": "additional",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Narrative goes here</div>"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:37ddfe07-0ec1-4f23-bcda-57c523282a78",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "37ddfe07-0ec1-4f23-bcda-57c523282a78",
+        "meta": {
+          "profile": [
+            "http://fhir.infoway-inforoute.ca/io/psca/StructureDefinition/observation-results-radiology-ca-ps"
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "code": "imaging",
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "display": "Imaging"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "code": "79103-8",
+              "system": "http://loinc.org",
+              "display": "CT Abdomen W contrast IV"
+            }
+          ],
+          "text": "Upper abdomen with the administration of oral and intravenous contrast"
+        },
+        "subject": {
+          "reference": "urn:uuid:d520ecd1-76a0-4894-b895-b8a5a971954e"
+        },
+        "effectiveDateTime": "2020-03-20",
+        "performer": [
+          {
+            "reference": "urn:uuid:4330bd48-d003-45d1-863b-3c6621f709b6"
+          }
+        ],
+        "component": [
+          {
+            "code": {
+              "coding": [
+                {
+                  "code": "79103-8",
+                  "system": "http://loinc.org",
+                  "display": "CT Abdomen W contrast IV"
+                }
+              ]
+            },
+            "valueCodeableConcept": {
+              "coding": [
+                {
+                  "version": "http://snomed.info/sct/20611000087101",
+                  "code": "12847006",
+                  "system": "http://snomed.info/sct",
+                  "display": "Acute duodenal ulcer with hemorrhage"
+                }
+              ],
+              "text": "Acute duodenal ulcer with hemorrhage"
+            }
+          }
+        ],
+        "text": {
+          "status": "additional",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Narrative goes here</div>"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:4330bd48-d003-45d1-863b-3c6621f709b6",
+      "resource": {
+        "resourceType": "Practitioner",
+        "id": "4330bd48-d003-45d1-863b-3c6621f709b6",
+        "meta": {
+          "profile": [
+            "http://fhir.infoway-inforoute.ca/io/psca/StructureDefinition/practitioner-lab-ca-ps"
+          ]
+        },
+        "name": [
+          {
+            "family": "Sorkinson",
+            "given": [
+              "Aaron"
+            ]
+          }
+        ],
+        "text": {
+          "status": "additional",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Narrative goes here</div>"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:e211f7f5-a818-4144-9a43-efbc70dced3c",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "e211f7f5-a818-4144-9a43-efbc70dced3c",
+        "meta": {
+          "profile": [
+            "http://fhir.infoway-inforoute.ca/io/psca/StructureDefinition/observation-results-laboratory-pathology-ca-ps"
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "code": "laboratory",
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "code": "2657-5",
+              "system": "http://loinc.org"
+            }
+          ]
+        },
+        "subject": {
+          "reference": "urn:uuid:d520ecd1-76a0-4894-b895-b8a5a971954e"
+        },
+        "effectiveDateTime": "2012-12-02",
+        "performer": [
+          {
+            "reference": "urn:uuid:4330bd48-d003-45d1-863b-3c6621f709b6"
+          }
+        ],
+        "valueQuantity": {
+          "value": 0.1,
+          "code": "mg/dL",
+          "system": "http://unitsofmeasure.org",
+          "unit": "mg/dl"
+        },
+        "text": {
+          "status": "additional",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Narrative goes here</div>"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:6c4b6a3e-2c64-4de3-b23e-e435347052e6",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "6c4b6a3e-2c64-4de3-b23e-e435347052e6",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/StructureDefinition/bmi"
+          ]
+        },
+        "valueQuantity": {
+          "system": "http://unitsofmeasure.org",
+          "code": "kg/m2",
+          "value": 29.34,
+          "unit": "kg/m2"
+        },
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "vital-signs",
+                "display": "Vital Signs"
+              }
+            ],
+            "text": "Vital Signs"
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "39156-5",
+              "display": "Body mass index (BMI) [Ratio]"
+            }
+          ]
+        },
+        "status": "final",
+        "subject": {
+          "reference": "urn:uuid:d520ecd1-76a0-4894-b895-b8a5a971954e"
+        },
+        "effectiveDateTime": "2024-01-05",
+        "text": {
+          "status": "additional",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Narrative goes here</div>"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:77537ea0-85a1-40d0-88e7-9f488a3ba174",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "77537ea0-85a1-40d0-88e7-9f488a3ba174",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/StructureDefinition/bodyheight"
+          ]
+        },
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "vital-signs",
+                "display": "Vital Signs"
+              }
+            ],
+            "text": "Vital Signs"
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "8302-2",
+              "display": "Body height"
+            }
+          ],
+          "text": "Body height"
+        },
+        "valueQuantity": {
+          "system": "http://unitsofmeasure.org",
+          "value": 162,
+          "code": "cm",
+          "unit": "cm"
+        },
+        "status": "final",
+        "subject": {
+          "reference": "urn:uuid:d520ecd1-76a0-4894-b895-b8a5a971954e"
+        },
+        "effectiveDateTime": "2024-01-05",
+        "text": {
+          "status": "additional",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Narrative goes here</div>"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:9a9891a6-aaa8-4c66-88d2-bb67800d36d0",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "9a9891a6-aaa8-4c66-88d2-bb67800d36d0",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/StructureDefinition/bodyweight"
+          ]
+        },
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "vital-signs",
+                "display": "Vital Signs"
+              }
+            ],
+            "text": "Vital Signs"
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "29463-7"
+            }
+          ],
+          "text": "Body weight"
+        },
+        "valueQuantity": {
+          "system": "http://unitsofmeasure.org",
+          "value": 77,
+          "code": "kg",
+          "unit": "kg"
+        },
+        "status": "final",
+        "subject": {
+          "reference": "urn:uuid:d520ecd1-76a0-4894-b895-b8a5a971954e"
+        },
+        "effectiveDateTime": "2024-01-05",
+        "text": {
+          "status": "additional",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Narrative goes here</div>"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:dab22b4c-518c-48a8-9220-8c74f56ad896",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "dab22b4c-518c-48a8-9220-8c74f56ad896",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/StructureDefinition/bp"
+          ]
+        },
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "vital-signs",
+                "display": "Vital Signs"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "85354-9"
+            }
+          ],
+          "text": "Blood pressure systolic & diastolic"
+        },
+        "component": [
+          {
+            "valueQuantity": {
+              "system": "http://unitsofmeasure.org",
+              "code": "mm[Hg]",
+              "value": 120,
+              "unit": "mmHg"
+            },
+            "code": {
+              "coding": [
+                {
+                  "system": "http://loinc.org",
+                  "code": "8480-6",
+                  "display": "Systolic blood pressure"
+                }
+              ]
+            }
+          },
+          {
+            "valueQuantity": {
+              "system": "http://unitsofmeasure.org",
+              "code": "mm[Hg]",
+              "value": 80,
+              "unit": "mmHg"
+            },
+            "code": {
+              "coding": [
+                {
+                  "system": "http://loinc.org",
+                  "code": "8462-4",
+                  "display": "Diastolic blood pressure"
+                }
+              ]
+            }
+          }
+        ],
+        "status": "final",
+        "subject": {
+          "reference": "urn:uuid:d520ecd1-76a0-4894-b895-b8a5a971954e"
+        },
+        "effectiveDateTime": "2024-01-05",
+        "text": {
+          "status": "additional",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Narrative goes here</div>"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:e526a79d-2afc-4240-b2fb-2d36b09f7f6b",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "e526a79d-2afc-4240-b2fb-2d36b09f7f6b",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/StructureDefinition/bodytemp"
+          ]
+        },
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "vital-signs",
+                "display": "Vital Signs"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "8310-5"
+            }
+          ],
+          "text": "Temperature"
+        },
+        "valueQuantity": {
+          "system": "http://unitsofmeasure.org",
+          "value": 37,
+          "code": "Cel",
+          "unit": "Cel"
+        },
+        "status": "entered-in-error",
+        "subject": {
+          "reference": "urn:uuid:d520ecd1-76a0-4894-b895-b8a5a971954e"
+        },
+        "effectiveDateTime": "2024-01-05",
+        "text": {
+          "status": "additional",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Narrative goes here</div>"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:5d882fe0-dcdd-47ca-85f2-ccfc90159bde",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "5d882fe0-dcdd-47ca-85f2-ccfc90159bde",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/StructureDefinition/headcircum"
+          ]
+        },
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "vital-signs",
+                "display": "Vital Signs"
+              }
+            ],
+            "text": "Vital Signs"
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "9843-4",
+              "display": "Head Occipital-frontal circumference"
+            }
+          ],
+          "text": "Head Circumference"
+        },
+        "valueQuantity": {
+          "system": "http://unitsofmeasure.org",
+          "value": 55.2,
+          "code": "cm",
+          "unit": "cm"
+        },
+        "status": "final",
+        "subject": {
+          "reference": "urn:uuid:d520ecd1-76a0-4894-b895-b8a5a971954e"
+        },
+        "effectiveDateTime": "2024-01-05",
+        "text": {
+          "status": "additional",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Narrative goes here</div>"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:b59874ac-db9f-4d45-8397-70c507d48cd8",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "b59874ac-db9f-4d45-8397-70c507d48cd8",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/StructureDefinition/heartrate"
+          ]
+        },
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "vital-signs",
+                "display": "Vital Signs"
+              }
+            ],
+            "text": "Vital Signs"
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "8867-4"
+            }
+          ],
+          "text": "Heart rate"
+        },
+        "valueQuantity": {
+          "system": "http://unitsofmeasure.org",
+          "code": "/min",
+          "value": 80,
+          "unit": "/minute"
+        },
+        "status": "final",
+        "subject": {
+          "reference": "urn:uuid:d520ecd1-76a0-4894-b895-b8a5a971954e"
+        },
+        "effectiveDateTime": "2024-01-05",
+        "text": {
+          "status": "additional",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Narrative goes here</div>"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:41d33a71-a265-45b9-82bd-a787ad0ec23c",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "41d33a71-a265-45b9-82bd-a787ad0ec23c",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/StructureDefinition/oxygensat"
+          ]
+        },
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "vital-signs",
+                "display": "Vital Signs"
+              }
+            ],
+            "text": "Vital Signs"
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "2708-6"
+            }
+          ]
+        },
+        "valueQuantity": {
+          "system": "http://unitsofmeasure.org",
+          "code": "%",
+          "value": 95,
+          "unit": "%"
+        },
+        "status": "final",
+        "subject": {
+          "reference": "urn:uuid:d520ecd1-76a0-4894-b895-b8a5a971954e"
+        },
+        "effectiveDateTime": "2024-01-05",
+        "text": {
+          "status": "additional",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Narrative goes here</div>"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:3a6d98f3-3bd0-4c0c-b58e-3db7427804a1",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "3a6d98f3-3bd0-4c0c-b58e-3db7427804a1",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/StructureDefinition/resprate"
+          ]
+        },
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "vital-signs",
+                "display": "Vital Signs"
+              }
+            ],
+            "text": "Vital Signs"
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "9279-1",
+              "display": "Respiratory rate"
+            }
+          ],
+          "text": "Respiratory rate"
+        },
+        "valueQuantity": {
+          "system": "http://unitsofmeasure.org",
+          "code": "/min",
+          "value": 15,
+          "unit": "breaths/"
+        },
+        "status": "final",
+        "subject": {
+          "reference": "urn:uuid:d520ecd1-76a0-4894-b895-b8a5a971954e"
+        },
+        "effectiveDateTime": "2024-01-05",
+        "text": {
+          "status": "additional",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Narrative goes here</div>"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:e04b6a9f-4a2c-4b57-8f55-4811984cc222",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "e04b6a9f-4a2c-4b57-8f55-4811984cc222",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/StructureDefinition/vitalsigns",
+            "http://hl7.org/fhir/StructureDefinition/vitalspanel"
+          ]
+        },
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "vital-signs",
+                "display": "Vital Signs"
+              }
+            ],
+            "text": "Vital Signs"
+          }
+        ],
+        "status": "final",
+        "code": {
+          "coding": [
+            {
+              "code": "85353-1",
+              "system": "http://loinc.org",
+              "display": "Vital signs, weight, height, head circumference, oxygen saturation and BMI panel"
+            }
+          ],
+          "text": "Vital signs Panel"
+        },
+        "subject": {
+          "reference": "urn:uuid:d520ecd1-76a0-4894-b895-b8a5a971954e"
+        },
+        "effectiveDateTime": "2024-01-05",
+        "hasMember": [
+          {
+            "reference": "urn:uuid:3a6d98f3-3bd0-4c0c-b58e-3db7427804a1",
+            "display": "Respiratory Rate"
+          },
+          {
+            "reference": "urn:uuid:b59874ac-db9f-4d45-8397-70c507d48cd8",
+            "display": "Heart Rate"
+          },
+          {
+            "reference": "urn:uuid:dab22b4c-518c-48a8-9220-8c74f56ad896",
+            "display": "Blood Pressure"
+          },
+          {
+            "reference": "urn:uuid:e526a79d-2afc-4240-b2fb-2d36b09f7f6b",
+            "display": "Body Temperature"
+          },
+          {
+            "reference": "urn:uuid:6c4b6a3e-2c64-4de3-b23e-e435347052e6",
+            "display": "BMI"
+          },
+          {
+            "reference": "urn:uuid:77537ea0-85a1-40d0-88e7-9f488a3ba174",
+            "display": "Body Height"
+          },
+          {
+            "reference": "urn:uuid:9a9891a6-aaa8-4c66-88d2-bb67800d36d0",
+            "display": "Body Weight"
+          },
+          {
+            "reference": "urn:uuid:5d882fe0-dcdd-47ca-85f2-ccfc90159bde",
+            "display": "Head Circumference"
+          },
+          {
+            "reference": "urn:uuid:41d33a71-a265-45b9-82bd-a787ad0ec23c",
+            "display": "Oxygen Saturation Level"
+          }
+        ],
+        "text": {
+          "status": "additional",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Narrative goes here</div>"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:e8269a7e-c843-4703-a4d2-4aa6cf32a8e3",
+      "resource": {
+        "resourceType": "DeviceUseStatement",
+        "id": "e8269a7e-c843-4703-a4d2-4aa6cf32a8e3",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/uv/ips/StructureDefinition/DeviceUseStatement-uv-ips"
+          ]
+        },
+        "status": "active",
+        "subject": {
+          "reference": "urn:uuid:d520ecd1-76a0-4894-b895-b8a5a971954e"
+        },
+        "timingDateTime": "2010-08-06",
+        "device": {
+          "reference": "urn:uuid:d91b6fbb-f091-40b6-8582-2c4c11da4cc9"
+        },
+        "text": {
+          "status": "additional",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Narrative goes here</div>"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:9f5d9258-6cc3-49ed-8fee-f38c9ff684da",
+      "resource": {
+        "resourceType": "DeviceUseStatement",
+        "id": "9f5d9258-6cc3-49ed-8fee-f38c9ff684da",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/uv/ips/StructureDefinition/DeviceUseStatement-uv-ips"
+          ]
+        },
+        "status": "active",
+        "subject": {
+          "reference": "urn:uuid:d520ecd1-76a0-4894-b895-b8a5a971954e"
+        },
+        "device": {
+          "reference": "urn:uuid:204708c1-b026-429a-8b19-e5b8578e2577"
+        },
+        "text": {
+          "status": "additional",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Narrative goes here</div>"
+        },
+        "_timingDateTime": {
+          "extension": [
+            {
+              "url": "http://hl7.org/fhir/StructureDefinition/data-absent-reason",
+              "valueCode": "unknown"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:d91b6fbb-f091-40b6-8582-2c4c11da4cc9",
+      "resource": {
+        "resourceType": "Device",
+        "id": "d91b6fbb-f091-40b6-8582-2c4c11da4cc9",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/uv/ips/StructureDefinition/Device-uv-ips"
+          ]
+        },
+        "type": {
+          "coding": [
+            {
+              "code": "228869008",
+              "system": "http://snomed.info/sct",
+              "display": "Manual wheelchair",
+              "version": "http://snomed.info/sct/20611000087101"
+            }
+          ],
+          "text": "Manual wheelchair"
+        },
+        "patient": {
+          "reference": "urn:uuid:d520ecd1-76a0-4894-b895-b8a5a971954e"
+        },
+        "text": {
+          "status": "additional",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Narrative goes here</div>"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:204708c1-b026-429a-8b19-e5b8578e2577",
+      "resource": {
+        "resourceType": "Device",
+        "id": "204708c1-b026-429a-8b19-e5b8578e2577",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/uv/ips/StructureDefinition/Device-uv-ips"
+          ]
+        },
+        "type": {
+          "coding": [
+            {
+              "version": "http://snomed.info/sct/20611000087101",
+              "code": "74566002",
+              "system": "http://snomed.info/sct",
+              "display": "Crutch"
+            }
+          ],
+          "text": "Crutch"
+        },
+        "patient": {
+          "reference": "urn:uuid:d520ecd1-76a0-4894-b895-b8a5a971954e"
+        },
+        "text": {
+          "status": "additional",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Narrative goes here</div>"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:81d9c649-6896-4572-bd05-74b9a9bd227a",
+      "resource": {
+        "resourceType": "Condition",
+        "id": "81d9c649-6896-4572-bd05-74b9a9bd227a",
+        "meta": {
+          "profile": [
+            "http://fhir.infoway-inforoute.ca/io/psca/StructureDefinition/condition-ca-ps"
+          ]
+        },
+        "clinicalStatus": {
+          "coding": [
+            {
+              "code": "active",
+              "system": "http://terminology.hl7.org/CodeSystem/condition-clinical"
+            }
+          ]
+        },
+        "code": {
+          "text": "Gout",
+          "coding": [
+            {
+              "code": "90560007",
+              "system": "http://snomed.info/sct",
+              "display": "Gout"
+            }
+          ]
+        },
+        "subject": {
+          "reference": "urn:uuid:d520ecd1-76a0-4894-b895-b8a5a971954e"
+        },
+        "onsetDateTime": "2010-08-06",
+        "text": {
+          "status": "additional",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Narrative goes here</div>"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:0ceb29b9-6156-45a0-9a0e-ae1d7e3ac53a",
+      "resource": {
+        "resourceType": "Condition",
+        "id": "0ceb29b9-6156-45a0-9a0e-ae1d7e3ac53a",
+        "meta": {
+          "profile": [
+            "http://fhir.infoway-inforoute.ca/io/psca/StructureDefinition/condition-ca-ps"
+          ]
+        },
+        "clinicalStatus": {
+          "coding": [
+            {
+              "code": "active",
+              "system": "http://terminology.hl7.org/CodeSystem/condition-clinical"
+            }
+          ]
+        },
+        "code": {
+          "coding": [
+            {
+              "code": "962000",
+              "system": "http://snomed.info/sct",
+              "display": "Disability evaluation, disability 6%"
+            }
+          ],
+          "text": "Disability evaluation, disability 6%"
+        },
+        "subject": {
+          "reference": "urn:uuid:d520ecd1-76a0-4894-b895-b8a5a971954e"
+        },
+        "onsetDateTime": "2010-12-10",
+        "text": {
+          "status": "additional",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Narrative goes here</div>"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:6f01c38b-043b-4c91-8131-835c7009b3fd",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "6f01c38b-043b-4c91-8131-835c7009b3fd",
+        "meta": {
+          "profile": [
+            "http://fhir.infoway-inforoute.ca/io/psca/StructureDefinition/observation-alcoholuse-ca-ps"
+          ]
+        },
+        "status": "final",
+        "code": {
+          "coding": [
+            {
+              "code": "74013-4",
+              "system": "http://loinc.org"
+            }
+          ]
+        },
+        "subject": {
+          "reference": "urn:uuid:d520ecd1-76a0-4894-b895-b8a5a971954e"
+        },
+        "effectiveDateTime": "2024-01-05",
+        "valueQuantity": {
+          "value": 2,
+          "code": "{wine glasses}/d",
+          "system": "http://unitsofmeasure.org"
+        },
+        "text": {
+          "status": "additional",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Narrative goes here</div>"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:7cd8f128-23a4-4f97-9986-d778b7aa8c95",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "7cd8f128-23a4-4f97-9986-d778b7aa8c95",
+        "meta": {
+          "profile": [
+            "http://fhir.infoway-inforoute.ca/io/psca/StructureDefinition/observation-tobaccouse-ca-ps"
+          ]
+        },
+        "status": "final",
+        "code": {
+          "coding": [
+            {
+              "code": "72166-2",
+              "system": "http://loinc.org"
+            }
+          ]
+        },
+        "subject": {
+          "reference": "urn:uuid:d520ecd1-76a0-4894-b895-b8a5a971954e"
+        },
+        "effectiveDateTime": "2024-01-05",
+        "valueCodeableConcept": {
+          "coding": [
+            {
+              "code": "LA18978-9",
+              "system": "http://loinc.org",
+              "display": "Never smoker"
+            }
+          ]
+        },
+        "text": {
+          "status": "additional",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Narrative goes here</div>"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:2df99df4-465e-4bab-9313-fbe9117f1d37",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "2df99df4-465e-4bab-9313-fbe9117f1d37",
+        "meta": {
+          "profile": [
+            "http://fhir.infoway-inforoute.ca/io/psca/StructureDefinition/observation-socialhistory-ca-ps"
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "code": "social-history",
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "display": "Social History"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "text": "Lifestyle Risk Factor"
+        },
+        "subject": {
+          "reference": "urn:uuid:d520ecd1-76a0-4894-b895-b8a5a971954e"
+        },
+        "valueCodeableConcept": {
+          "text": "Home has not been outfitted with accessibility devices"
+        },
+        "note": [
+          {
+            "text": "Roberta has episodic struggles with mobility and her home has not been outfitted with a ramp"
+          }
+        ],
+        "text": {
+          "status": "additional",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Narrative goes here</div>"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:6be80d8c-4c63-41f1-b9b2-b06cb144afb1",
+      "resource": {
+        "resourceType": "FamilyMemberHistory",
+        "id": "6be80d8c-4c63-41f1-b9b2-b06cb144afb1",
+        "meta": {
+          "profile": [
+            "http://fhir.infoway-inforoute.ca/io/psca/StructureDefinition/familymemberhistory-ca-ps"
+          ]
+        },
+        "status": "completed",
+        "patient": {
+          "reference": "urn:uuid:d520ecd1-76a0-4894-b895-b8a5a971954e"
+        },
+        "relationship": {
+          "text": "Father"
+        },
+        "date": "2024-01-05",
+        "note": [
+          {
+            "text": "Father died of a Heart Attack"
+          }
+        ],
+        "text": {
+          "status": "additional",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Narrative goes here</div>"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:4f786ae4-0de8-45f8-bbed-167a136870e1",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "4f786ae4-0de8-45f8-bbed-167a136870e1",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/uv/ips/StructureDefinition/Observation-pregnancy-status-uv-ips"
+          ]
+        },
+        "status": "final",
+        "code": {
+          "coding": [
+            {
+              "code": "82810-3",
+              "system": "http://loinc.org"
+            }
+          ]
+        },
+        "subject": {
+          "reference": "urn:uuid:d520ecd1-76a0-4894-b895-b8a5a971954e"
+        },
+        "effectiveDateTime": "1984-08-20",
+        "valueCodeableConcept": {
+          "coding": [
+            {
+              "code": "LA26683-5",
+              "system": "http://loinc.org"
+            }
+          ]
+        },
+        "text": {
+          "status": "additional",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Narrative goes here</div>"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:1ec435ad-dd4c-48cf-8f28-24f8768e5cfa",
+      "resource": {
+        "resourceType": "Encounter",
+        "id": "1ec435ad-dd4c-48cf-8f28-24f8768e5cfa",
+        "status": "finished",
+        "class": {
+          "code": "AMB",
+          "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:8c6ddad7-6c5a-48b4-b2a3-97f449334b87",
+      "resource": {
+        "resourceType": "DocumentReference",
+        "id": "8c6ddad7-6c5a-48b4-b2a3-97f449334b87",
+        "status": "current",
+        "content": [
+          {
+            "attachment": {
+              "url": "http://link.to.my.attachment"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

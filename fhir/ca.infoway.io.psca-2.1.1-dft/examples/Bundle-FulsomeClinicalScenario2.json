@@ -1,0 +1,1025 @@
+{
+  "resourceType": "Bundle",
+  "id": "Bundle-FulsomeClinicalScenario2",
+  "meta": {
+    "profile": [
+      "http://fhir.infoway-inforoute.ca/io/psca/StructureDefinition/bundle-ca-ps"
+    ]
+  },
+  "identifier": {
+    "system": "http://fictional-identifier-system-uri.com",
+    "value": "JSONBUNDLE2"
+  },
+  "type": "document",
+  "timestamp": "2023-01-05T14:30:00+01:00",
+  "entry": [
+    {
+      "fullUrl": "https://exampleFHIRserver.org/Composition/CompositionExample",
+      "resource": {
+        "resourceType": "Composition",
+        "id": "CompositionExample",
+        "meta": {
+          "profile": [
+            "http://fhir.infoway-inforoute.ca/io/psca/StructureDefinition/composition-ca-ps"
+          ]
+        },
+        "text": {
+          "status": "additional",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Primary Problem: Robert is a normally well-controlled Type 2 diabetic with well-managed hypertension. He experiences occassional gout attacks.\n\nSignificant Clinical Event Requiring Patient Summary: Robert has been been experiencing some neuropathy he is assuming is caused by his diabetes, and his gout is flaring up. He needs to see a GP in Yellowknife and may need a referral. \n\nDr Allan GP (Prac ID 9600), Robert's most responsible GP in Ontario, is wanting to communicate Robert's clinical information to Dr Smith (Prac ID 2222) a GP in Alberta where Robert is working.</div>"
+        },
+        "status": "final",
+        "type": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "60591-5",
+              "display": "Patient summary Document"
+            }
+          ]
+        },
+        "subject": {
+          "reference": "https://exampleFHIRserver.org/Patient/d520ecd1-76a0-4894-b895-b8a5a971954e"
+        },
+        "date": "2022-01-05",
+        "author": [
+          {
+            "reference": "https://exampleFHIRserver.org/Practitioner/a3cf9ac3-c323-490e-87e4-88fbf65b9600"
+          }
+        ],
+        "title": "Patient Summary PS-CA",
+        "section": [
+          {
+            "title": "Medications",
+            "code": {
+              "coding": [
+                {
+                  "system": "http://loinc.org",
+                  "code": "10160-0"
+                }
+              ]
+            },
+            "text": {
+              "status": "additional",
+              "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Medications</div>"
+            },
+            "entry": [
+              {
+                "reference": "https://exampleFHIRserver.org/MedicationStatement/03cd9a05-597b-4d34-a203-ac5d8134eabd"
+              },
+              {
+                "reference": "https://exampleFHIRserver.org/MedicationStatement/407c998a-d316-4172-a01f-21f5849113ee"
+              },
+              {
+                "reference": "https://exampleFHIRserver.org/MedicationStatement/d0ef4649-c530-4fe9-99e5-3dde41451520"
+              },
+              {
+                "reference": "https://exampleFHIRserver.org/MedicationStatement/d88affe3-737a-4f4a-bcc3-a2e415c6c849"
+              },
+              {
+                "reference": "https://exampleFHIRserver.org/MedicationStatement/ff7e6c12-aab7-4d4f-94e1-82204fe896e9"
+              }
+            ]
+          },
+          {
+            "title": "Allergies and Intolerances",
+            "code": {
+              "coding": [
+                {
+                  "system": "http://loinc.org",
+                  "code": "48765-2"
+                }
+              ]
+            },
+            "text": {
+              "status": "additional",
+              "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Allergies and Intolerances</div>"
+            },
+            "entry": [
+              {
+                "reference": "https://exampleFHIRserver.org/AllergyIntolerance/ceea9c48-759d-4636-a11e-0a067b32973a"
+              },
+              {
+                "reference": "https://exampleFHIRserver.org/AllergyIntolerance/96960895-95ed-4516-ad73-eea8647afb80"
+              }
+            ]
+          },
+          {
+            "title": "Problem List",
+            "code": {
+              "coding": [
+                {
+                  "system": "http://loinc.org",
+                  "code": "11450-4"
+                }
+              ]
+            },
+            "text": {
+              "status": "additional",
+              "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Current list of problems</div>"
+            },
+            "entry": [
+              {
+                "reference": "https://exampleFHIRserver.org/Condition/3ea95c2b-cd7d-4ad4-b5f7-10c6563180e7"
+              },
+              {
+                "reference": "https://exampleFHIRserver.org/Condition/56413e31-e24a-4bfe-b85f-70a07dd1a03b"
+              },
+              {
+                "reference": "https://exampleFHIRserver.org/Condition/3e464c5b-4555-4521-aa8e-c233a28abc68"
+              },
+              {
+                "reference": "https://exampleFHIRserver.org/Condition/6fa1d634-89ee-4402-9642-5cb8f309edaf"
+              }
+            ]
+          },
+          {
+            "title": "Past History of Illness",
+            "code": {
+              "coding": [
+                {
+                  "system": "http://loinc.org",
+                  "code": "11348-0"
+                }
+              ]
+            },
+            "text": {
+              "status": "additional",
+              "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Past problems</div>"
+            },
+            "entry": [
+              {
+                "reference": "https://exampleFHIRserver.org/Condition/92e9b7a6-7647-4cf7-8feb-4027b59cba4b"
+              }
+            ]
+          },
+          {
+            "title": "History of Procedures",
+            "code": {
+              "coding": [
+                {
+                  "system": "http://loinc.org",
+                  "code": "47519-4"
+                }
+              ]
+            },
+            "text": {
+              "status": "additional",
+              "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Past procedures</div>"
+            },
+            "entry": [
+              {
+                "reference": "https://exampleFHIRserver.org/Procedure/1ab3d8c8-f598-488e-a85e-781fc093a58e"
+              },
+              {
+                "reference": "https://exampleFHIRserver.org/Procedure/97a5cddb-bd42-47d6-8c95-1cd709bd9e75"
+              },
+              {
+                "reference": "https://exampleFHIRserver.org/Procedure/84596160-3d4a-4b93-a6d2-26b867b83b69"
+              }
+            ]
+          },
+          {
+            "title": "Vital Signs",
+            "code": {
+              "coding": [
+                {
+                  "system": "http://loinc.org",
+                  "code": "8716-3"
+                }
+              ]
+            },
+            "text": {
+              "status": "additional",
+              "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Vital Signs</div>"
+            },
+            "entry": [
+              {
+                "reference": "https://exampleFHIRserver.org/Observation/35137582-aca8-4b29-9fbc-d27693dbace8"
+              },
+              {
+                "reference": "https://exampleFHIRserver.org/Observation/67e42ace-4563-4cb4-9e5f-09314495a4e2"
+              },
+              {
+                "reference": "https://exampleFHIRserver.org/Observation/f560d566-bce3-4cc2-b076-a983f1cfc179"
+              },
+              {
+                "reference": "https://exampleFHIRserver.org/Observation/04efa9cc-56d3-4d7b-bf2d-133bcde0fca2"
+              },
+              {
+                "reference": "https://exampleFHIRserver.org/Observation/e27162fe-3b06-4ff6-9043-b96f30ba27fe"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://exampleFHIRserver.org/Practitioner/a3cf9ac3-c323-490e-87e4-88fbf65b9600",
+      "resource": {
+        "resourceType": "Practitioner",
+        "id": "a3cf9ac3-c323-490e-87e4-88fbf65b9600",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/ca/baseline/StructureDefinition/profile-practitioner"
+          ]
+        },
+        "name": [
+          {
+            "family": "Allan",
+            "prefix": [
+              "Dr."
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://exampleFHIRserver.org/Patient/d520ecd1-76a0-4894-b895-b8a5a971954e",
+      "resource": {
+        "resourceType": "Patient",
+        "id": "d520ecd1-76a0-4894-b895-b8a5a971954e",
+        "meta": {
+          "profile": [
+            "http://fhir.infoway-inforoute.ca/io/psca/StructureDefinition/patient-ca-ps"
+          ]
+        },
+        "identifier": [
+          {
+            "use": "official",
+            "type": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+                  "code": "JHN"
+                }
+              ]
+            },
+            "system": "https://fhir.infoway-inforoute.ca/NamingSystem/ca-on-patient-hcn",
+            "value": "794703280"
+          }
+        ],
+        "name": [
+          {
+            "family": "Gray",
+            "given": [
+              "Robert"
+            ]
+          }
+        ],
+        "gender": "male",
+        "birthDate": "1961-07-23",
+        "deceasedBoolean": false,
+        "address": [
+          {
+            "text": "4100 Meadowlark Crescent, Burlington, Ontario"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://exampleFHIRserver.org/MedicationStatement/03cd9a05-597b-4d34-a203-ac5d8134eabd",
+      "resource": {
+        "resourceType": "MedicationStatement",
+        "id": "03cd9a05-597b-4d34-a203-ac5d8134eabd",
+        "meta": {
+          "profile": [
+            "http://fhir.infoway-inforoute.ca/io/psca/StructureDefinition/medicationstatement-ca-ps"
+          ]
+        },
+        "status": "active",
+        "medicationCodeableConcept": {
+          "coding": [
+            {
+              "system": "https://fhir.infoway-inforoute.ca/CodeSystem/canadianclinicaldrugdataset",
+              "code": "9000357",
+              "display": "gliclazide"
+            }
+          ],
+          "text": "gliclazide"
+        },
+        "subject": {
+          "reference": "https://exampleFHIRserver.org/Patient/d520ecd1-76a0-4894-b895-b8a5a971954e"
+        },
+        "effectiveDateTime": "2022-01-05",
+        "dosage": [
+          {
+            "text": "1 bid"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://exampleFHIRserver.org/MedicationStatement/407c998a-d316-4172-a01f-21f5849113ee",
+      "resource": {
+        "resourceType": "MedicationStatement",
+        "id": "407c998a-d316-4172-a01f-21f5849113ee",
+        "meta": {
+          "profile": [
+            "http://fhir.infoway-inforoute.ca/io/psca/StructureDefinition/medicationstatement-ca-ps"
+          ]
+        },
+        "status": "active",
+        "medicationCodeableConcept": {
+          "coding": [
+            {
+              "system": "https://fhir.infoway-inforoute.ca/CodeSystem/canadianclinicaldrugdataset",
+              "code": "9000540",
+              "display": "perindopril"
+            }
+          ],
+          "text": "perindopril erbumine 4 mg oral tablet"
+        },
+        "subject": {
+          "reference": "https://exampleFHIRserver.org/Patient/d520ecd1-76a0-4894-b895-b8a5a971954e"
+        },
+        "effectiveDateTime": "2022-01-05",
+        "dosage": [
+          {
+            "text": "1 od"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://exampleFHIRserver.org/MedicationStatement/d0ef4649-c530-4fe9-99e5-3dde41451520",
+      "resource": {
+        "resourceType": "MedicationStatement",
+        "id": "d0ef4649-c530-4fe9-99e5-3dde41451520",
+        "meta": {
+          "profile": [
+            "http://fhir.infoway-inforoute.ca/io/psca/StructureDefinition/medicationstatement-ca-ps"
+          ]
+        },
+        "status": "active",
+        "medicationCodeableConcept": {
+          "coding": [
+            {
+              "system": "https://fhir.infoway-inforoute.ca/CodeSystem/canadianclinicaldrugdataset",
+              "code": "9000540",
+              "display": "pioglitazone"
+            }
+          ],
+          "text": "pioglitazone 30mg"
+        },
+        "subject": {
+          "reference": "https://exampleFHIRserver.org/Patient/d520ecd1-76a0-4894-b895-b8a5a971954e"
+        },
+        "effectiveDateTime": "2022-01-05",
+        "dosage": [
+          {
+            "text": "1 od"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://exampleFHIRserver.org/MedicationStatement/d88affe3-737a-4f4a-bcc3-a2e415c6c849",
+      "resource": {
+        "resourceType": "MedicationStatement",
+        "id": "d88affe3-737a-4f4a-bcc3-a2e415c6c849",
+        "meta": {
+          "profile": [
+            "http://fhir.infoway-inforoute.ca/io/psca/StructureDefinition/medicationstatement-ca-ps"
+          ]
+        },
+        "status": "active",
+        "medicationCodeableConcept": {
+          "coding": [
+            {
+              "system": "https://fhir.infoway-inforoute.ca/CodeSystem/canadianclinicaldrugdataset",
+              "code": "9000101",
+              "display": "metoprolol tartrate 50 mg oral tablet"
+            }
+          ],
+          "text": "metoprolol tartrate 50 mg oral tablet"
+        },
+        "subject": {
+          "reference": "https://exampleFHIRserver.org/Patient/d520ecd1-76a0-4894-b895-b8a5a971954e"
+        },
+        "effectiveDateTime": "2022-01-05",
+        "dosage": [
+          {
+            "text": "bid"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://exampleFHIRserver.org/MedicationStatement/ff7e6c12-aab7-4d4f-94e1-82204fe896e9",
+      "resource": {
+        "resourceType": "MedicationStatement",
+        "id": "ff7e6c12-aab7-4d4f-94e1-82204fe896e9",
+        "meta": {
+          "profile": [
+            "http://fhir.infoway-inforoute.ca/io/psca/StructureDefinition/medicationstatement-ca-ps"
+          ]
+        },
+        "status": "active",
+        "medicationCodeableConcept": {
+          "coding": [
+            {
+              "system": "https://fhir.infoway-inforoute.ca/CodeSystem/canadianclinicaldrugdataset",
+              "code": "9000152",
+              "display": "indomethacin 50 mg oral capsule"
+            }
+          ],
+          "text": "indomethacin 50 mg oral capsule"
+        },
+        "subject": {
+          "reference": "https://exampleFHIRserver.org/Patient/d520ecd1-76a0-4894-b895-b8a5a971954e"
+        },
+        "effectiveDateTime": "2022-01-05",
+        "dosage": [
+          {
+            "text": "tid prn for gout attacks"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://exampleFHIRserver.org/AllergyIntolerance/ceea9c48-759d-4636-a11e-0a067b32973a",
+      "resource": {
+        "resourceType": "AllergyIntolerance",
+        "id": "ceea9c48-759d-4636-a11e-0a067b32973a",
+        "meta": {
+          "profile": [
+            "http://fhir.infoway-inforoute.ca/io/psca/StructureDefinition/allergyintolerance-ca-ps"
+          ]
+        },
+        "clinicalStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
+              "code": "active",
+              "display": "Active"
+            }
+          ]
+        },
+        "type": "intolerance",
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "version": "http://snomed.info/sct/20611000087101",
+              "code": "372567009",
+              "display": "Metformin (substance)"
+            }
+          ],
+          "text": "Metformin (substance)"
+        },
+        "patient": {
+          "reference": "https://exampleFHIRserver.org/Patient/d520ecd1-76a0-4894-b895-b8a5a971954e"
+        }
+      }
+    },
+    {
+      "fullUrl": "https://exampleFHIRserver.org/AllergyIntolerance/96960895-95ed-4516-ad73-eea8647afb80",
+      "resource": {
+        "resourceType": "AllergyIntolerance",
+        "id": "96960895-95ed-4516-ad73-eea8647afb80",
+        "meta": {
+          "profile": [
+            "http://fhir.infoway-inforoute.ca/io/psca/StructureDefinition/allergyintolerance-ca-ps"
+          ]
+        },
+        "clinicalStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
+              "code": "active",
+              "display": "Active"
+            }
+          ]
+        },
+        "type": "allergy",
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "version": "http://snomed.info/sct/20611000087101",
+              "code": "387413002",
+              "display": "Colchicine (substance)"
+            },
+            {
+              "system": "http://snomed.info/sct",
+              "version": "http://snomed.info/sct/20611000087101",
+              "code": "294215003",
+              "display": "Allergy to colchicine (finding)"
+            }
+          ],
+          "text": "Colchicine"
+        },
+        "patient": {
+          "reference": "https://exampleFHIRserver.org/Patient/d520ecd1-76a0-4894-b895-b8a5a971954e"
+        }
+      }
+    },
+    {
+      "fullUrl": "https://exampleFHIRserver.org/Condition/3ea95c2b-cd7d-4ad4-b5f7-10c6563180e7",
+      "resource": {
+        "resourceType": "Condition",
+        "id": "3ea95c2b-cd7d-4ad4-b5f7-10c6563180e7",
+        "meta": {
+          "profile": [
+            "http://fhir.infoway-inforoute.ca/io/psca/StructureDefinition/condition-ca-ps"
+          ]
+        },
+        "clinicalStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+              "code": "active"
+            }
+          ]
+        },
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "version": "http://snomed.info/sct/20611000087101",
+              "code": "44054006",
+              "display": "Diabetes mellitus type 2 (disorder)"
+            }
+          ],
+          "text": "Diabetes mellitus type 2 (disorder)"
+        },
+        "subject": {
+          "reference": "https://exampleFHIRserver.org/Patient/d520ecd1-76a0-4894-b895-b8a5a971954e"
+        }
+      }
+    },
+    {
+      "fullUrl": "https://exampleFHIRserver.org/Condition/56413e31-e24a-4bfe-b85f-70a07dd1a03b",
+      "resource": {
+        "resourceType": "Condition",
+        "id": "56413e31-e24a-4bfe-b85f-70a07dd1a03b",
+        "meta": {
+          "profile": [
+            "http://fhir.infoway-inforoute.ca/io/psca/StructureDefinition/condition-ca-ps"
+          ]
+        },
+        "clinicalStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+              "code": "active"
+            }
+          ]
+        },
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "version": "http://snomed.info/sct/20611000087101",
+              "code": "38341003",
+              "display": "Hypertensive disorder, systemic arterial (disorder)"
+            }
+          ],
+          "text": "Hypertensive disorder, systemic arterial (disorder)"
+        },
+        "subject": {
+          "reference": "https://exampleFHIRserver.org/Patient/d520ecd1-76a0-4894-b895-b8a5a971954e"
+        }
+      }
+    },
+    {
+      "fullUrl": "https://exampleFHIRserver.org/Condition/3e464c5b-4555-4521-aa8e-c233a28abc68",
+      "resource": {
+        "resourceType": "Condition",
+        "id": "3e464c5b-4555-4521-aa8e-c233a28abc68",
+        "meta": {
+          "profile": [
+            "http://fhir.infoway-inforoute.ca/io/psca/StructureDefinition/condition-ca-ps"
+          ]
+        },
+        "clinicalStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+              "code": "active"
+            }
+          ]
+        },
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "version": "http://snomed.info/sct/20611000087101",
+              "code": "90560007",
+              "display": "Inflammatory disorder due to increased blood urate level (disorder)"
+            }
+          ],
+          "text": "Inflammatory disorder due to increased blood urate level (disorder)"
+        },
+        "subject": {
+          "reference": "https://exampleFHIRserver.org/Patient/d520ecd1-76a0-4894-b895-b8a5a971954e"
+        }
+      }
+    },
+    {
+      "fullUrl": "https://exampleFHIRserver.org/Condition/6fa1d634-89ee-4402-9642-5cb8f309edaf",
+      "resource": {
+        "resourceType": "Condition",
+        "id": "6fa1d634-89ee-4402-9642-5cb8f309edaf",
+        "meta": {
+          "profile": [
+            "http://fhir.infoway-inforoute.ca/io/psca/StructureDefinition/condition-ca-ps"
+          ]
+        },
+        "clinicalStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+              "code": "active"
+            }
+          ]
+        },
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "version": "http://snomed.info/sct/20611000087101",
+              "code": "15167005",
+              "display": "Alcohol abuse (disorder)"
+            }
+          ],
+          "text": "Alcohol abuse (disorder)"
+        },
+        "subject": {
+          "reference": "https://exampleFHIRserver.org/Patient/d520ecd1-76a0-4894-b895-b8a5a971954e"
+        }
+      }
+    },
+    {
+      "fullUrl": "https://exampleFHIRserver.org/Condition/92e9b7a6-7647-4cf7-8feb-4027b59cba4b",
+      "resource": {
+        "resourceType": "Condition",
+        "id": "92e9b7a6-7647-4cf7-8feb-4027b59cba4b",
+        "meta": {
+          "profile": [
+            "http://fhir.infoway-inforoute.ca/io/psca/StructureDefinition/condition-ca-ps"
+          ]
+        },
+        "clinicalStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+              "code": "resolved"
+            }
+          ]
+        },
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "version": "http://snomed.info/sct/20611000087101",
+              "code": "445507008",
+              "display": "Inflammation of pancreas caused by alcohol (disorder)"
+            }
+          ],
+          "text": "Inflammation of pancreas caused by alcohol (disorder)"
+        },
+        "subject": {
+          "reference": "https://exampleFHIRserver.org/Patient/d520ecd1-76a0-4894-b895-b8a5a971954e"
+        },
+        "recordedDate": "2020"
+      }
+    },
+    {
+      "fullUrl": "https://exampleFHIRserver.org/Procedure/1ab3d8c8-f598-488e-a85e-781fc093a58e",
+      "resource": {
+        "resourceType": "Procedure",
+        "id": "1ab3d8c8-f598-488e-a85e-781fc093a58e",
+        "meta": {
+          "profile": [
+            "http://fhir.infoway-inforoute.ca/io/psca/StructureDefinition/procedure-ca-ps"
+          ]
+        },
+        "status": "completed",
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "version": "http://snomed.info/sct/20611000087101",
+              "code": "38102005",
+              "display": "Cholecystectomy (procedure)"
+            }
+          ],
+          "text": "Cholecystectomy (procedure)"
+        },
+        "subject": {
+          "reference": "https://exampleFHIRserver.org/Patient/d520ecd1-76a0-4894-b895-b8a5a971954e"
+        },
+        "performedDateTime": "2020-01-05"
+      }
+    },
+    {
+      "fullUrl": "https://exampleFHIRserver.org/Procedure/97a5cddb-bd42-47d6-8c95-1cd709bd9e75",
+      "resource": {
+        "resourceType": "Procedure",
+        "id": "97a5cddb-bd42-47d6-8c95-1cd709bd9e75",
+        "meta": {
+          "profile": [
+            "http://fhir.infoway-inforoute.ca/io/psca/StructureDefinition/procedure-ca-ps"
+          ]
+        },
+        "status": "completed",
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "version": "http://snomed.info/sct/20611000087101",
+              "code": "386831001",
+              "display": "Endoscopy of stomach (procedure)"
+            }
+          ],
+          "text": "Endoscopy of stomach (procedure)"
+        },
+        "subject": {
+          "reference": "https://exampleFHIRserver.org/Patient/d520ecd1-76a0-4894-b895-b8a5a971954e"
+        },
+        "performedDateTime": "2020"
+      }
+    },
+    {
+      "fullUrl": "https://exampleFHIRserver.org/Procedure/84596160-3d4a-4b93-a6d2-26b867b83b69",
+      "resource": {
+        "resourceType": "Procedure",
+        "id": "84596160-3d4a-4b93-a6d2-26b867b83b69",
+        "meta": {
+          "profile": [
+            "http://fhir.infoway-inforoute.ca/io/psca/StructureDefinition/procedure-ca-ps"
+          ]
+        },
+        "status": "completed",
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "version": "http://snomed.info/sct/20611000087101",
+              "code": "73761001",
+              "display": "Colonoscopy (procedure)"
+            }
+          ],
+          "text": "Colonoscopy (procedure)"
+        },
+        "subject": {
+          "reference": "https://exampleFHIRserver.org/Patient/d520ecd1-76a0-4894-b895-b8a5a971954e"
+        },
+        "performedDateTime": "2020"
+      }
+    },
+    {
+      "fullUrl": "https://exampleFHIRserver.org/Observation/35137582-aca8-4b29-9fbc-d27693dbace8",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "35137582-aca8-4b29-9fbc-d27693dbace8",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/StructureDefinition/bp"
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "vital-signs",
+                "display": "Vital Signs"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "85354-9",
+              "display": "Blood pressure panel with all children optional"
+            }
+          ],
+          "text": "Blood pressure systolic and diastolic"
+        },
+        "subject": {
+          "reference": "https://exampleFHIRserver.org/Patient/d520ecd1-76a0-4894-b895-b8a5a971954e"
+        },
+        "effectiveDateTime": "2022-01-05",
+        "component" : [
+          {
+            "code": {
+              "coding": [
+                {
+                  "system": "http://loinc.org",
+                  "code": "8480-6",
+                  "display": "Systolic Blood Pressure"
+                }
+              ],
+              "text": "Systolic Blood Pressure"
+            },
+            "valueQuantity": {
+              "value": 140.0,
+              "unit" : "mmHg",
+              "system": "http://unitsofmeasure.org",
+              "code": "mm[Hg]"
+            }
+          },
+          {
+            "code": {
+              "coding": [
+                {
+                  "system": "http://loinc.org",
+                  "code": "8462-4",
+                  "display": "Diastolic Blood Pressure"
+                }
+              ],
+              "text": "Diastolic Blood Pressure"
+            },
+            "valueQuantity": {
+              "value": 88.0,
+              "unit" : "mmHg",
+              "system": "http://unitsofmeasure.org",
+              "code": "mm[Hg]"
+            }
+          }
+        ]
+        }
+    },
+    {
+      "fullUrl": "https://exampleFHIRserver.org/Observation/67e42ace-4563-4cb4-9e5f-09314495a4e2",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "67e42ace-4563-4cb4-9e5f-09314495a4e2",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/StructureDefinition/heartrate"
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "vital-signs",
+                "display": "Vital Signs"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "8867-4",
+              "display": "Heart Rate"
+            }
+          ],
+          "text": "Heart Rate"
+        },
+        "subject": {
+          "reference": "https://exampleFHIRserver.org/Patient/d520ecd1-76a0-4894-b895-b8a5a971954e"
+        },
+        "effectiveDateTime": "2022-01-05",
+        "valueQuantity": {
+          "value": 78.0,
+          "unit": "beats/minute",
+          "system": "http://unitsofmeasure.org",
+          "code": "/min"
+        }
+      }
+    },
+    {
+      "fullUrl": "https://exampleFHIRserver.org/Observation/f560d566-bce3-4cc2-b076-a983f1cfc179",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "f560d566-bce3-4cc2-b076-a983f1cfc179",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/StructureDefinition/bodyweight"
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "vital-signs",
+                "display": "Vital Signs"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "29463-7",
+              "display": "Body Weight"
+            }
+          ],
+          "text": "Body Weight"
+        },
+        "subject": {
+          "reference": "https://exampleFHIRserver.org/Patient/d520ecd1-76a0-4894-b895-b8a5a971954e"
+        },
+        "effectiveDateTime": "2022-01-05",
+        "valueQuantity": {
+          "value": 230.0,
+          "unit": "lbs",
+          "system": "http://unitsofmeasure.org",
+          "code": "[lb_av]"
+        }
+      }
+    },
+    {
+      "fullUrl": "https://exampleFHIRserver.org/Observation/04efa9cc-56d3-4d7b-bf2d-133bcde0fca2",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "04efa9cc-56d3-4d7b-bf2d-133bcde0fca2",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/StructureDefinition/bodyheight"
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "vital-signs",
+                "display": "Vital Signs"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "8302-2",
+              "display": "Body Height"
+            }
+          ],
+          "text": "Body Height"
+        },
+        "subject": {
+          "reference": "https://exampleFHIRserver.org/Patient/d520ecd1-76a0-4894-b895-b8a5a971954e"
+        },
+        "effectiveDateTime": "2022-01-05",
+        "valueQuantity": {
+          "value": 72.0,
+          "unit": "in",
+          "system": "http://unitsofmeasure.org",
+          "code": "[in_i]"
+        }
+      }
+    },
+    {
+      "fullUrl": "https://exampleFHIRserver.org/Observation/e27162fe-3b06-4ff6-9043-b96f30ba27fe",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "e27162fe-3b06-4ff6-9043-b96f30ba27fe",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/StructureDefinition/vitalsigns"
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "vital-signs",
+                "display": "Vital Signs"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "8280-0",
+              "display": "Waist Circumference at umbilicus by Tape measure"
+            }
+          ],
+          "text": "Waist Circumference"
+        },
+        "subject": {
+          "reference": "https://exampleFHIRserver.org/Patient/d520ecd1-76a0-4894-b895-b8a5a971954e"
+        },
+        "effectiveDateTime": "2022-01-05",
+        "valueQuantity": {
+          "value": 38.0,
+          "unit": "in",
+          "system": "http://unitsofmeasure.org",
+          "code": "[in_i]"
+        }
+      }
+    }
+  ]
+}

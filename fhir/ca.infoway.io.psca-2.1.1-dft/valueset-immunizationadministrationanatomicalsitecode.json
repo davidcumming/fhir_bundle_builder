@@ -1,0 +1,28 @@
+{
+  "resourceType": "ValueSet",
+  "id": "immunizationadministrationanatomicalsitecode",
+  "url": "https://fhir.infoway-inforoute.ca/ValueSet/immunizationadministrationanatomicalsitecode",
+  "name": "ImmunizationAdministrationAnatomicalSiteCode",
+  "version": "1.0.0",
+  "title": "Immunization Administration Anatomical Site Code",
+  "status": "draft",
+  "experimental": false,
+  "date": "1900-01-01",
+  "description": "The anatomical site where the immunizing agent was administered.\n\nThis resource is an informative value set; a normative subset containing the expanded values can be found on Canada Health Infoway's [Terminology Server](https://infocentral.infoway-inforoute.ca/en/tools/standards-tools/terminology-server).  The [direct link](https://fhir.infoway-inforoute.ca/ValueSet/immunizationadministrationanatomicalsitecode) to the ValueSet on the Terminology Server will require an [InfoCentral account](https://infocentral.infoway-inforoute.ca/en/register) for access.\n\nReviewers should anticipate that the representation of this valueSet will continue to evolve.",
+  "jurisdiction": [
+    {
+      "coding": [
+        {
+          "system": "urn:iso:std:iso:3166",
+          "code": "CA"
+        }
+      ]
+    }
+  ],
+  "compose": {
+    "include": [ {
+      "valueSet": [ "http://snomed.info/sct?fhir_vs=refset/57971000087104" ]
+    } ]
+  }
+}
+

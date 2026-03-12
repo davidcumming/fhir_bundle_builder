@@ -1,0 +1,31 @@
+{
+  "resourceType": "ValueSet",
+  "id": "vaccinepreventablediseasecode",
+  "url": "https://fhir.infoway-inforoute.ca/ValueSet/vaccinepreventablediseasecode",
+  "name": "VaccinePreventableDiseaseCode",
+  "version": "1.0.0",
+  "title": "Vaccine Preventable Disease Code",
+  "status": "draft",
+  "experimental": false,
+  "date": "1900-01-01",
+  "description": "The scope of this subset is diseases that are prevented by administration of vaccines. This allows the association of Vaccine-Preventable Diseases and Antigens (AntigenCode) and Immunoglobulins (ImmunoglobulinAgentCode) subsets.\n\n This resource is an informative value set; a normative subset containing the expanded values can be found on Canada Health Infoway's [Terminology Server](https://infocentral.infoway-inforoute.ca/en/tools/standards-tools/terminology-server).  The [direct link](https://fhir.infoway-inforoute.ca/ValueSet/vaccinepreventablediseasecode) to the ValueSet on TerminologyServer will require an [InfoCentral account](https://infocentral.infoway-inforoute.ca/en/register) for access.",
+  "jurisdiction": [
+    {
+      "coding": [
+        {
+          "system": "urn:iso:std:iso:3166",
+          "code": "CA"
+        }
+      ]
+    }
+  ],
+  "compose": {
+    "include": [
+      {
+        "valueSet": [
+          "http://snomed.info/sct?fhir_vs=refset/22081000087102"
+        ]
+      }
+    ]
+  }
+}

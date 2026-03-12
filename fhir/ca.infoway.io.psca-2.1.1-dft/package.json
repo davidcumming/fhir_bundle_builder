@@ -1,0 +1,34 @@
+{
+  "name": "ca.infoway.io.psca",
+  "version": "2.1.1-DFT",
+  "description": "Pan-Canadian Patient Summary (PS-CA) 2.1.1 DFT Release to support  Patient Summary in Canada",
+  "author": "Canada Health Infoway",
+  "keywords": [
+    "ca",
+    "canada",
+    "patient summary",
+    "ps",
+    "ips",
+    "infoway",
+    "national"
+  ],
+  "title": "Pan-Canadian Patient Summary",
+  "fhirVersions": [
+    "4.0.1"
+  ],
+  "maintainers": [
+    {
+      "name": "National Standards Release Centre",
+      "email": "standards@infoway-inforoute.ca"
+    }
+  ],
+  "canonical": "http://fhir.infoway-inforoute.ca/io/psca",
+  "url": "https://simplifier.net/guide/pan-canadian-patient-summary-v1.0-ti-fhir-implementation-guide/home",
+  "jurisdiction": "urn:iso:std:iso:3166#CA",
+  "dependencies": {
+    "hl7.fhir.ca.baseline": "1.1.8",
+    "hl7.fhir.uv.ips": "2.0.0-ballot",
+    "hl7.fhir.uv.extensions.r4": "5.1.0",
+    "hl7.fhir.r4.core": "4.0.1"
+  }
+}

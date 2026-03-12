@@ -1,0 +1,51 @@
+{
+  "resourceType": "CodeSystem",
+  "id": "ContentNotSupported",
+  "text": {
+    "status": "generated",
+    "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"><p>This code system http://fhir.infoway-inforoute.ca/io/psca/CodeSystem/ContentNotSupported defines the following codes:</p><table class=\"codes\"><tr><td style=\"white-space:nowrap\"><b>Code</b></td><td><b>Display</b></td></tr><tr><td style=\"white-space:nowrap\">not-supported<a name=\"ContentNotSupported-not-supported\"> </a></td><td>The content is not currently supported by the producing system due to technical limitations and/or policy constraints</td></tr></table></div>"
+  },
+  "url": "http://fhir.infoway-inforoute.ca/io/psca/CodeSystem/ContentNotSupported",
+  "version": "1.0.0",
+  "name": "ContentNotSupportedCS",
+  "title": "CodeSystem Content Not Supported (PS-CA)",
+  "status": "active",
+  "experimental": true,
+  "date": "2022-01-17T01:23:00-08:00",
+  "publisher": "Canada Health Infoway",
+  "contact": [
+    {
+      "name": "National Standards Release Centre",
+      "telecom": [
+        {
+          "system": "url",
+          "value": "http://www.infoway-inforoute.ca"
+        },
+        {
+          "system": "email",
+          "value": "standards@infoway-inforoute.ca"
+        }
+      ]
+    }
+  ],
+  "description": "This codesystem defines concepts for content that is not supported by the supplying system.\n\nFeedback is requested on use of this CodeSystem and the related mechanism of identifying the reason for absent content.",
+  "jurisdiction": [
+    {
+      "coding": [
+        {
+          "system": "urn:iso:std:iso:3166",
+          "code": "CA"
+        }
+      ]
+    }
+  ],
+  "copyright": "Copyright © 2021,2022 Canada Health Infoway. All rights reserved. [Terms of Use and License Agreements](https://ic.infoway-inforoute.ca/en/about/tou). [Privacy Policy](https://www.infoway-inforoute.ca/en/legal/privacy-policy).",
+  "caseSensitive": false,
+  "content": "complete",
+  "concept": [
+    {
+      "code": "not-supported",
+      "display": "The content is not currently supported by the producing system due to technical limitations and/or policy constraints"
+    }
+  ]
+}

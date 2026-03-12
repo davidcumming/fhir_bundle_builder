@@ -1,0 +1,62 @@
+{
+  "resourceType": "Immunization",
+  "id": "Immunization-example",
+  "meta": {
+    "profile": [
+      "http://fhir.infoway-inforoute.ca/io/psca/StructureDefinition/immunization-ca-ps"
+    ]
+  },
+  "text": {
+    "status": "generated",
+    "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"><p><b>Generated Narrative: Immunization</b></p><div style=\"display: inline-block; background-color: #d9e0e7; padding: 6px; margin: 4px; border: 1px solid #8da1b4; border-radius: 5px; line-height: 60%\"><p style=\"margin-bottom: 0px\">Resource Immunization \"Immunization-example\" </p><p style=\"margin-bottom: 0px\">Profile: <a href=\"StructureDefinition-immunization-ca-ps.html\">Immunization (PS-CA)</a></p></div><p><b>identifier</b>: id: 60ed0066-7304-4c64-9c49-eeb725581584</p><p><b>status</b>: completed</p><p><b>vaccineCode</b>: SPIKEVAX messenger ribonucleic acid 100 micrograms per 0.5 milliliter dispersion for injection Moderna Therapeutics Inc. (real clinical drug) <span style=\"background: LightGoldenRodYellow; margin: 4px; border: 1px solid khaki\"> (<a href=\"https://browser.ihtsdotools.org/\">SNOMED CT</a>#28571000087109)</span></p><p><b>patient</b>: <a href=\"Patient-patient1-example.html\">Patient/patient1-example</a> \" DONALD\"</p><p><b>occurrence</b>: 2021-07-01</p><h3>Performers</h3><table class=\"grid\"><tr><td>-</td><td><b>Actor</b></td></tr><tr><td>*</td><td><a name=\"1\"> </a><blockquote><div style=\"display: inline-block; background-color: #d9e0e7; padding: 6px; margin: 4px; border: 1px solid #8da1b4; border-radius: 5px; line-height: 60%\"><p style=\"margin-bottom: 0px\">Resource Practitioner \"1\" </p></div><p><b>name</b>: John Doe</p></blockquote></td></tr></table><p><b>note</b>: COVID-19 Moderna Spikevax dose 1</p><h3>ProtocolApplieds</h3><table class=\"grid\"><tr><td>-</td><td><b>DoseNumber[x]</b></td></tr><tr><td>*</td><td>1</td></tr></table></div>"
+  },
+  "contained": [
+    {
+      "resourceType": "Practitioner",
+      "id": "1",
+      "name": [
+        {
+          "text": "John Doe"
+        }
+      ]
+    }
+  ],
+  "identifier": [
+    {
+      "system": "http://fictional-identifier-system-uri.com",
+      "value": "60ed0066-7304-4c64-9c49-eeb725581584"
+    }
+  ],
+  "status": "completed",
+  "vaccineCode": {
+    "coding": [
+      {
+        "system": "http://snomed.info/sct",
+        "code": "28571000087109",
+        "display": "SPIKEVAX messenger ribonucleic acid 100 micrograms per 0.5 milliliter dispersion for injection Moderna Therapeutics Inc. (real clinical drug)"
+      }
+    ],
+    "text": "SPIKEVAX messenger ribonucleic acid 100 micrograms per 0.5 milliliter dispersion for injection Moderna Therapeutics Inc. (real clinical drug)"
+  },
+  "patient": {
+    "reference": "Patient/patient1-example"
+  },
+  "occurrenceDateTime": "2021-07-01",
+  "performer": [
+    {
+      "actor": {
+        "reference": "#1"
+      }
+    }
+  ],
+  "note": [
+    {
+      "text": "COVID-19 Moderna Spikevax dose 1"
+    }
+  ],
+  "protocolApplied": [
+    {
+      "doseNumberString": "1"
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "resourceType": "ValueSet",
+  "status": "draft",
+  "name": "PharmaceuticalBiologicProductAndSubstanceCode",
+  "id": "SS-PharmaceuticalBiologicProductAndSubstanceCode-1-0-0",
+  "title": "PharmaceuticalBiologicProductAndSubstanceCode",
+  "description": "This subset is the combination of the PharmaceuticalBiologicProductCode and SubstanceCode subsets. This subset contains concepts that represent drug and vaccine products including generic names and tradenames, as well as concepts that represent general substances, the chemical constituents of pharmaceutical/biological products, body substances, dietary substances and diagnostic substances. This is a broad data exchange subset that is intended to support semantic interoperability and conformance testing. It is recommended that jurisdictions define and implement more specific clinically curated subsets that contain a portion of these concepts for data capture at the point of care for their specific use case. This subset was defined using the intensional definition of <373873005|Pharmaceutical / biologic product (product)| and <105590001|Substance (substance)| against the substrate SNOMED CT Canadian Edition.\n\nThis resource is an informative value set; a normative subset containing the expanded values can be found on Canada Health Infoway's [Terminology Server](https://infocentral.infoway-inforoute.ca/en/tools/standards-tools/terminology-server). The [direct link](https://fhir.infoway-inforoute.ca/ValueSet/pharmaceuticalbiologicproductandsubstancecode) to the ValueSet on the Terminology Server will require an [InfoCentral account](https://infocentral.infoway-inforoute.ca/en/register) for access.",
+  "url": "https://fhir.infoway-inforoute.ca/ValueSet/pharmaceuticalbiologicproductandsubstancecode",
+  "meta": {
+    "versionId": "1",
+    "lastUpdated": "2024-07-11T15:39:47.513+00:00",
+    "security": [
+      {
+        "code": "restricted.read",
+        "system": "http://ontoserver.csiro.au/CodeSystem/ontoserver-permissions"
+      }
+    ]
+  },
+  "identifier": [
+    {
+      "system": "urn:ietf:rfc:3986",
+      "value": "urn:oid:2.16.840.1.113883.2.20.3.483"
+    }
+  ],
+  "experimental": false,
+  "publisher": "Canada Health Infoway",
+  "jurisdiction": [
+    {
+      "coding": [
+        {
+          "code": "CA",
+          "system": "urn:iso:std:iso:3166"
+        }
+      ]
+    }
+  ],
+  "contact": [
+    {
+      "telecom": [
+        {
+          "system": "url",
+          "value": "http://www.infoway-inforoute.ca"
+        },
+        {
+          "system": "email",
+          "value": "standards@infoway-inforoute.ca"
+        }
+      ]
+    }
+  ],
+  "copyright": "Copyright © 2025+ Canada Health Infoway. All rights reserved. [Terms of Use and License Agreements](https://ic.infoway-inforoute.ca/en/about/tou). [Privacy Policy](https://www.infoway-inforoute.ca/en/legal/privacy-policy).",
+  "date": "2024-05-31",
+  "compose": {
+    "include": [
+      {
+        "valueSet": [
+          "http://snomed.info/sct?fhir_vs=refset/45931000087105"
+        ]
+      }
+    ]
+  }
+}

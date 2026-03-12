@@ -1,0 +1,22 @@
+{
+  "resourceType": "ValueSet",
+  "id": "procedurecode",
+  "url": "https://fhir.infoway-inforoute.ca/ValueSet/procedurecode",
+  "name": "ProcedureCode",
+  "version": "1.0.0",
+  "title": "Procedure Code",
+  "status": "draft",
+  "experimental": false,
+  "date": "1900-01-01",
+  "description": "This subset contains concepts that represent activities performed in the provision of health care including invasive procedures, laboratory procedures, administration of medicines, imaging, education, therapies, and administrative procedures.\n\nThis is a broad data exchange subset that is intended to support semantic interoperability and conformance testing. It is recommended that jurisdictions define and implement more specific clinically curated subsets that contain a portion of these concepts for data capture at the point of care for their specific use case.\n\nThis subset was defined using the intensional definition of <71388002\\|Procedure (procedure)\\| against the substrate SNOMED CT Canadian Edition.\n\nThis resource is an informative value set; a normative subset containing the expanded values can be found on Canada Health Infoway's [Terminology Server](https://terminologystandardsservice.ca/fhir). The [direct link](https://fhir.infoway-inforoute.ca/ValueSet/procedurecode) to the ValueSet on the Terminology Server will require an [InfoCentral account](https://infocentral.infoway-inforoute.ca/en/register) for access.",
+  "copyright": "Copyright © 2021,2022 Canada Health Infoway. All rights reserved. [Terms of Use and License Agreements](https://ic.infoway-inforoute.ca/en/about/tou). [Privacy Policy](https://www.infoway-inforoute.ca/en/legal/privacy-policy).\n\nThis artefact includes content from SNOMED Clinical Terms® (SNOMED CT®) which is copyrighted material of the International Health Terminology Standards Development Organisation (IHTSDO). Where an implementation of this artefact makes use of SNOMED CT content, the implementer must have the appropriate SNOMED CT Affiliate license - for more information contact http://www.snomed.org/snomed-ct/get-snomed-ct or [info@snomed.org](mailto:info@snomed.org)",
+  "compose": {
+    "include": [
+      {
+        "valueSet": [
+          "http://snomed.info/sct?fhir_vs=refset/45911000087100"
+        ]
+      }
+    ]
+  }
+}

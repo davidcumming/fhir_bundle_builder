@@ -1,0 +1,18 @@
+{
+    "resourceType": "ValueSet",
+    "id": "pCLOCD",
+    "url": "http://fhir.infoway-inforoute.ca/io/psca/ValueSet/pCLOCD",
+    "name": "pCLOCD",
+    "title": "pCLOCD Codes",
+    "status": "draft",
+    "experimental": false,
+    "date": "2023-12-06T00:00:00-00:00",
+    "description": "The [pCLOCD](https://infocentral.infoway-inforoute.ca/en/standards/canadian/pclocd-loinc) code system draws from the pan-Canadian LOINC Observation Code Database (pCLOCD) which is the Canadian version of the LOINC(tm) database. It was created using the LOINC(tm) records and attributes that were constrained for Canadian use and supplemented to specifically meet Canadian requirements. It contains the core LOINC(tm) attributes as required by Regenstrief copyright rules. The LOINC(tm) Component has been customized to meet Canadian requirements and is displayed as the pan Canadian Component Name. This component name is the basis for the pan Canadian Display Name. Core attributes include both English and Canadian French.\n\n This resource is a stub value set intended to point implementers towards the use of pCLOCD content while efforts move forward with the pan-Canadian Health Data Content Framework to propose harmonized terminology and potentially further constrained valueSets for specific contexts; in the meantime, the contents of this code system can be downloaded or viewed via the [PCLOCD page](https://fhir.infoway-inforoute.ca/CodeSystem/pCLOCD ) on the[Terminology Server](https://terminologystandardsservice.ca/fhir).  Access to the Terminology Server requires an [InfoCentral account](https://infocentral.infoway-inforoute.ca/en/register).",    
+    "compose": {
+      "include": [
+        {
+          "system":  "https://fhir.infoway-inforoute.ca/CodeSystem/pCLOCD"
+        }
+      ]
+    }
+  }

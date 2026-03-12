@@ -1,0 +1,44 @@
+{
+  "resourceType": "ValueSet",
+  "status": "draft",
+  "name": "DIN",
+  "id": "din",
+  "title": "DIN All Concepts",
+  "description": "This subset contains all concepts represented by the Health Canada Drug Identification Number code system. A Drug Identification Number (DIN) is a computer-generated eight digit number assigned by Health Canada to a drug product prior to being marketed in Canada. It uniquely identifies all drug products sold in a dosage form in Canada and is located on the label of prescription and over-the-counter drug products that have been evaluated and authorized for sale in Canada. Further information about this Code System can be found at https://www.canada.ca/en/health-canada/services/drugs-health-products/drug-products/applications-submissions/guidance-documents/regulatory-requirements-drug-identification-numbers/document.html. This resource is an informative value set; a normative subset containing the expanded values is not yet available.",
+  "url": "http://fhir.infoway-inforoute.ca/io/psca/ValueSet/DIN",
+  "experimental": false,
+  "publisher": "Canada Health Infoway",
+  "jurisdiction": [
+    {
+      "coding": [
+        {
+          "code": "CA",
+          "system": "urn:iso:std:iso:3166"
+        }
+      ]
+    }
+  ],
+  "contact": [
+    {
+      "telecom": [
+        {
+          "system": "url",
+          "value": "http://www.infoway-inforoute.ca"
+        },
+        {
+          "system": "email",
+          "value": "standards@infoway-inforoute.ca"
+        }
+      ]
+    }
+  ],
+  "copyright": "Copyright © 2025+ Canada Health Infoway. All rights reserved. [Terms of Use and License Agreements](https://ic.infoway-inforoute.ca/en/about/tou). [Privacy Policy](https://www.infoway-inforoute.ca/en/legal/privacy-policy).",
+  "date": "2025-03-31",
+  "compose": {
+    "include": [
+      {
+        "system": "http://hl7.org/fhir/NamingSystem/ca-hc-din"
+      }
+    ]
+  }
+}

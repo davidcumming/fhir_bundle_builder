@@ -1,0 +1,22 @@
+{
+  "resourceType": "ValueSet",
+  "id": "routeofadministration",
+  "url": "https://fhir.infoway-inforoute.ca/ValueSet/routeofadministration",
+  "name": "RouteOfAdministration",
+  "version": "1.0.0",
+  "title": "Route Of Administration",
+  "status": "draft",
+  "experimental": false,
+  "date": "1900-01-01",
+  "description": "This subset describes which path the administered medication or immunization takes to get into the body or into contact with the body; the route of entry or the course the medication or immunization must take to get to its destination. For example, an oral antibiotic may be used to treat a severe infection on a toe; the oral route is used to get the medicine to be able to reach and treat the infection in the toe. Examples: intravenous (IV), subcutaneous (SC), intramuscular (IM). The route of administration of a medicine should only be a description of the path taken and not the form.\n\nThis subset is intensionally defined using the set of subtypes of 284009009 \\| Route of administration value (qualifier value)\\| and a set of pan-Canadian members. This is a broad data exchange subset that supports interoperability and conformance testing, and can be constrained to meet local use cases.\n\nThis resource is an informative value set; a normative subset containing the expanded values can be found on Canada Health Infoway's [Terminology Server](https://terminologystandardsservice.ca/fhir). The [direct link](https://fhir.infoway-inforoute.ca/ValueSet/routeofadministration) to the ValueSet on the Terminology Server will require an [InfoCentral account](https://infocentral.infoway-inforoute.ca/en/register) for access.",
+  "copyright": "Copyright © 2021,2022 Canada Health Infoway. All rights reserved. [Terms of Use and License Agreements](https://ic.infoway-inforoute.ca/en/about/tou). [Privacy Policy](https://www.infoway-inforoute.ca/en/legal/privacy-policy).\n\nThis artefact includes content from SNOMED Clinical Terms® (SNOMED CT®) which is copyrighted material of the International Health Terminology Standards Development Organisation (IHTSDO). Where an implementation of this artefact makes use of SNOMED CT content, the implementer must have the appropriate SNOMED CT Affiliate license - for more information contact http://www.snomed.org/snomed-ct/get-snomed-ct or [info@snomed.org](mailto:info@snomed.org)",
+  "compose": {
+    "include": [
+      {
+        "valueSet": [
+          "http://snomed.info/sct?fhir_vs=refset/22321000087101"
+        ]
+      }
+    ]
+  }
+}

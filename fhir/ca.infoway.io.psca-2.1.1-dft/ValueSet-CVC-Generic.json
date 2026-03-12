@@ -1,0 +1,52 @@
+{
+  "resourceType": "ValueSet",
+  "id": "CVC-Generic",
+  "text": {
+    "status": "generated",
+    "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"><ul><li>Import all the codes that are contained in https://cvc.canimmunize.ca/v3/ValueSet/Generic</li></ul></div>"
+  },
+  "url": "http://fhir.infoway-inforoute.ca/io/psca/ValueSet/CVC-Generic",
+  "version": "1.0.0",
+  "name": "CVCGeneric",
+  "title": "Canadian Vaccine Catalogue Vaccine Generic Names",
+  "status": "active",
+  "experimental": false,
+  "date": "2022-01-17T01:23:00-08:00",
+  "publisher": "Canada Health Infoway",
+  "contact": [
+    {
+      "name": "National Standards Release Centre",
+      "telecom": [
+        {
+          "system": "url",
+          "value": "http://www.infoway-inforoute.ca"
+        },
+        {
+          "system": "email",
+          "value": "standards@infoway-inforoute.ca"
+        }
+      ]
+    }
+  ],
+  "description": "The [Generic Immunizing Agents](https://cvc.canimmunize.ca/en/explore#/generics) value set is defined by the Canadian Vaccine Catalogue.\n\n  The Generic Immunizing Agents subset contains generically described vaccines and passive immunizing agents used in Canada. It is an extension of the Pan-Canadian Immunization Reference Sets Vaccine Historical Name Code and Passive Historical Immunizing Agent Code subset developed by Canada Health Infoway.\n\nThis resource is an informative value set; the value set [can be downloaded via the CVC API](https://cvc.canimmunize.ca/docs/#/ValueSet/getGenericValueSet) and can be viewed on the [Canadian Vaccine Catalogue](https://cvc.canimmunize.ca/en/explore#/generics) web page.",
+  "jurisdiction": [
+    {
+      "coding": [
+        {
+          "system": "urn:iso:std:iso:3166",
+          "code": "CA"
+        }
+      ]
+    }
+  ],
+  "copyright": "Copyright © 2021,2022 Canada Health Infoway. All rights reserved. [Terms of Use and License Agreements](https://ic.infoway-inforoute.ca/en/about/tou). [Privacy Policy](https://www.infoway-inforoute.ca/en/legal/privacy-policy).\n\nThis artefact includes content from SNOMED Clinical Terms® (SNOMED CT®) which is copyrighted material of the International Health Terminology Standards Development Organisation (IHTSDO). Where an implementation of this artefact makes use of SNOMED CT content, the implementer must have the appropriate SNOMED CT Affiliate license - for more information contact http://www.snomed.org/snomed-ct/get-snomed-ct or [info@snomed.org](mailto:info@snomed.org)",
+  "compose": {
+    "include": [
+      {
+        "valueSet": [
+          "https://cvc.canimmunize.ca/v3/ValueSet/Generic"
+        ]
+      }
+    ]
+  }
+}

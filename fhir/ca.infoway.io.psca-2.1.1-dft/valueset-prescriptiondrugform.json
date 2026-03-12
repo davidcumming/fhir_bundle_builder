@@ -1,0 +1,384 @@
+{
+  "resourceType": "ValueSet",
+  "id": "prescriptiondrugform",
+  "url": "https://fhir.infoway-inforoute.ca/ValueSet/prescriptiondrugform",
+  "name": "PrescriptionDrugForm",
+  "version": "1.0.0",
+  "title": "PrescribeIT Prescription Drug Form",
+  "status": "draft",
+  "experimental": false,
+  "date": "1900-01-01",
+  "description": "The form in which a compounded drug or active ingredient can be dispensed to the patient.\n\nThis is a broad data exchange subset that is intended to support semantic interoperability and conformance testing. It is recommended that jurisdictions define and implement more specific clinically curated subsets that contain a portion of these concepts for data capture at the point of care for their specific use case.\n\nThis subset was defined by the PrescribeIT project from the Canadian Clinical Drug Data Set.\n\nThis resource is an informative value set; a [normative subset]( https://ui.terminologystandardsservice.ca/ui/deeplink?iss=https://terminologystandardsservice.ca/fhir&type=ValueSet&canonicalUrl=https://fhir.infoway-inforoute.ca/ValueSet/prescriptiondrugform) can be found on Canada Health Infoway's [Terminology Server](https://terminologystandardsservice.ca/fhir).  Access to the Terminology Server requires an [InfoCentral account](https://infocentral.infoway-inforoute.ca/en/register).",
+  "copyright": "Copyright © 2021,2022 Canada Health Infoway. All rights reserved. [Terms of Use and License Agreements](https://ic.infoway-inforoute.ca/en/about/tou). [Privacy Policy](https://www.infoway-inforoute.ca/en/legal/privacy-policy).",
+  "compose": {
+    "include": [
+      {
+        "system": "http://terminology.hl7.org/CodeSystem/v3-orderableDrugForm",
+        "concept": [
+          {
+            "code": "ECTAB",
+            "display": "Enteric Coated Tablet"
+          },
+          {
+            "code": "VAGCRM",
+            "display": "Vaginal Cream"
+          },
+          {
+            "code": "DROP",
+            "display": "Drops"
+          },
+          {
+            "code": "RECOINT",
+            "display": "Rectal Ointment"
+          },
+          {
+            "code": "OTDROP",
+            "display": "Otic Drops"
+          },
+          {
+            "code": "FOAMAPL",
+            "display": "Foam with Applicator"
+          },
+          {
+            "code": "PATCH",
+            "display": "Patch"
+          },
+          {
+            "code": "OPGEL",
+            "display": "Ophthalmic Gel"
+          },
+          {
+            "code": "OTGEL",
+            "display": "Otic Gel"
+          },
+          {
+            "code": "TINC",
+            "display": "Tincture"
+          },
+          {
+            "code": "BUCTAB",
+            "display": "Buccal Tablet"
+          },
+          {
+            "code": "MDINHL",
+            "display": "Metered Dose Inhaler"
+          },
+          {
+            "code": "OINTAPL",
+            "display": "Ointment with Applicator"
+          },
+          {
+            "code": "SPRY",
+            "display": "Sprays"
+          },
+          {
+            "code": "SUPP",
+            "display": "Suppository"
+          },
+          {
+            "code": "ELIXIR",
+            "display": "Elixir"
+          },
+          {
+            "code": "NASSPRY",
+            "display": "Nasal Spray"
+          },
+          {
+            "code": "OPCRM",
+            "display": "Ophthalmic Cream"
+          },
+          {
+            "code": "OTCRM",
+            "display": "Otic Cream"
+          },
+          {
+            "code": "SYRUP",
+            "display": "Syrup"
+          },
+          {
+            "code": "MDINHLPWD",
+            "display": "Metered Dose Powder Inhaler"
+          },
+          {
+            "code": "PELLET",
+            "display": "Pellet"
+          },
+          {
+            "code": "SLTAB",
+            "display": "Sublingual Tablet"
+          },
+          {
+            "code": "DRTAB",
+            "display": "Delayed Release Tablet"
+          },
+          {
+            "code": "CRM",
+            "display": "Cream"
+          },
+          {
+            "code": "MEDPAD",
+            "display": "Medicated Pad"
+          },
+          {
+            "code": "OTOINT",
+            "display": "Otic Ointment"
+          },
+          {
+            "code": "ORSUSP",
+            "display": "Oral Suspension"
+          },
+          {
+            "code": "TOPPWD",
+            "display": "Topical Powder"
+          },
+          {
+            "code": "RECFORM",
+            "display": "Rectal foam"
+          },
+          {
+            "code": "POWD",
+            "display": "Powder"
+          },
+          {
+            "code": "ENTCAP",
+            "display": "Enteric Coated Capsule"
+          },
+          {
+            "code": "GELAPL",
+            "display": "Gel with Applicator"
+          },
+          {
+            "code": "OPDROP",
+            "display": "Ophthalmic Drops"
+          },
+          {
+            "code": "SWAB",
+            "display": "Swab"
+
+          },
+          {
+            "code": "RECCRM",
+            "display": "Rectal Cream"
+
+          },
+          {
+            "code": "AER",
+            "display": "Aerosol"
+
+          },
+          {
+            "code": "GEL",
+            "display": "Gel"
+
+          },
+          {
+            "code": "ORALSOL",
+            "display": "Oral Solution"
+
+          },
+          {
+            "code": "TPATCH",
+            "display": "Transdermal Patch"
+
+          },
+          {
+            "code": "CAP",
+            "display": "Capsule"
+
+          },
+          {
+            "code": "ERTAB",
+            "display": "Extended Release Tablet"
+
+          },
+          {
+            "code": "OIL",
+            "display": "Oil"
+
+          },
+          {
+            "code": "FOAM",
+            "display": "Foam"
+
+          },
+          {
+            "code": "SPRYADAPT",
+            "display": "Spray with Adaptor"
+
+          },
+          {
+            "code": "SHMP",
+            "display": "Shampoo"
+
+          },
+          {
+            "code": "RECSUPP",
+            "display": "Rectal Suppository"
+
+          },
+          {
+            "code": "RINSE",
+            "display": "Mouthwash/Rinse"
+
+          },
+          {
+            "code": "PUD",
+            "display": "Pudding"
+
+          },
+          {
+            "code": "CAPLET",
+            "display": "Caplet"
+
+          },
+          {
+            "code": "LTN",
+            "display": "Lotion"
+
+          },
+          {
+            "code": "DISINTAB",
+            "display": "Disintegrating Tablet"
+
+          },
+          {
+            "code": "ENEMA",
+            "display": "Enema"
+
+          },
+          {
+            "code": "DISK",
+            "display": "Disk"
+
+          },
+          {
+            "code": "DERMSPRY",
+            "display": "Dermal Spray"
+
+          },
+          {
+            "code": "PASTE",
+            "display": "Paste"
+
+          },
+          {
+            "code": "VAGSUPP",
+            "display": "Vaginal Suppository"
+
+          },
+          {
+            "code": "BEAD",
+            "display": "Beads"
+
+          },
+          {
+            "code": "OINT",
+            "display": "Ointment"
+
+          },
+          {
+            "code": "BAR",
+            "display": "Bar"
+
+          },
+          {
+            "code": "PAD",
+            "display": "Pad"
+
+          },
+          {
+            "code": "GRAN",
+            "display": "Granules"
+
+          },
+          {
+            "code": "TAB",
+            "display": "Tablet"
+
+          },
+          {
+            "code": "RECSOL",
+            "display": "Rectal Solution"
+
+          },
+          {
+            "code": "OPOINT",
+            "display": "Ophthalmic Ointment"
+
+          },
+          {
+            "code": "FLAKE",
+            "display": "Flakes"
+
+          },
+          {
+            "code": "IRSOL",
+            "display": "Irrigation Solution"
+
+          },
+          {
+            "code": "WAFER",
+            "display": "Wafer"
+
+          },
+          {
+            "code": "ERCAP",
+            "display": "Extended Release Capsule"
+
+          },
+          {
+            "code": "VAGTAB",
+            "display": "Vaginal Tablet"
+
+          },
+          {
+            "code": "CRYS",
+            "display": "Crystals"
+
+          },
+          {
+            "code": "SOL",
+            "display": "Solution"
+
+          },
+          {
+            "code": "SUSP",
+            "display": "Suspension"
+
+          },
+          {
+            "code": "CHEWTAB",
+            "display": "Chewable Tablet"
+
+          },
+          {
+            "code": "ORTROCHE",
+            "display": "Lozenge/Oral Troche"
+
+          }
+        ]
+      },
+      {
+        "system": "http://snomed.info/sct",
+        "concept": [
+          {
+            "code": "385041009",
+        "display": "Oral powder"
+          },
+          {
+            "code": "22161000087109",
+        "display": "Gummy"
+          },
+          {
+            "code": "22171000087100",
+        "display": "Rectal rocket"
+          },
+          {
+            "code": "22141000087108",
+        "display": "Lollipop"
+          }
+        ]
+      }
+    ]
+  }
+}

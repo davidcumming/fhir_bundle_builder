@@ -1,0 +1,31 @@
+{
+  "resourceType": "ValueSet",
+  "id": "vaccinehistoricalnamecode",
+  "url": "https://fhir.infoway-inforoute.ca/ValueSet/vaccinehistoricalnamecode",
+  "name": "VaccineHistoricalNameCode",
+  "version": "1.0.0",
+  "title": "Vaccine Historical Name Code",
+  "status": "draft",
+  "experimental": false,
+  "date": "1900-01-01",
+  "description": "The scope of this subset is vaccines that are currently licensed for use in Canada (generic description, i.e. no trade name), those obtained through special access programs (generic description), and vaccines that have been discontinued and/or never licensed in Canada (with trade name). This content is intended to be used when populating an immunization history when the client and /or provider does not have the detail of the trade name (brand name) of the vaccine administered OR the product has been discontinued and/or never licensed in Canada. This subset will include concepts represented by a generic description for a vaccine that was previously administered to the client as may be expressed by the client or provider for an immunization history and concepts represented by the trade name for products that have been discontinued and/or never licensed in Canada.\n\n This resource is an informative value set; a [normative subset](https://fhir.infoway-inforoute.ca/ValueSet/vaccinehistoricalnamecode) containing the expanded values can be found on Canada Health Infoway's [Terminology Server](https://terminologystandardsservice.ca/fhir).  Access to the Terminology Server requires an [InfoCentral account](https://infocentral.infoway-inforoute.ca/en/register).\n\n Reviewers should anticipate that the representation of this valueSet will continue to evolve",
+  "jurisdiction": [
+    {
+      "coding": [
+        {
+          "system": "urn:iso:std:iso:3166",
+          "code": "CA"
+        }
+      ]
+    }
+  ],
+  "compose": {
+    "include": [
+      {
+        "valueSet": [
+          "http://snomed.info/sct?fhir_vs=refset/22071000087104"
+        ]
+      }
+    ]
+  }
+}

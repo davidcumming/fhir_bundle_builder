@@ -1,0 +1,22 @@
+{
+  "resourceType": "ValueSet",
+  "id": "SS-MedicationReasonCode-1-0-0",
+  "url": "https://fhir.infoway-inforoute.ca/ValueSet/medicationreasoncode",
+  "identifier": [ {
+    "system": "urn:ietf:rfc:3986",
+    "value": "urn:oid:2.16.840.1.113883.2.20.3.493"
+  } ],
+  "version": "1.0.0",
+  "name": "MedicationReasonCode",
+  "title": "MedicationReasonCode",
+  "status": "active",
+  "experimental": false,
+  "date": "2025-08-31",
+  "publisher": "Canada Health Infoway",
+  "description": "This subset contains concepts that represent a health condition, sign, symptom, event, situation with explicit context or procedure for which a medication is or was prescribed to manage, improve, treat or prevent..  This is a broad data exchange subset that is intended to support semantic interoperability and conformance testing. It is recommended that jurisdictions define and implement more specific clinically curated subsets that contain a portion of these concepts for data capture at the point of care for their specific use case. This subset was defined using the intensional definition of  ^ 45941000087104 |Diagnoses, results of a clinical observation, assessment of judgment, normal and abnormal clinical states reference set (foundation metadata concept)| or < 272379006 |Event (event)| or < 243796009 |Situation with explicit context (situation)| or ^ 45911000087100 |Activities performed in the provision of health care reference set (foundation metadata concept)| against the substrate SNOMED CT Canadian Edition.\n\nThis resource is an informative value set; a normative subset containing the expanded values can be found on Canada Health Infoway's [Terminology Server](https://infocentral.infoway-inforoute.ca/en/tools/standards-tools/terminology-server).  The [Direct link](https://fhir.infoway-inforoute.ca/ValueSet/healthconditioncode) to the ValueSet on TerminologyServer will require an [InfoCentral account](https://infocentral.infoway-inforoute.ca/en/register) for access.",
+  "compose": {
+    "include": [ {
+      "valueSet": [ "http://snomed.info/sct?fhir_vs=refset/92991000087108" ]
+    } ]
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "resourceType": "ValueSet",
+  "id": "SS-HealthConditionCode",
+  "url": "https://fhir.infoway-inforoute.ca/ValueSet/healthconditioncode",
+  "name": "HealthConditionCode",
+  "title": "Health Condition Code",
+  "status": "active",
+  "experimental": false,
+  "date": "2025-02-28",
+  "description": "This subset contains concepts that represent health-related conditions which can be diagnoses, the results of a clinical observation, assessment of judgment, events or other situations with explicit context. This is a broad data exchange subset that is intended to support semantic interoperability and conformance testing. It is recommended that jurisdictions define and implement more specific clinically curated subsets that contain a portion of these concepts for data capture at the point of care for their specific use case. This subset was defined using the intensional definition of ^ 45941000087104 \\|Diagnoses, results of a clinical observation, assessment of judgment, normal and abnormal clinical states reference set (foundation metadata concept)\\| or < 272379006 \\|Event (event)\\| or < 243796009 \\|Situation with explicit context (situation)\\|against the substrate SNOMED CT Canadian Edition.\n\nThis resource is an informative value set; a normative subset containing the expanded values can be found on Canada Health Infoway's [Terminology Server](https://infocentral.infoway-inforoute.ca/en/tools/standards-tools/terminology-server).  The [Direct link](https://fhir.infoway-inforoute.ca/ValueSet/healthconditioncode) to the ValueSet on TerminologyServer will require an [InfoCentral account](https://infocentral.infoway-inforoute.ca/en/register) for access.",
+  "jurisdiction": [
+    {
+      "coding": [
+        {
+          "system": "urn:iso:std:iso:3166",
+          "code": "CA"
+        }
+      ]
+    }
+  ],
+  "compose": {
+    "include": [
+      {
+        "valueSet": [
+          "http://snomed.info/sct?fhir_vs=refset/93001000087107"
+        ]
+      }
+    ]
+  }
+}

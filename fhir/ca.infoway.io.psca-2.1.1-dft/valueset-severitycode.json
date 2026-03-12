@@ -1,0 +1,22 @@
+{
+  "resourceType": "ValueSet",
+  "id": "severitycode",
+  "url": "https://fhir.infoway-inforoute.ca/ValueSet/severitycode",
+  "name": "SeverityCode",
+  "version": "1.0.0",
+  "title": "Severity Code",
+  "status": "draft",
+  "experimental": false,
+  "date": "1900-01-01",
+  "description": "This subset contains concepts that represent a range of severities from mild to fatal.\n\nThis subset is intended to be both a data exchange subset to support semantic interoperability and conformance testing, and a data capture subset that is implemented at the point of care.\n\nThis subset was defined using the intensional definition of <272141005\\|Severities (qualifier value)\\| against the substrate SNOMED CT Canadian Edition.\n\nThis resource is an informative value set; a normative subset containing the expanded values can be found on Canada Health Infoway's [Terminology Server](https://terminologystandardsservice.ca/fhir). The [direct link](https://fhir.infoway-inforoute.ca/ValueSet/severitycode) to the ValueSet on the Terminology Server will require an [InfoCentral account](https://infocentral.infoway-inforoute.ca/en/register) account for access.",
+  "copyright": "Copyright © 2021,2022 Canada Health Infoway. All rights reserved. [Terms of Use and License Agreements](https://ic.infoway-inforoute.ca/en/about/tou). [Privacy Policy](https://www.infoway-inforoute.ca/en/legal/privacy-policy).\n\nThis artefact includes content from SNOMED Clinical Terms® (SNOMED CT®) which is copyrighted material of the International Health Terminology Standards Development Organisation (IHTSDO). Where an implementation of this artefact makes use of SNOMED CT content, the implementer must have the appropriate SNOMED CT Affiliate license - for more information contact http://www.snomed.org/snomed-ct/get-snomed-ct or [info@snomed.org](mailto:info@snomed.org)",
+  "compose": {
+    "include": [
+      {
+        "valueSet": [
+          "http://snomed.info/sct?fhir_vs=refset/45981000087109"
+        ]
+      }
+    ]
+  }
+}

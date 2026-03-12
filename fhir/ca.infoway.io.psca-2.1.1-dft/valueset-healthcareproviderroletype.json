@@ -1,0 +1,609 @@
+{
+  "resourceType": "ValueSet",
+  "id": "SS-HealthcareProviderRoleType-1-2-0",
+  "language": "en",
+  "url": "https://fhir.infoway-inforoute.ca/ValueSet/healthcareproviderroletype",
+  "identifier": [ {
+    "system": "urn:ietf:rfc:3986",
+    "value": "urn:oid:2.16.840.1.113883.2.20.3.48"
+  } ],
+  "version": "1.2.0",
+  "name": "HealthcareProviderRoleType",
+  "title": "HealthcareProviderRoleType",
+  "status": "active",
+  "experimental": false,
+  "date": "1900-01-01",
+  "publisher": "Canada Health Infoway",
+  "description": "A role type that is used to categorize an entity that delivers health care in an expected and professional manner to an entity in need of health care services. Examples: Registered Nurse, Chiropractor, Physician, Custodial Care Clinic.\n\nThis resource is an informative value set; a [normative subset](https://fhir.infoway-inforoute.ca/ValueSet/healthcareproviderroletype) containing the expanded values can be found on Canada Health Infoway's [Terminology Server](https://terminologystandardsservice.ca/fhir).  Access to the Terminology Server requires an [InfoCentral account](https://infocentral.infoway-inforoute.ca/en/register).",
+  "compose": {
+    "include": [ {
+      "system": "https://fhir.infoway-inforoute.ca/CodeSystem/scptype",
+      "concept": [
+        {
+          "code": "CGN",
+          "display": "Certified Graduate Nurse"
+        },
+        {
+          "code": "HIM",
+          "display": "Health information management professional"
+        },
+        {
+          "code": "PSYCH",
+          "display": "Psychologist"
+        },
+        {
+          "code": "BMS",
+          "display": "Behavior Management Specialist"
+        },
+        {
+          "code": "RHEUM",
+          "display": "Rheumatologist"
+        },
+        {
+          "code": "PSYCM",
+          "display": "Psychometrist"
+        },
+        {
+          "code": "RECT",
+          "display": "Recreation Therapist"
+        },
+        {
+          "code": "COORD",
+          "display": "Coordinators"
+        },
+        {
+          "code": "ACP",
+          "display": "Advanced Care Paramedic"
+        },
+        {
+          "code": "RESP",
+          "display": "Respirologist"
+        },
+        {
+          "code": "AH",
+          "display": "Alternative Healer"
+        },
+        {
+          "code": "VSSG",
+          "display": "Vascular surgeon"
+        },
+        {
+          "code": "RECA",
+          "display": "Recreation Therapy Assistant"
+        },
+        {
+          "code": "OPHTGST",
+          "display": "Ophthalmologist"
+        },
+        {
+          "code": "AT",
+          "display": "Athletic Therapist"
+        },
+        {
+          "code": "PSYCHTST",
+          "display": "Psychiatrist"
+        },
+        {
+          "code": "ENDO",
+          "display": "Endocrinologist"
+        },
+        {
+          "code": "DENA",
+          "display": "Dental Assistant"
+        },
+        {
+          "code": "EPHP",
+          "display": "Environmental public health professional"
+        },
+        {
+          "code": "VET",
+          "display": "Veterinarian"
+        },
+        {
+          "code": "GEMD",
+          "display": "Geriatric medicine specialist"
+        },
+        {
+          "code": "PRT",
+          "display": "Physical Rehabilitation Therapist"
+        },
+        {
+          "code": "RNP",
+          "display": "Nurse Practitioner"
+        },
+        {
+          "code": "NEPH",
+          "display": "Nephrologist"
+        },
+        {
+          "code": "OPT",
+          "display": "Optometrist"
+        },
+        {
+          "code": "RC",
+          "display": "Rehabilitation counsellor"
+        },
+        {
+          "code": "AUD",
+          "display": "Audiologist"
+        },
+        {
+          "code": "SXT",
+          "display": "Sexologist"
+        },
+        {
+          "code": "RD",
+          "display": "Registered Dietitian"
+        },
+        {
+          "code": "COUN",
+          "display": "Counsellor"
+        },
+        {
+          "code": "EMSP",
+          "display": "Emergency medicine specialist"
+        },
+        {
+          "code": "ORTHOP",
+          "display": "Orthoptist"
+        },
+        {
+          "code": "RMT",
+          "display": "Registered Massage Therapist"
+        },
+        {
+          "code": "CRSG",
+          "display": "Cardiac surgeon"
+        },
+        {
+          "code": "OBGY",
+          "display": "Obstetrician-Gynecologist"
+        },
+        {
+          "code": "PHPH",
+          "display": "Public health physician"
+        },
+        {
+          "code": "DENT",
+          "display": "Denturist"
+        },
+        {
+          "code": "CPD",
+          "display": "Chiropodist"
+        },
+        {
+          "code": "RM",
+          "display": "Registered Midwife"
+        },
+        {
+          "code": "RN",
+          "display": "Registered Nurse"
+        },
+        {
+          "code": "RO",
+          "display": "Optician"
+        },
+        {
+          "code": "ATR",
+          "display": "Art Therapist"
+        },
+        {
+          "code": "EMR",
+          "display": "Emergency Medical Responder"
+        },
+        {
+          "code": "HSW",
+          "display": "Home Support Worker"
+        },
+        {
+          "code": "CRCM",
+          "display": "Critical Care medicine specialist"
+        },
+        {
+          "code": "PSW",
+          "display": "Personal Support Worker"
+        },
+        {
+          "code": "PATH",
+          "display": "Pathologist"
+        },
+        {
+          "code": "CARD",
+          "display": "Cardiologist"
+        },
+        {
+          "code": "HSE",
+          "display": "Health service executive"
+        },
+        {
+          "code": "KN",
+          "display": "Kinesiologist"
+        },
+        {
+          "code": "CLXT",
+          "display": "Combined Lab and X-ray Technologist"
+        },
+        {
+          "code": "SW",
+          "display": "Social Worker"
+        },
+        {
+          "code": "PHARM",
+          "display": "Pharmacist"
+        },
+        {
+          "code": "PTECH",
+          "display": "Pharmacy Technician"
+        },
+        {
+          "code": "MDR",
+          "display": "Medical resident"
+        },
+        {
+          "code": "CI",
+          "display": "Crisis Intervener"
+        },
+        {
+          "code": "EDT",
+          "display": "Electrodiagnostic Technician"
+        },
+        {
+          "code": "MLT",
+          "display": "Medical Laboratory Technologist"
+        },
+        {
+          "code": "CM",
+          "display": "Case manager"
+        },
+        {
+          "code": "OPTH",
+          "display": "Ophthalmic Technician"
+        },
+        {
+          "code": "MDBI",
+          "display": "Medical biochemist"
+        },
+        {
+          "code": "CC",
+          "display": "Clinical Counsellor"
+        },
+        {
+          "code": "PESW",
+          "display": "Peer Support Worker"
+        },
+        {
+          "code": "ST",
+          "display": "Speech Therapist"
+        },
+        {
+          "code": "PMSP",
+          "display": "Palliative medicine specialist"
+        },
+        {
+          "code": "CE",
+          "display": "Clinical Educator"
+        },
+        {
+          "code": "SAW",
+          "display": "Social Assistance Worker"
+        },
+        {
+          "code": "TA",
+          "display": "Therapy assistant"
+        },
+        {
+          "code": "CHIRO",
+          "display": "Chiropractic"
+        },
+        {
+          "code": "PHYSIO",
+          "display": "Physiotherapist"
+        },
+        {
+          "code": "RPN",
+          "display": "Registered Psychiatric Nurse"
+        },
+        {
+          "code": "PSYCHT",
+          "display": "Psychotherapist"
+        },
+        {
+          "code": "DH",
+          "display": "Dental Hygienist"
+        },
+        {
+          "code": "PLAS",
+          "display": "Plastic surgeon"
+        },
+        {
+          "code": "LT",
+          "display": "Lab Technician"
+        },
+        {
+          "code": "PCP",
+          "display": "Primary Care Paramedic"
+        },
+        {
+          "code": "PTA",
+          "display": "Physiotherapist Assistant"
+        },
+        {
+          "code": "UROL",
+          "display": "Urologist"
+        },
+        {
+          "code": "MA",
+          "display": "Medical assistant"
+        },
+        {
+          "code": "MOH",
+          "display": "Medical Officer of Health"
+        },
+        {
+          "code": "REHABENG",
+          "display": "Rehabilitation Engineer"
+        },
+        {
+          "code": "MD",
+          "display": "Medical Doctor"
+        },
+        {
+          "code": "FAM",
+          "display": "Family physician"
+        },
+        {
+          "code": "RAC",
+          "display": "Registered Acupuncturist"
+        },
+        {
+          "code": "PROS",
+          "display": "Prosthetist"
+        },
+        {
+          "code": "DEN",
+          "display": "Dentist"
+        },
+        {
+          "code": "DT",
+          "display": "Dental Technician"
+        },
+        {
+          "code": "RTMR",
+          "display": "Radiation Technologist in Magnetic Resonance"
+        },
+        {
+          "code": "HEM",
+          "display": "Hematologist"
+        },
+        {
+          "code": "CCP",
+          "display": "Critical Care Paramedic"
+        },
+        {
+          "code": "PED",
+          "display": "Pediatrician"
+        },
+        {
+          "code": "MP",
+          "display": "Medical Physicist"
+        },
+        {
+          "code": "MFT",
+          "display": "Marriage and Family Therapist"
+        },
+        {
+          "code": "CYCW",
+          "display": "Child Youth Care Worker"
+        },
+        {
+          "code": "RTEMG",
+          "display": "Registered Electromyography Technologist"
+        },
+        {
+          "code": "MUSTHP",
+          "display": "Music Therapist"
+        },
+        {
+          "code": "RCSW",
+          "display": "Registered Clinical Social Worker"
+        },
+        {
+          "code": "NMSP",
+          "display": "Nuclear medicine specialist"
+        },
+        {
+          "code": "PHST",
+          "display": "Pharmacy Student"
+        },
+        {
+          "code": "THOR",
+          "display": "Thoracic surgeon"
+        },
+        {
+          "code": "NUSG",
+          "display": "Neurosurgeon"
+        },
+        {
+          "code": "NAHCA",
+          "display": "Health Care Aide"
+        },
+        {
+          "code": "ND",
+          "display": "Naturopathic Doctor"
+        },
+        {
+          "code": "RTNM",
+          "display": "Nuclear Medicine Technologist"
+        },
+        {
+          "code": "OTOL",
+          "display": "Otolaryngologist"
+        },
+        {
+          "code": "MDMI",
+          "display": "Medical microbiologist"
+        },
+        {
+          "code": "ORTHTECH",
+          "display": "Orthopaedic Technologist"
+        },
+        {
+          "code": "RRT",
+          "display": "Respiratory Therapist"
+        },
+        {
+          "code": "STN",
+          "display": "Nursing Student"
+        },
+        {
+          "code": "OTA",
+          "display": "Occupational Therapist Assistant"
+        },
+        {
+          "code": "RAD",
+          "display": "Radiologist"
+        },
+        {
+          "code": "OCL",
+          "display": "Ocularist"
+        },
+        {
+          "code": "CDCI",
+          "display": "Communicable Disease Case Investigator"
+        },
+        {
+          "code": "SSW",
+          "display": "Social Services Worker"
+        },
+        {
+          "code": "IDIS",
+          "display": "Infectious disease specialist"
+        },
+        {
+          "code": "PSAP",
+          "display": "Procedural sedation/anesthesia provider"
+        },
+        {
+          "code": "RAP",
+          "display": "Acupuncturist"
+        },
+        {
+          "code": "IMSP",
+          "display": "Internal medicine specialist"
+        },
+        {
+          "code": "DERM",
+          "display": "Dermatologist"
+        },
+        {
+          "code": "ORTHSG",
+          "display": "Orthopedic surgeon"
+        },
+        {
+          "code": "GNSG",
+          "display": "General surgeon"
+        },
+        {
+          "code": "PHINT",
+          "display": "Pharmacy Intern"
+        },
+        {
+          "code": "CMS",
+          "display": "Child Management Specialist"
+        },
+        {
+          "code": "NEUR",
+          "display": "Neurologist"
+        },
+        {
+          "code": "GENCOUN",
+          "display": "Genetic Counsellor"
+        },
+        {
+          "code": "ONCO",
+          "display": "Oncologist"
+        },
+        {
+          "code": "OT",
+          "display": "Occupational Therapist"
+        },
+        {
+          "code": "AUDASSIST",
+          "display": "Audiology Assistant"
+        },
+        {
+          "code": "PHMD",
+          "display": "Physical medicine and rehabilitation specialist"
+        },
+        {
+          "code": "SLP",
+          "display": "Speech Language Pathologist"
+        },
+        {
+          "code": "GC",
+          "display": "Guidance Counsellor"
+        },
+        {
+          "code": "ANES",
+          "display": "Anesthesiologist"
+        },
+        {
+          "code": "ORTH",
+          "display": "Orthotist"
+        },
+        {
+          "code": "ALLGST",
+          "display": "Allergist"
+        },
+        {
+          "code": "OMSP",
+          "display": "Occupational medicine specialist"
+        },
+        {
+          "code": "LPN",
+          "display": "Licensed Practical Nurse"
+        },
+        {
+          "code": "RTT",
+          "display": "Radiation Technologist in Therapy"
+        },
+        {
+          "code": "PHI",
+          "display": "Public Health Inspector"
+        },
+        {
+          "code": "PA",
+          "display": "Physician Assistant"
+        },
+        {
+          "code": "RTR",
+          "display": "Radiation Technologist in Radiation"
+        },
+        {
+          "code": "MRT",
+          "display": "Medical radiation technologist"
+        },
+        {
+          "code": "HM",
+          "display": "Homeopath"
+        },
+        {
+          "code": "PO",
+          "display": "Podiatrist"
+        },
+        {
+          "code": "GAST",
+          "display": "Gastroenterologist"
+        },
+        {
+          "code": "MDGN",
+          "display": "Medical geneticist"
+        },
+        {
+          "code": "PP",
+          "display": "Paramedic Practitioner"
+        }
+      ]
+    } ]
+  }
+}

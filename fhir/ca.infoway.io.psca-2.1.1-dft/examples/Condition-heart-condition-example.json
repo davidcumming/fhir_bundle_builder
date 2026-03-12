@@ -1,0 +1,86 @@
+{
+  "resourceType": "Condition",
+  "id": "heart-condition-example",
+  "meta": {
+    "profile": [
+      "http://fhir.infoway-inforoute.ca/io/psca/StructureDefinition/condition-ca-ps"
+    ]
+  },
+  "text": {
+    "status": "generated",
+    "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"><p><b>Generated Narrative</b></p><div style=\"display: inline-block; background-color: #d9e0e7; padding: 6px; margin: 4px; border: 1px solid #8da1b4; border-radius: 5px; line-height: 60%\"><p style=\"margin-bottom: 0px\">Resource \"heart-condition-example\" </p><p style=\"margin-bottom: 0px\">Profile: <a href=\"StructureDefinition-condition-ca-ps.html\">Condition (PS-CA)</a></p></div><p><b>clinicalStatus</b>: Active <span style=\"background: LightGoldenRodYellow; margin: 4px; border: 1px solid khaki\"> (<a href=\"http://terminology.hl7.org/3.1.0/CodeSystem-condition-clinical.html\">Condition Clinical Status Codes</a>#active)</span></p><p><b>verificationStatus</b>: Confirmed <span style=\"background: LightGoldenRodYellow; margin: 4px; border: 1px solid khaki\"> (<a href=\"http://terminology.hl7.org/3.1.0/CodeSystem-condition-ver-status.html\">ConditionVerificationStatus</a>#confirmed)</span></p><p><b>category</b>: Problem <span style=\"background: LightGoldenRodYellow; margin: 4px; border: 1px solid khaki\"> (<a href=\"https://loinc.org/\">LOINC</a>#75326-9; <a href=\"http://terminology.hl7.org/3.1.0/CodeSystem-condition-category.html\">Condition Category Codes</a>#problem-list-item \"Problem List Item\")</span></p><p><b>severity</b>: Moderate <span style=\"background: LightGoldenRodYellow; margin: 4px; border: 1px solid khaki\"> (<a href=\"https://browser.ihtsdotools.org/\">SNOMED CT</a>#6736007)</span></p><p><b>code</b>: Disorder of heart valve <span style=\"background: LightGoldenRodYellow; margin: 4px; border: 1px solid khaki\"> (<a href=\"https://browser.ihtsdotools.org/\">SNOMED CT</a>#368009 \"Heart valve disorder\")</span></p><p><b>bodySite</b>: heart structure <span style=\"background: LightGoldenRodYellow; margin: 4px; border: 1px solid khaki\"> (<a href=\"https://browser.ihtsdotools.org/\">SNOMED CT</a>#40768004 \"Left thorax\")</span></p><p><b>subject</b>: <a href=\"Patient-patient1-example.html\">Patient/patient1-example: Donald Duck</a> \" DONALD\"</p><p><b>onset</b>: 2021-08-05</p><p><b>asserter</b>: <a href=\"Patient-patient1-example.html\">Patient/patient1-example: Donald Duck</a> \" DONALD\"</p></div>"
+  },
+  "clinicalStatus": {
+    "coding": [
+      {
+        "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+        "code": "active"
+      }
+    ]
+  },
+  "verificationStatus": {
+    "coding": [
+      {
+        "system": "http://terminology.hl7.org/CodeSystem/condition-ver-status",
+        "code": "confirmed"
+      }
+    ]
+  },
+  "category": [
+    {
+      "coding": [
+        {
+          "system": "http://loinc.org",
+          "code": "75326-9",
+          "display": "Problem"
+        },
+        {
+          "system": "http://terminology.hl7.org/CodeSystem/condition-category",
+          "code": "problem-list-item",
+          "display": "Problem List Item"
+        }
+      ],
+      "text": "Problem"
+    }
+  ],
+  "severity": {
+    "coding": [
+      {
+        "system": "http://snomed.info/sct",
+        "code": "6736007",
+        "display": "Moderate"
+      }
+    ]
+  },
+  "code": {
+    "coding": [
+      {
+        "system": "http://snomed.info/sct",
+        "code": "368009",
+        "display": "Heart valve disorder"
+      }
+    ],
+    "text": "Disorder of heart valve"
+  },
+  "bodySite": [
+    {
+      "coding": [
+        {
+          "system": "http://snomed.info/sct",
+          "code": "40768004",
+          "display": "Left thorax"
+        }
+      ],
+      "text": "heart structure"
+    }
+  ],
+  "subject": {
+    "reference": "Patient/patient1-example",
+    "display": "Donald Duck"
+  },
+  "onsetDateTime": "2021-08-05",
+  "asserter": {
+    "reference": "Patient/patient1-example",
+    "display": "Donald Duck"
+  }
+}

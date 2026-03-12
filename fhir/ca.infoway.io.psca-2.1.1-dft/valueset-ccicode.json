@@ -1,0 +1,19 @@
+{
+  "resourceType": "ValueSet",
+  "id": "CCI",
+  "url": "http://fhir.infoway-inforoute.ca/io/psca/ValueSet/CCI",
+  "name": "CCIAllCode",
+  "title": "Canadian Classification of Health Interventions All Concepts",
+  "status": "draft",
+  "experimental": false,
+  "date": "2022-01-17T01:23:00-08:00",
+  "description": "This subset contains all concepts represented by the [Canadian Classification of Health Interventions](https://terminology.hl7.org/CodeSystem-v3-cci.html) code system.\n\nThis is a broad data exchange value set that is intended to support semantic interoperability and conformance testing. It is recommended that jurisdictions define and implement more specific clinically curated subsets that contain a portion of these concepts for data capture at the point of care for their specific use case.\n\nFurther details about CCI are available from the [Canadian Institute for Health Information (CIHI)](https://www.cihi.ca).",
+  "copyright": "Copyright © 2021,2022 Canada Health Infoway. All rights reserved. [Terms of Use and License Agreements](https://ic.infoway-inforoute.ca/en/about/tou). [Privacy Policy](https://www.infoway-inforoute.ca/en/legal/privacy-policy).\n\nThis artefact includes content copyright © 2001–2018 Canadian Institute for Health Information. Subject to CIHI Terms of Use; contact classification@cihi.ca. ",
+    "compose": {
+    "include": [
+      {
+        "system": "http://cihi.ca/fhir/CodeSystem/cihi-cci"
+      }
+    ]
+  }
+}

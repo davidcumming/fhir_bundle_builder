@@ -1,0 +1,31 @@
+{
+  "resourceType": "ValueSet",
+  "id": "immunizationrouteofadministrationcode",
+  "url": "https://fhir.infoway-inforoute.ca/ValueSet/immunizationrouteofadministrationcode",
+  "name": "ImmunizationRouteOfAdministrationCode",
+  "version": "1.0.0",
+  "title": "Immunization Route Of Administration Code",
+  "status": "draft",
+  "experimental": false,
+  "date": "1900-01-01",
+  "description": "The path the administered immunization takes to get into the body. The subset has been curated specifically to capture only routes of administration relevant to immunization.\n\nThis resource is an informative value set; a normative subset containing the expanded values can be found on Canada Health Infoway's [Terminology Server](https: //infocentral.infoway-inforoute.ca/en/tools/standards-tools/terminology-server).  The [direct link](https://fhir.infoway-inforoute.ca/ValueSet/immunizationrouteofadministrationcode) to the ValueSet on TerminologyServer will require an [InfoCentral account](https://infocentral.infoway-inforoute.ca/en/register) for access.\n\n Reviewers should anticipate that the representation of this valueSet will continue to evolve.",
+  "jurisdiction": [
+    {
+      "coding": [
+        {
+          "system": "urn:iso:std:iso:3166",
+          "code": "CA"
+        }
+      ]
+    }
+  ],
+  "compose": {
+    "include": [
+      {
+        "valueSet": [
+          "http://snomed.info/sct?fhir_vs=refset/56411000087101"
+        ]
+      }
+    ]
+  }
+}
