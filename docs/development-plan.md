@@ -98,16 +98,16 @@ The following status labels should be used in this plan:
 
 ## 8. Current Focus
 
-**Current Focus:** Establish project planning and the initial workflow-development foundation so implementation can proceed in small, controlled slices.
+**Current Focus:** Prove the initial PS-CA asset retrieval boundary and define the first normalized asset context stub that the workflow can consume.
 
 ## 9. Next Planned Slice
 
-**Next Planned Slice:** Create the minimal Microsoft Agent Framework workflow skeleton for the PS-CA bundle builder in Dev UI, including initial workflow registration, a structured starting input shape, and placeholder executors with inspectable outputs.
+**Next Planned Slice:** Implement the initial PS-CA asset retrieval boundary and first normalized asset context stub from the existing package files already present in the repository.
 
 ## 10. Development Phases
 
 ## Phase 1: Foundation and Project Guidance
-**Status:** In Progress
+**Status:** Completed
 
 ### Goal
 Establish the stable architectural and planning documents that will guide implementation.
@@ -127,7 +127,7 @@ Establish the stable architectural and planning documents that will guide implem
 ---
 
 ## Phase 2: Minimal Workflow Skeleton in Dev UI
-**Status:** Planned
+**Status:** Completed
 
 ### Goal
 Prove that the project can run as a visible Microsoft Agent Framework workflow in Dev UI before deeper functionality is added.
@@ -357,6 +357,7 @@ The following risks should be monitored during development:
 - validation may be introduced too late unless intentionally included in early slices
 - state handling may become implicit unless workflow artifacts are defined carefully
 - UI thinking may pressure the team to skip workflow discipline
+- prerelease Agent Framework package behavior may affect Dev UI discovery or schema rendering details between versions
 
 ## 14. Definition of Progress
 
@@ -387,4 +388,4 @@ Codex should make targeted edits only. It should not rewrite the full document u
 
 ## 16. Immediate Next Objective
 
-The immediate next objective is to implement the first visible workflow skeleton in Microsoft Agent Framework Dev UI so the team can begin building from a real executable workflow rather than from documents alone.
+The immediate next objective is to prove the first workflow-usable PS-CA asset retrieval path and establish the initial normalized asset contract that later workflow stages can consume.
