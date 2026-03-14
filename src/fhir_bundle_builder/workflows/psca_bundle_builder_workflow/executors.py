@@ -11,8 +11,7 @@ from fhir_bundle_builder.specifications.psca import PscaAssetQuery, PscaAssetRep
 from .models import (
     BuildPlan,
     BundleSchematic,
-    CandidateBundleEntry,
-    CandidateBundleStub,
+    CandidateBundleResult,
     NormalizedBuildRequest,
     RepairDecisionStub,
     ResourceConstructionStageResult,
@@ -23,6 +22,7 @@ from .models import (
     WorkflowDefaults,
     WorkflowSkeletonRunResult,
 )
+from .bundle_finalization_builder import build_psca_candidate_bundle_result
 from .build_plan_builder import build_psca_build_plan
 from .resource_construction_builder import build_psca_resource_construction_result
 from .schematic_builder import build_psca_bundle_schematic
@@ -142,51 +142,32 @@ async def resource_construction(
     await ctx.send_message(result)
 
 
-@executor(id="bundle_finalization", input=ResourceConstructionStageResult, output=CandidateBundleStub)
+@executor(id="bundle_finalization", input=ResourceConstructionStageResult, output=CandidateBundleResult)
 async def bundle_finalization(
     message: ResourceConstructionStageResult,
-    ctx: WorkflowContext[CandidateBundleStub],
+    ctx: WorkflowContext[CandidateBundleResult],
 ) -> None:
     normalized_request = _get_artifact(ctx, "normalized_request")
-    entries = [
-        CandidateBundleEntry(
-            full_url=f"urn:uuid:{resource.placeholder_id}",
-            resource_type=resource.resource_type,
-            placeholder_resource_id=resource.placeholder_id,
-            scaffold_state=resource.current_scaffold.scaffold_state,
-            resource_scaffold=resource.current_scaffold.fhir_scaffold,
-        )
-        for resource in message.resource_registry
-    ]
-    candidate = CandidateBundleStub(
-        stage_id="bundle_finalization",
-        status="placeholder_complete",
-        summary="Assembled a candidate bundle stub from the latest scaffold tracked for each placeholder resource.",
-        placeholder_note="The candidate bundle contains inspectable scaffold artifacts only; multiple plan steps may refine the same placeholder resource before final assembly logic exists.",
-        source_refs=message.source_refs,
-        bundle_id=f"{normalized_request.specification.package_id}-{normalized_request.request.scenario_label}",
-        bundle_type=normalized_request.workflow_defaults.bundle_type,
-        entry_count=len(entries),
-        entries=entries,
-    )
+    schematic = _get_artifact(ctx, "bundle_schematic")
+    candidate = build_psca_candidate_bundle_result(message, schematic, normalized_request)
     _store_artifact(ctx, "candidate_bundle", candidate)
     await ctx.send_message(candidate)
 
 
-@executor(id="validation", input=CandidateBundleStub, output=ValidationReportStub)
-async def validation(message: CandidateBundleStub, ctx: WorkflowContext[ValidationReportStub]) -> None:
+@executor(id="validation", input=CandidateBundleResult, output=ValidationReportStub)
+async def validation(message: CandidateBundleResult, ctx: WorkflowContext[ValidationReportStub]) -> None:
     report = ValidationReportStub(
         stage_id="validation",
         status="placeholder_warning",
-        summary="Emitted a deterministic placeholder validation report for the candidate bundle stub.",
-        placeholder_note="Validation logic is not implemented yet; findings here are explanatory placeholders only.",
+        summary="Emitted a deterministic placeholder validation report for the candidate bundle scaffold.",
+        placeholder_note="Validation logic is not implemented yet; findings here are explanatory placeholders only, even though bundle finalization now produces a real Bundle-shaped candidate scaffold.",
         source_refs=message.source_refs,
         outcome="placeholder_pass_with_warnings",
         findings=[
             ValidationFindingStub(
                 severity="information",
                 location="Bundle",
-                message="Validation is stubbed for the workflow skeleton slice; no structural or profile checks were executed.",
+                message="Validation is stubbed for this slice; no structural or profile checks were executed against the candidate bundle scaffold.",
                 repair_target="future-validation-logic",
             )
         ],

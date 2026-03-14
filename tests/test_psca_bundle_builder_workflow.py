@@ -130,22 +130,43 @@ async def test_psca_bundle_builder_workflow_smoke() -> None:
         "allergyintolerance-1",
         "condition-1",
     }
-    assert final_output.candidate_bundle.entry_count == 8
-    assert {entry.placeholder_resource_id for entry in final_output.candidate_bundle.entries} == {
+    assert final_output.candidate_bundle.assembly_mode == "deterministic_registry_bundle_scaffold"
+    assert final_output.candidate_bundle.candidate_bundle.bundle_state == "candidate_scaffold_assembled"
+    assert final_output.candidate_bundle.candidate_bundle.entry_count == 8
+    assert [entry.placeholder_id for entry in final_output.candidate_bundle.entry_assembly] == [
+        "composition-1",
         "patient-1",
+        "practitionerrole-1",
         "practitioner-1",
         "organization-1",
-        "practitionerrole-1",
-        "composition-1",
         "medicationrequest-1",
         "allergyintolerance-1",
         "condition-1",
-    }
-    composition_entry = next(
-        entry for entry in final_output.candidate_bundle.entries if entry.placeholder_resource_id == "composition-1"
-    )
-    assert composition_entry.scaffold_state == "sections_attached"
-    assert len(composition_entry.resource_scaffold["section"]) == 3
+    ]
+    assert final_output.candidate_bundle.candidate_bundle.fhir_bundle["resourceType"] == "Bundle"
+    assert final_output.candidate_bundle.candidate_bundle.fhir_bundle["id"] == "ca.infoway.io.psca-pytest-smoke"
+    assert final_output.candidate_bundle.candidate_bundle.fhir_bundle["meta"]["profile"] == [
+        final_output.bundle_schematic.bundle_scaffold.profile_url
+    ]
+    assert final_output.candidate_bundle.candidate_bundle.fhir_bundle["type"] == "document"
+    assert [
+        entry["resource"]["resourceType"] for entry in final_output.candidate_bundle.candidate_bundle.fhir_bundle["entry"]
+    ] == [
+        "Composition",
+        "Patient",
+        "PractitionerRole",
+        "Practitioner",
+        "Organization",
+        "MedicationRequest",
+        "AllergyIntolerance",
+        "Condition",
+    ]
+    assert final_output.candidate_bundle.candidate_bundle.deferred_paths == [
+        "identifier",
+        "timestamp",
+        "entry.fullUrl",
+    ]
+    assert len(final_output.candidate_bundle.candidate_bundle.fhir_bundle["entry"][0]["resource"]["section"]) == 3
     assert final_output.validation_report.outcome == "placeholder_pass_with_warnings"
     assert final_output.repair_decision.decision == "complete_for_slice"
 

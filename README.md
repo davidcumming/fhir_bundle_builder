@@ -7,6 +7,7 @@ The implemented slice is intentionally narrow:
 - structured top-level workflow input
 - deterministic workflow stages for request normalization, PS-CA asset retrieval, bundle schematic generation, and build planning
 - scaffold-oriented resource construction driven by the real build plan
+- deterministic bundle finalization into a real candidate `Bundle` scaffold
 - inspectable structured artifacts emitted at each stage
 - no product UI
 - no full bundle population yet
@@ -76,7 +77,7 @@ The `specification_asset_retrieval` stage now emits the first normalized PS-CA a
 
 ## Current slice boundaries
 
-This slice is for workflow shape, PS-CA normalized asset retrieval, the first real schematic artifact, the first real build plan, and the first scaffold-oriented resource-construction foundation.
+This slice is for workflow shape, PS-CA normalized asset retrieval, the first real schematic artifact, the first real build plan, the first scaffold-oriented resource-construction foundation, and the first candidate-bundle finalization foundation.
 
 - The workflow reads existing PS-CA package files deterministically from the repo.
 - The spec retrieval stage exposes a normalized PS-CA asset context with foundational profiles, Composition section definitions, and selected example evidence.
@@ -88,6 +89,7 @@ This slice is for workflow shape, PS-CA normalized asset retrieval, the first re
   - explicit schematic relationships and provenance
 - The build-plan stage emits a structured deterministic build plan with explicit steps, dependencies, expected inputs, and expected outputs.
 - The resource-construction stage emits deterministic FHIR-shaped resource scaffolds, per-step construction results, and a registry of the latest scaffold state per placeholder.
+- The bundle-finalization stage emits a real candidate `Bundle` scaffold assembled deterministically from the registry and schematic bundle-entry expectations.
 - Validation and repair are placeholder stages used to prove the end-to-end workflow path.
 
 ## Schematic-stage output
@@ -138,3 +140,22 @@ The `resource_construction` stage now emits the first real scaffold-oriented con
   - scaffold creation
   - later section attachment update
 - unresolved and deferred fields called out explicitly rather than implied
+
+## Bundle-finalization-stage output
+
+The `bundle_finalization` stage now emits the first real candidate-bundle artifact for workflow use. In Dev UI you should see:
+
+- bundle-finalization metadata showing deterministic registry-driven assembly
+- a real FHIR-shaped `Bundle` scaffold with:
+  - `resourceType = Bundle`
+  - deterministic `id`
+  - `meta.profile`
+  - `type = document`
+  - ordered `entry.resource` items
+- deterministic entry ordering derived from the bundle schematic’s `bundle_entry` relationships
+- explicit entry assembly details for each placeholder resource
+- deferred bundle-level fields called out explicitly, including:
+  - `identifier`
+  - `timestamp`
+  - `entry.fullUrl`
+- a clear distinction between the candidate bundle scaffold and a future validated bundle

@@ -372,23 +372,55 @@ class ResourceConstructionStageResult(StageArtifact):
     evidence: ResourceConstructionEvidence
 
 
-class CandidateBundleEntry(BaseModel):
-    """Placeholder entry in the candidate bundle stub."""
+CandidateBundleAssemblyMode = Literal["deterministic_registry_bundle_scaffold"]
+CandidateBundleState = Literal["candidate_scaffold_assembled"]
 
-    full_url: str
+
+class BundleEntryAssemblyResult(BaseModel):
+    """Deterministic assembly metadata for one bundle entry."""
+
+    sequence: int
+    placeholder_id: str
     resource_type: str
-    placeholder_resource_id: str
+    required_by_bundle_scaffold: bool
+    source_registry_step_id: str
     scaffold_state: ResourceScaffoldState
-    resource_scaffold: dict[str, Any]
+    entry_path: str
 
 
-class CandidateBundleStub(StageArtifact):
-    """Bundle-in-progress / finalization placeholder artifact."""
+class CandidateBundleArtifact(BaseModel):
+    """Candidate bundle scaffold assembled from constructed resource scaffolds."""
 
     bundle_id: str
+    profile_url: str
     bundle_type: str
+    bundle_state: CandidateBundleState
     entry_count: int
-    entries: list[CandidateBundleEntry]
+    fhir_bundle: dict[str, Any]
+    populated_paths: list[str] = Field(default_factory=list)
+    deferred_paths: list[str] = Field(default_factory=list)
+
+
+class CandidateBundleEvidence(BaseModel):
+    """Provenance for the candidate bundle stage."""
+
+    source_resource_construction_stage_id: str
+    source_schematic_stage_id: str
+    source_build_plan_stage_id: str
+    required_entry_placeholder_ids: list[str] = Field(default_factory=list)
+    ordered_placeholder_ids: list[str] = Field(default_factory=list)
+    source_refs: list[str] = Field(default_factory=list)
+
+
+class CandidateBundleResult(StageArtifact):
+    """Structured bundle-finalization artifact for the candidate bundle scaffold."""
+
+    assembly_mode: CandidateBundleAssemblyMode
+    candidate_bundle: CandidateBundleArtifact
+    entry_assembly: list[BundleEntryAssemblyResult]
+    deferred_items: list[str] = Field(default_factory=list)
+    unresolved_items: list[str] = Field(default_factory=list)
+    evidence: CandidateBundleEvidence
 
 
 class ValidationFindingStub(BaseModel):
@@ -426,6 +458,6 @@ class WorkflowSkeletonRunResult(BaseModel):
     bundle_schematic: BundleSchematic
     build_plan: BuildPlan
     resource_construction: ResourceConstructionStageResult
-    candidate_bundle: CandidateBundleStub
+    candidate_bundle: CandidateBundleResult
     validation_report: ValidationReportStub
     repair_decision: RepairDecisionStub
