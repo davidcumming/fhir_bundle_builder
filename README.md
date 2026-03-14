@@ -78,7 +78,7 @@ The `specification_asset_retrieval` stage now emits the first normalized PS-CA a
 
 ## Current slice boundaries
 
-This slice is for workflow shape, PS-CA normalized asset retrieval, the first real schematic artifact, the first real build plan, the first scaffold-oriented resource-construction foundation, the first candidate-bundle finalization foundation, and the first validation foundation.
+This slice is for workflow shape, PS-CA normalized asset retrieval, the first real schematic artifact, the first real build plan, the first scaffold-oriented resource-construction foundation, the first candidate-bundle finalization foundation, the first validation foundation, and the first repair-decision foundation.
 
 - The workflow reads existing PS-CA package files deterministically from the repo.
 - The spec retrieval stage exposes a normalized PS-CA asset context with foundational profiles, Composition section definitions, and selected example evidence.
@@ -92,7 +92,7 @@ This slice is for workflow shape, PS-CA normalized asset retrieval, the first re
 - The resource-construction stage emits deterministic FHIR-shaped resource scaffolds, per-step construction results, and a registry of the latest scaffold state per placeholder.
 - The bundle-finalization stage emits a real candidate `Bundle` scaffold assembled deterministically from the registry and schematic bundle-entry expectations.
 - The validation stage emits a structured report with separate standards-validation and workflow-rule results.
-- Repair remains a placeholder stage used to prove the end-to-end workflow path.
+- The repair-decision stage emits structured routing recommendations without executing retries or mutations yet.
 
 ## Schematic-stage output
 
@@ -179,3 +179,20 @@ The `validation` stage now emits the first real structured validation artifact f
 - counts for errors, warnings, and informational findings
 - validation evidence linking back to the candidate bundle, schematic, build plan, and resource construction artifacts
 - clear warnings that external profile/conformance validation is still deferred
+
+## Repair-decision-stage output
+
+The `repair_decision` stage now emits the first real structured repair-routing artifact for workflow use. In Dev UI you should see:
+
+- an overall repair decision such as:
+  - `external_validation_pending`
+  - `repair_recommended`
+  - `complete_no_repair_needed`
+- a recommended repair target and next workflow stage when an internal repair is appropriate
+- per-finding routing records that show:
+  - the original validation channel and severity
+  - the stable finding code
+  - the deterministic route target
+  - whether the finding is actionable in the current workflow
+- explicit separation between internal repair recommendations and deferred external standards-validation dependencies
+- a clear distinction between repair recommendation and actual repair execution, which is still deferred

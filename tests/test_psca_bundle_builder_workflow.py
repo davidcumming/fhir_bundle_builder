@@ -180,7 +180,21 @@ async def test_psca_bundle_builder_workflow_smoke() -> None:
         and finding.severity == "information"
         for finding in final_output.validation_report.workflow_validation.findings
     )
-    assert final_output.repair_decision.decision == "complete_for_slice"
+    assert final_output.repair_decision.overall_decision == "external_validation_pending"
+    assert final_output.repair_decision.recommended_target == "standards_validation_external"
+    assert final_output.repair_decision.recommended_next_stage == "none"
+    assert any(
+        route.finding_code == "external_profile_validation_deferred"
+        and route.route_target == "standards_validation_external"
+        and route.actionable is False
+        for route in final_output.repair_decision.finding_routes
+    )
+    assert any(
+        route.finding_code == "bundle.deferred_fields_recorded"
+        and route.route_target == "none_required"
+        and route.actionable is False
+        for route in final_output.repair_decision.finding_routes
+    )
 
     completed_executors = [
         event.executor_id

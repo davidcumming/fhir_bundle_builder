@@ -10,7 +10,9 @@ from pydantic import BaseModel, Field
 from fhir_bundle_builder.specifications.psca import PscaNormalizedAssetContext
 from fhir_bundle_builder.validation.models import (
     StandardsValidationResult,
+    ValidationChannel,
     ValidationEvidence,
+    ValidationSeverity,
     ValidationStatus,
     WorkflowValidationResult,
 )
@@ -442,11 +444,53 @@ class ValidationReport(StageArtifact):
     evidence: ValidationEvidence
 
 
-class RepairDecisionStub(StageArtifact):
-    """Structured placeholder repair decision."""
+RepairOverallDecision = Literal[
+    "complete_no_repair_needed",
+    "repair_recommended",
+    "external_validation_pending",
+    "human_review_recommended",
+]
+RepairRouteTarget = Literal[
+    "none_required",
+    "resource_construction",
+    "bundle_finalization",
+    "build_plan_or_schematic",
+    "standards_validation_external",
+    "human_intervention",
+]
+RepairRecommendedNextStage = Literal["none", "resource_construction", "bundle_finalization", "build_plan"]
 
-    decision: Literal["complete_for_slice"]
-    next_stage: Literal["none"]
+
+class RepairFindingRoute(BaseModel):
+    """Deterministic routing recommendation for one validation finding."""
+
+    channel: ValidationChannel
+    severity: ValidationSeverity
+    finding_code: str
+    route_target: RepairRouteTarget
+    recommended_next_stage: RepairRecommendedNextStage
+    actionable: bool
+    reason: str
+
+
+class RepairDecisionEvidence(BaseModel):
+    """Provenance for the repair decision stage."""
+
+    source_validation_stage_id: str
+    source_overall_validation_status: ValidationStatus
+    routed_finding_codes: list[str] = Field(default_factory=list)
+    source_refs: list[str] = Field(default_factory=list)
+
+
+class RepairDecisionResult(StageArtifact):
+    """Structured repair decision and routing recommendation."""
+
+    overall_decision: RepairOverallDecision
+    recommended_target: RepairRouteTarget
+    recommended_next_stage: RepairRecommendedNextStage
+    finding_routes: list[RepairFindingRoute] = Field(default_factory=list)
+    deferred_external_dependencies: list[str] = Field(default_factory=list)
+    evidence: RepairDecisionEvidence
     rationale: str
 
 
@@ -463,4 +507,4 @@ class WorkflowSkeletonRunResult(BaseModel):
     resource_construction: ResourceConstructionStageResult
     candidate_bundle: CandidateBundleResult
     validation_report: ValidationReport
-    repair_decision: RepairDecisionStub
+    repair_decision: RepairDecisionResult

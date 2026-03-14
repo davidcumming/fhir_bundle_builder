@@ -14,7 +14,7 @@ from .models import (
     BundleSchematic,
     CandidateBundleResult,
     NormalizedBuildRequest,
-    RepairDecisionStub,
+    RepairDecisionResult,
     ResourceConstructionStageResult,
     SpecificationAssetContext,
     ValidationReport,
@@ -24,6 +24,7 @@ from .models import (
 )
 from .bundle_finalization_builder import build_psca_candidate_bundle_result
 from .build_plan_builder import build_psca_build_plan
+from .repair_decision_builder import build_psca_repair_decision
 from .resource_construction_builder import build_psca_resource_construction_result
 from .schematic_builder import build_psca_bundle_schematic
 from .validation_builder import build_psca_validation_report
@@ -179,16 +180,7 @@ async def repair_decision(
     message: ValidationReport,
     ctx: WorkflowContext[Any, WorkflowSkeletonRunResult],
 ) -> None:
-    decision = RepairDecisionStub(
-        stage_id="repair_decision",
-        status="placeholder_complete",
-        summary="Marked the workflow slice complete because this iteration establishes structured validation output, not repair routing.",
-        placeholder_note="Future slices will replace this with structured repair routing driven by the standards and workflow validation channels.",
-        source_refs=message.source_refs,
-        decision="complete_for_slice",
-        next_stage="none",
-        rationale="This validation-foundation slice is successful once the workflow emits a structured multi-channel validation report that a later repair stage can consume.",
-    )
+    decision = build_psca_repair_decision(message)
     _store_artifact(ctx, "repair_decision", decision)
     await ctx.yield_output(
         WorkflowSkeletonRunResult(
