@@ -98,11 +98,11 @@ The following status labels should be used in this plan:
 
 ## 8. Current Focus
 
-**Current Focus:** Use the real PS-CA bundle schematic artifact to implement the first bounded build-planning slice while keeping the workflow deterministic and inspectable.
+**Current Focus:** Use the real build plan artifact to implement the first bounded resource-construction slice while keeping the workflow deterministic and inspectable.
 
 ## 9. Next Planned Slice
 
-**Next Planned Slice:** Implement the first PS-CA build-plan slice using the real bundle schematic artifact, without resource-population logic.
+**Next Planned Slice:** Implement the first PS-CA resource-construction slice from the real build plan, without full bundle population.
 
 ## 10. Development Phases
 
@@ -198,7 +198,7 @@ Enable the workflow to produce a structured PS-CA bundle scaffold.
 ---
 
 ## Phase 5: Build Planning
-**Status:** Planned
+**Status:** Completed
 
 ### Goal
 Enable the workflow to derive an ordered resource build plan from the bundle schematic and request context.
@@ -347,6 +347,7 @@ The following assumptions currently guide the plan:
 - the specification ingestion pipeline should be designed to support arbitrary FHIR specifications later
 - the initial normalized PS-CA asset scope is intentionally limited to package metadata, selected foundational profiles, Composition section definitions, and example summaries rather than full IG normalization
 - the first real PS-CA schematic intentionally covers only the required sections plus minimal subject/author support placeholders
+- the first real build plan intentionally uses a two-step Composition strategy and a limited hard-dependency set derived from the current schematic
 - initial development should prioritize workflow shape, artifact contracts, and inspectability over feature completeness
 
 ## 13. Known Early Risks
@@ -390,4 +391,4 @@ Codex should make targeted edits only. It should not rewrite the full document u
 
 ## 16. Immediate Next Objective
 
-The immediate next objective is to derive the first structured PS-CA build plan from the schematic artifact without broadening scope into resource construction or full generation.
+The immediate next objective is to execute the first narrow resource-construction path from the structured build plan without broadening scope into full generation.

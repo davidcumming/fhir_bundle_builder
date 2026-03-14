@@ -5,11 +5,11 @@ This repository is currently proving the workflow shape for a PS-CA bundle build
 The implemented slice is intentionally narrow:
 
 - structured top-level workflow input
-- deterministic workflow stages for request normalization, PS-CA asset retrieval, and bundle schematic generation
+- deterministic workflow stages for request normalization, PS-CA asset retrieval, bundle schematic generation, and build planning
 - inspectable structured artifacts emitted at each stage
 - no product UI
 - no real bundle population yet
-- no real build planning intelligence yet
+- no real resource construction yet
 - no arbitrary-spec ingestion yet
 
 ## Repository shape
@@ -76,7 +76,7 @@ The `specification_asset_retrieval` stage now emits the first normalized PS-CA a
 
 ## Current slice boundaries
 
-This slice is for workflow shape, PS-CA normalized asset retrieval, and the first real schematic artifact only.
+This slice is for workflow shape, PS-CA normalized asset retrieval, the first real schematic artifact, and the first real build plan only.
 
 - The workflow reads existing PS-CA package files deterministically from the repo.
 - The spec retrieval stage exposes a normalized PS-CA asset context with foundational profiles, Composition section definitions, and selected example evidence.
@@ -86,7 +86,7 @@ This slice is for workflow shape, PS-CA normalized asset retrieval, and the firs
   - required section scaffolds for medications, allergies, and problems
   - explicit resource placeholders
   - explicit schematic relationships and provenance
-- The build-plan stage still derives only a simple placeholder sequence from the schematic.
+- The build-plan stage emits a structured deterministic build plan with explicit steps, dependencies, expected inputs, and expected outputs.
 - Resource construction emits placeholder resource build results only.
 - Validation and repair are placeholder stages used to prove the end-to-end workflow path.
 
@@ -104,3 +104,20 @@ The `bundle_schematic` stage now emits the first real PS-CA schematic artifact f
   - PractitionerRole support links
   - section-entry wiring
 - provenance showing which normalized assets and example evidence were used
+
+## Build-plan-stage output
+
+The `build_plan` stage now emits the first real PS-CA planning artifact for workflow use. In Dev UI you should see:
+
+- plan metadata showing deterministic schematic-derived planning and the two-step Composition strategy
+- ordered steps for:
+  - patient
+  - practitioner
+  - organization
+  - practitioner role
+  - composition scaffold
+  - medication, allergy, and problem section entries
+  - composition finalization
+- explicit prerequisite relationships rather than a simple linear chain
+- expected step inputs and expected outputs that the later resource-construction slice can consume
+- deferred items that remain outside this slice, such as bundle assembly intelligence and element-level population

@@ -9,8 +9,7 @@ from agent_framework import WorkflowContext, executor
 from fhir_bundle_builder.specifications.psca import PscaAssetQuery, PscaAssetRepository
 
 from .models import (
-    BuildPlanStep,
-    BuildPlanStub,
+    BuildPlan,
     BundleSchematic,
     CandidateBundleEntry,
     CandidateBundleStub,
@@ -25,6 +24,7 @@ from .models import (
     WorkflowDefaults,
     WorkflowSkeletonRunResult,
 )
+from .build_plan_builder import build_psca_build_plan
 from .schematic_builder import build_psca_bundle_schematic
 
 WORKFLOW_NAME = "PS-CA Bundle Builder Skeleton"
@@ -120,70 +120,33 @@ async def bundle_schematic(
     await ctx.send_message(schematic)
 
 
-@executor(id="build_plan", input=BundleSchematic, output=BuildPlanStub)
-async def build_plan(message: BundleSchematic, ctx: WorkflowContext[BuildPlanStub]) -> None:
-    build_order = {
-        "Patient": 1,
-        "Practitioner": 2,
-        "Organization": 3,
-        "PractitionerRole": 4,
-        "Condition": 5,
-        "MedicationRequest": 6,
-        "AllergyIntolerance": 7,
-        "Composition": 8,
-    }
-    ordered_placeholders = sorted(
-        message.resource_placeholders,
-        key=lambda placeholder: (build_order.get(placeholder.resource_type, 999), placeholder.placeholder_id),
-    )
-    steps: list[BuildPlanStep] = []
-    prior_step_id: str | None = None
-    for sequence, placeholder in enumerate(ordered_placeholders, start=1):
-        step_id = f"build-{placeholder.placeholder_id}"
-        depends_on = [prior_step_id] if prior_step_id is not None else []
-        steps.append(
-            BuildPlanStep(
-                step_id=step_id,
-                sequence=sequence,
-                resource_type=placeholder.resource_type,
-                depends_on=depends_on,
-                build_purpose=f"Emit inspectable placeholder output for {placeholder.role}.",
-                optional=not placeholder.required,
-            )
-        )
-        prior_step_id = step_id
-
-    plan = BuildPlanStub(
-        stage_id="build_plan",
-        status="placeholder_complete",
-        summary="Derived a simple ordered placeholder build plan from the real PS-CA schematic artifact.",
-        placeholder_note="Dependency handling is still intentionally simplistic; this stage now consumes the schematic scaffold without attempting real build-order intelligence.",
-        source_refs=message.source_refs,
-        plan_basis="schematic-derived-placeholder-sequence",
-        steps=steps,
-    )
+@executor(id="build_plan", input=BundleSchematic, output=BuildPlan)
+async def build_plan(message: BundleSchematic, ctx: WorkflowContext[BuildPlan]) -> None:
+    plan = build_psca_build_plan(message)
     _store_artifact(ctx, "build_plan", plan)
     await ctx.send_message(plan)
 
 
 @executor(
     id="resource_construction",
-    input=BuildPlanStub,
+    input=BuildPlan,
     output=ResourceConstructionStageResult,
 )
 async def resource_construction(
-    message: BuildPlanStub,
+    message: BuildPlan,
     ctx: WorkflowContext[ResourceConstructionStageResult],
 ) -> None:
     built_resources = [
         PlaceholderResourceBuildResult(
             step_id=step.step_id,
+            step_kind=step.step_kind,
             resource_type=step.resource_type,
-            placeholder_resource_id=f"{step.resource_type.lower()}-{step.sequence}",
+            placeholder_resource_id=step.target_placeholder_id,
             build_status="placeholder_created",
             assumptions=[
                 "No clinical content was generated in this slice.",
                 "Resource payloads are represented only by typed placeholder metadata.",
+                "Expected inputs and outputs are declared in the build plan, but no real resource execution exists yet.",
             ],
         )
         for step in message.steps
@@ -210,19 +173,23 @@ async def bundle_finalization(
     ctx: WorkflowContext[CandidateBundleStub],
 ) -> None:
     normalized_request = _get_artifact(ctx, "normalized_request")
+    deduped_resources: dict[str, PlaceholderResourceBuildResult] = {}
+    for resource in message.built_resources:
+        deduped_resources[resource.placeholder_resource_id] = resource
+
     entries = [
         CandidateBundleEntry(
             full_url=f"urn:uuid:{resource.placeholder_resource_id}",
             resource_type=resource.resource_type,
             placeholder_resource_id=resource.placeholder_resource_id,
         )
-        for resource in message.built_resources
+        for resource in deduped_resources.values()
     ]
     candidate = CandidateBundleStub(
         stage_id="bundle_finalization",
         status="placeholder_complete",
-        summary="Assembled a candidate bundle stub from the placeholder resource outputs.",
-        placeholder_note="The candidate bundle contains inspectable placeholder entries only; it is not a valid PS-CA bundle.",
+        summary="Assembled a candidate bundle stub from the placeholder resource outputs using unique placeholder ids.",
+        placeholder_note="The candidate bundle contains inspectable placeholder entries only; multiple plan steps may refine the same placeholder resource.",
         source_refs=message.source_refs,
         bundle_id=f"{normalized_request.specification.package_id}-{normalized_request.request.scenario_label}",
         bundle_type=normalized_request.workflow_defaults.bundle_type,

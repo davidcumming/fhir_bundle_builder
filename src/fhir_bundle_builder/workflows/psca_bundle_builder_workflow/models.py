@@ -216,28 +216,88 @@ class BundleSchematic(StageArtifact):
     omitted_optional_sections: list[str] = Field(default_factory=list)
 
 
+BuildStepKind = Literal[
+    "anchor_resource",
+    "support_resource",
+    "section_entry_resource",
+    "composition_scaffold",
+    "composition_finalize",
+]
+BuildStepDependencyType = Literal[
+    "requires_reference_handle",
+    "requires_scaffold_ready",
+    "requires_section_entries_attached",
+]
+
+
+class BuildStepDependency(BaseModel):
+    """Explicit prerequisite relationship for one build step."""
+
+    prerequisite_step_id: str
+    dependency_type: BuildStepDependencyType
+    reason: str
+
+
+class BuildStepInput(BaseModel):
+    """Expected input context for one build step."""
+
+    input_key: str
+    input_type: str
+    required: bool
+    description: str
+
+
+class BuildStepOutput(BaseModel):
+    """Expected output artifact from one build step."""
+
+    output_key: str
+    output_type: str
+    description: str
+
+
 class BuildPlanStep(BaseModel):
-    """Ordered resource build step."""
+    """Ordered resource build step derived from the schematic."""
 
     step_id: str
     sequence: int
+    step_kind: BuildStepKind
+    target_placeholder_id: str
     resource_type: str
-    depends_on: list[str] = Field(default_factory=list)
+    profile_url: str | None = None
+    owning_section_key: str | None = None
     build_purpose: str
+    dependencies: list[BuildStepDependency] = Field(default_factory=list)
+    expected_inputs: list[BuildStepInput] = Field(default_factory=list)
+    expected_outputs: list[BuildStepOutput] = Field(default_factory=list)
     optional: bool = False
 
 
-class BuildPlanStub(StageArtifact):
-    """Ordered placeholder build plan."""
+class BuildPlanEvidence(BaseModel):
+    """Provenance for the build plan artifact."""
 
-    plan_basis: Literal["schematic-derived-placeholder-sequence"]
+    source_schematic_stage_id: str
+    source_schematic_generation_basis: str
+    planned_placeholder_ids: list[str] = Field(default_factory=list)
+    planned_section_keys: list[str] = Field(default_factory=list)
+    relationship_ids_used: list[str] = Field(default_factory=list)
+    source_refs: list[str] = Field(default_factory=list)
+
+
+class BuildPlan(StageArtifact):
+    """Structured PS-CA build plan for downstream resource construction."""
+
+    plan_basis: Literal["deterministic_schematic_dependency_plan"]
+    composition_strategy: Literal["two_step_scaffold_then_finalize"]
     steps: list[BuildPlanStep]
+    deferred_items: list[str] = Field(default_factory=list)
+    evidence: BuildPlanEvidence
 
 
 class PlaceholderResourceBuildResult(BaseModel):
     """Per-resource placeholder output for the construction stage."""
 
     step_id: str
+    step_kind: BuildStepKind
     resource_type: str
     placeholder_resource_id: str
     build_status: Literal["placeholder_created"]
@@ -301,7 +361,7 @@ class WorkflowSkeletonRunResult(BaseModel):
     normalized_request: NormalizedBuildRequest
     specification_asset_context: SpecificationAssetContext
     bundle_schematic: BundleSchematic
-    build_plan: BuildPlanStub
+    build_plan: BuildPlan
     resource_construction: ResourceConstructionStageResult
     candidate_bundle: CandidateBundleStub
     validation_report: ValidationReportStub
