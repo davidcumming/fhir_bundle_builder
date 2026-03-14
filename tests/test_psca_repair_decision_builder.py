@@ -117,8 +117,8 @@ async def test_psca_repair_decision_routes_support_resource_failures_to_resource
     ]
 
 
-async def test_psca_repair_decision_groups_section_entry_repairs_into_one_directive() -> None:
-    report = await _build_validation_report(mutator=_remove_section_entry_content)
+async def test_psca_repair_decision_routes_medicationrequest_placeholder_failures_to_one_step_directive() -> None:
+    report = await _build_validation_report(mutator=_remove_medicationrequest_content)
 
     decision = build_psca_repair_decision(report)
 
@@ -126,13 +126,12 @@ async def test_psca_repair_decision_groups_section_entry_repairs_into_one_direct
     assert decision.recommended_resource_construction_repair_directive is not None
     assert decision.recommended_resource_construction_repair_directive.target_step_ids == [
         "build-medicationrequest-1",
-        "build-allergyintolerance-1",
-        "build-condition-1",
     ]
     assert decision.recommended_resource_construction_repair_directive.target_placeholder_ids == [
         "medicationrequest-1",
-        "allergyintolerance-1",
-        "condition-1",
+    ]
+    assert decision.recommended_resource_construction_repair_directive.trigger_finding_codes == [
+        "bundle.medicationrequest_placeholder_content_present"
     ]
 
 
@@ -155,6 +154,27 @@ async def test_psca_repair_decision_unions_multiple_resource_construction_findin
         "patient-1",
         "composition-1",
     ]
+
+
+async def test_psca_repair_decision_unions_multiple_section_entry_failures_in_plan_order() -> None:
+    report = await _build_validation_report(mutator=_remove_medicationrequest_and_condition_content)
+
+    decision = build_psca_repair_decision(report)
+
+    assert decision.recommended_target == "resource_construction"
+    assert decision.recommended_resource_construction_repair_directive is not None
+    assert decision.recommended_resource_construction_repair_directive.target_step_ids == [
+        "build-medicationrequest-1",
+        "build-condition-1",
+    ]
+    assert decision.recommended_resource_construction_repair_directive.target_placeholder_ids == [
+        "medicationrequest-1",
+        "condition-1",
+    ]
+    assert set(decision.recommended_resource_construction_repair_directive.trigger_finding_codes) == {
+        "bundle.medicationrequest_placeholder_content_present",
+        "bundle.condition_placeholder_content_present",
+    }
 
 
 async def test_psca_repair_decision_routes_bundle_shape_errors_to_bundle_finalization() -> None:
@@ -265,13 +285,18 @@ def _remove_bundle_identifier(candidate_bundle):
     return broken_bundle
 
 
-def _remove_section_entry_content(candidate_bundle):
+def _remove_medicationrequest_content(candidate_bundle):
     broken_bundle = deepcopy(candidate_bundle)
     medication = broken_bundle.candidate_bundle.fhir_bundle["entry"][5]["resource"]
-    allergy = broken_bundle.candidate_bundle.fhir_bundle["entry"][6]["resource"]
+    medication["medicationCodeableConcept"]["text"] = ""
+    return broken_bundle
+
+
+def _remove_medicationrequest_and_condition_content(candidate_bundle):
+    broken_bundle = deepcopy(candidate_bundle)
+    medication = broken_bundle.candidate_bundle.fhir_bundle["entry"][5]["resource"]
     condition = broken_bundle.candidate_bundle.fhir_bundle["entry"][7]["resource"]
     medication["medicationCodeableConcept"]["text"] = ""
-    allergy["code"]["text"] = ""
     condition["code"]["text"] = ""
     return broken_bundle
 

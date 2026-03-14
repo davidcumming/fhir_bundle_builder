@@ -88,7 +88,9 @@ def _build_workflow_validation_result(
         "bundle.patient_identity_content_present",
         "bundle.practitioner_identity_content_present",
         "bundle.practitionerrole_author_context_present",
-        "bundle.section_entry_content_present",
+        "bundle.medicationrequest_placeholder_content_present",
+        "bundle.allergyintolerance_placeholder_content_present",
+        "bundle.condition_placeholder_content_present",
         "bundle.required_sections_present",
         "bundle.references_aligned_to_entry_fullurls",
     ]
@@ -254,12 +256,30 @@ def _build_workflow_validation_result(
             )
         )
 
-    if not _section_entry_content_present(bundle):
+    if not _medicationrequest_placeholder_content_present(bundle):
         findings.append(
             _workflow_error(
-                "bundle.section_entry_content_present",
-                "Bundle.entry",
-                "Expected MedicationRequest, AllergyIntolerance, and Condition entries to include deterministic placeholder content fields.",
+                "bundle.medicationrequest_placeholder_content_present",
+                "Bundle.entry[5].resource",
+                "Expected MedicationRequest placeholder content to include status='draft', intent='proposal', and medicationCodeableConcept.text.",
+            )
+        )
+
+    if not _allergyintolerance_placeholder_content_present(bundle):
+        findings.append(
+            _workflow_error(
+                "bundle.allergyintolerance_placeholder_content_present",
+                "Bundle.entry[6].resource",
+                "Expected AllergyIntolerance placeholder content to include fixed clinical/verification status codes and code.text.",
+            )
+        )
+
+    if not _condition_placeholder_content_present(bundle):
+        findings.append(
+            _workflow_error(
+                "bundle.condition_placeholder_content_present",
+                "Bundle.entry[7].resource",
+                "Expected Condition placeholder content to include fixed clinical/verification status codes and code.text.",
             )
         )
 
@@ -424,35 +444,38 @@ def _workflow_error(code: str, location: str, message: str) -> ValidationFinding
     )
 
 
-def _section_entry_content_present(bundle: dict[str, object]) -> bool:
+def _medicationrequest_placeholder_content_present(bundle: dict[str, object]) -> bool:
     medication = _find_resource_by_type(bundle, "MedicationRequest")
-    allergy = _find_resource_by_type(bundle, "AllergyIntolerance")
-    condition = _find_resource_by_type(bundle, "Condition")
-
-    medication_ok = (
+    return (
         medication.get("status") == "draft"
         and medication.get("intent") == "proposal"
         and isinstance(medication.get("medicationCodeableConcept"), dict)
         and bool(medication["medicationCodeableConcept"].get("text"))
     )
+
+
+def _allergyintolerance_placeholder_content_present(bundle: dict[str, object]) -> bool:
+    allergy = _find_resource_by_type(bundle, "AllergyIntolerance")
     allergy_clinical = _first_coding(allergy.get("clinicalStatus"))
     allergy_verification = _first_coding(allergy.get("verificationStatus"))
-    allergy_ok = (
+    return (
         allergy_clinical.get("code") == "active"
         and allergy_verification.get("code") == "unconfirmed"
         and isinstance(allergy.get("code"), dict)
         and bool(allergy["code"].get("text"))
     )
+
+
+def _condition_placeholder_content_present(bundle: dict[str, object]) -> bool:
+    condition = _find_resource_by_type(bundle, "Condition")
     condition_clinical = _first_coding(condition.get("clinicalStatus"))
     condition_verification = _first_coding(condition.get("verificationStatus"))
-    condition_ok = (
+    return (
         condition_clinical.get("code") == "active"
         and condition_verification.get("code") == "provisional"
         and isinstance(condition.get("code"), dict)
         and bool(condition["code"].get("text"))
     )
-
-    return medication_ok and allergy_ok and condition_ok
 
 
 def _first_coding(value: object) -> dict[str, object]:

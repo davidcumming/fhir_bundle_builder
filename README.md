@@ -220,6 +220,7 @@ The `validation` stage now emits the first real structured validation artifact f
 - a separate workflow/business-rule validation section with:
   - deterministic bundle/document checks
   - deterministic bundle identity/fullUrl checks
+  - resource-specific placeholder-content checks for `MedicationRequest`, `AllergyIntolerance`, and `Condition`
   - findings tied to bundle structure and PS-CA expectations
   - explicit deferred areas
 - counts for errors, warnings, and informational findings
@@ -246,6 +247,7 @@ The `repair_decision` stage now emits the first real structured repair-routing a
   - trigger finding codes
   - target build-step ids
   - target placeholder ids
+  - single-resource section-entry targeting when only one section-entry placeholder-content rule fails
 - a clear distinction between repair recommendation and actual repair execution, which is still deferred
 
 ## Repair-execution-stage output

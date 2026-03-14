@@ -91,11 +91,23 @@ _FINDING_ROUTE_MAP: dict[str, tuple[str, str, bool, str]] = {
         True,
         "PractitionerRole author-context placeholder content is populated during resource construction.",
     ),
-    "bundle.section_entry_content_present": (
+    "bundle.medicationrequest_placeholder_content_present": (
         "resource_construction",
         "resource_construction",
         True,
-        "Section-entry placeholder content is populated during resource construction.",
+        "MedicationRequest placeholder content is populated during resource construction.",
+    ),
+    "bundle.allergyintolerance_placeholder_content_present": (
+        "resource_construction",
+        "resource_construction",
+        True,
+        "AllergyIntolerance placeholder content is populated during resource construction.",
+    ),
+    "bundle.condition_placeholder_content_present": (
+        "resource_construction",
+        "resource_construction",
+        True,
+        "Condition placeholder content is populated during resource construction.",
     ),
     "bundle.required_sections_present": (
         "resource_construction",
@@ -150,14 +162,20 @@ _RESOURCE_CONSTRUCTION_DIRECTIVE_MAP: dict[str, tuple[list[str], list[str], str]
         ["composition-1"],
         "Rerun composition finalization to reattach the deterministic required sections.",
     ),
-    "bundle.section_entry_content_present": (
-        [
-            "build-medicationrequest-1",
-            "build-allergyintolerance-1",
-            "build-condition-1",
-        ],
-        ["medicationrequest-1", "allergyintolerance-1", "condition-1"],
-        "Rerun the grouped section-entry construction steps because the current validation finding is still aggregated across all section-entry resources.",
+    "bundle.medicationrequest_placeholder_content_present": (
+        ["build-medicationrequest-1"],
+        ["medicationrequest-1"],
+        "Rerun the MedicationRequest section-entry step to restore deterministic placeholder content for the medications section entry.",
+    ),
+    "bundle.allergyintolerance_placeholder_content_present": (
+        ["build-allergyintolerance-1"],
+        ["allergyintolerance-1"],
+        "Rerun the AllergyIntolerance section-entry step to restore deterministic placeholder content for the allergies section entry.",
+    ),
+    "bundle.condition_placeholder_content_present": (
+        ["build-condition-1"],
+        ["condition-1"],
+        "Rerun the Condition section-entry step to restore deterministic placeholder content for the problems section entry.",
     ),
 }
 

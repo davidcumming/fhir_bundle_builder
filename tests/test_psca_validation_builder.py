@@ -137,7 +137,7 @@ async def test_psca_validation_builder_fails_when_practitioner_or_practitionerro
     )
 
 
-async def test_psca_validation_builder_fails_when_section_entry_content_is_missing() -> None:
+async def test_psca_validation_builder_fails_when_medicationrequest_placeholder_content_is_missing() -> None:
     normalized_request, schematic, candidate_bundle = _build_validation_inputs()
     broken_bundle = deepcopy(candidate_bundle)
     medication = broken_bundle.candidate_bundle.fhir_bundle["entry"][5]["resource"]
@@ -152,7 +152,106 @@ async def test_psca_validation_builder_fails_when_section_entry_content_is_missi
 
     assert report.workflow_validation.status == "failed"
     assert any(
-        finding.code == "bundle.section_entry_content_present" and finding.severity == "error"
+        finding.code == "bundle.medicationrequest_placeholder_content_present"
+        and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.allergyintolerance_placeholder_content_present"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.condition_placeholder_content_present"
+        for finding in report.workflow_validation.findings
+    )
+
+
+async def test_psca_validation_builder_fails_when_allergyintolerance_placeholder_content_is_missing() -> None:
+    normalized_request, schematic, candidate_bundle = _build_validation_inputs()
+    broken_bundle = deepcopy(candidate_bundle)
+    allergy = broken_bundle.candidate_bundle.fhir_bundle["entry"][6]["resource"]
+    allergy["code"]["text"] = ""
+
+    report = await build_psca_validation_report(
+        broken_bundle,
+        schematic,
+        normalized_request,
+        LocalCandidateBundleScaffoldStandardsValidator(),
+    )
+
+    assert report.workflow_validation.status == "failed"
+    assert any(
+        finding.code == "bundle.allergyintolerance_placeholder_content_present"
+        and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.medicationrequest_placeholder_content_present"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.condition_placeholder_content_present"
+        for finding in report.workflow_validation.findings
+    )
+
+
+async def test_psca_validation_builder_fails_when_condition_placeholder_content_is_missing() -> None:
+    normalized_request, schematic, candidate_bundle = _build_validation_inputs()
+    broken_bundle = deepcopy(candidate_bundle)
+    condition = broken_bundle.candidate_bundle.fhir_bundle["entry"][7]["resource"]
+    condition["code"]["text"] = ""
+
+    report = await build_psca_validation_report(
+        broken_bundle,
+        schematic,
+        normalized_request,
+        LocalCandidateBundleScaffoldStandardsValidator(),
+    )
+
+    assert report.workflow_validation.status == "failed"
+    assert any(
+        finding.code == "bundle.condition_placeholder_content_present"
+        and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.medicationrequest_placeholder_content_present"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.allergyintolerance_placeholder_content_present"
+        for finding in report.workflow_validation.findings
+    )
+
+
+async def test_psca_validation_builder_fails_when_multiple_section_entry_resources_are_missing() -> None:
+    normalized_request, schematic, candidate_bundle = _build_validation_inputs()
+    broken_bundle = deepcopy(candidate_bundle)
+    medication = broken_bundle.candidate_bundle.fhir_bundle["entry"][5]["resource"]
+    condition = broken_bundle.candidate_bundle.fhir_bundle["entry"][7]["resource"]
+    medication.pop("medicationCodeableConcept", None)
+    condition["code"]["text"] = ""
+
+    report = await build_psca_validation_report(
+        broken_bundle,
+        schematic,
+        normalized_request,
+        LocalCandidateBundleScaffoldStandardsValidator(),
+    )
+
+    assert report.workflow_validation.status == "failed"
+    assert any(
+        finding.code == "bundle.medicationrequest_placeholder_content_present"
+        and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert any(
+        finding.code == "bundle.condition_placeholder_content_present"
+        and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.allergyintolerance_placeholder_content_present"
         for finding in report.workflow_validation.findings
     )
 

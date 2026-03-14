@@ -136,8 +136,8 @@ async def test_psca_repair_execution_reruns_resource_construction_once() -> None
     assert execution.post_retry_repair_decision.overall_decision == "external_validation_pending"
 
 
-async def test_psca_repair_execution_reruns_grouped_section_entry_steps_without_full_stage_rebuild() -> None:
-    artifacts = await _build_repair_inputs(mutator=_remove_section_entry_content)
+async def test_psca_repair_execution_reruns_one_section_entry_step_for_single_resource_failure() -> None:
+    artifacts = await _build_repair_inputs(mutator=_remove_medicationrequest_content)
 
     execution = await build_psca_repair_execution_result(
         artifacts["repair_decision"],
@@ -153,19 +153,46 @@ async def test_psca_repair_execution_reruns_grouped_section_entry_steps_without_
     assert execution.applied_resource_construction_repair_directive is not None
     assert execution.applied_resource_construction_repair_directive.target_step_ids == [
         "build-medicationrequest-1",
-        "build-allergyintolerance-1",
+    ]
+    assert execution.post_retry_resource_construction is not None
+    assert execution.post_retry_resource_construction.execution_scope == "targeted_repair"
+    assert [step.step_id for step in execution.post_retry_resource_construction.step_results] == [
+        "build-medicationrequest-1",
+    ]
+    assert execution.post_retry_resource_construction.regenerated_placeholder_ids == [
+        "medicationrequest-1",
+    ]
+    assert execution.post_retry_validation_report is not None
+    assert execution.post_retry_validation_report.overall_status == "passed_with_warnings"
+
+
+async def test_psca_repair_execution_unions_multiple_section_entry_steps_when_multiple_resources_fail() -> None:
+    artifacts = await _build_repair_inputs(mutator=_remove_medicationrequest_and_condition_content)
+
+    execution = await build_psca_repair_execution_result(
+        artifacts["repair_decision"],
+        artifacts["normalized_request"],
+        artifacts["build_plan"],
+        artifacts["schematic"],
+        artifacts["resource_construction"],
+        LocalCandidateBundleScaffoldStandardsValidator(),
+    )
+
+    assert execution.execution_outcome == "executed"
+    assert execution.requested_target == "resource_construction"
+    assert execution.applied_resource_construction_repair_directive is not None
+    assert execution.applied_resource_construction_repair_directive.target_step_ids == [
+        "build-medicationrequest-1",
         "build-condition-1",
     ]
     assert execution.post_retry_resource_construction is not None
     assert execution.post_retry_resource_construction.execution_scope == "targeted_repair"
     assert [step.step_id for step in execution.post_retry_resource_construction.step_results] == [
         "build-medicationrequest-1",
-        "build-allergyintolerance-1",
         "build-condition-1",
     ]
     assert execution.post_retry_resource_construction.regenerated_placeholder_ids == [
         "medicationrequest-1",
-        "allergyintolerance-1",
         "condition-1",
     ]
     assert execution.post_retry_validation_report is not None
@@ -280,12 +307,17 @@ def _remove_required_section(candidate_bundle):
     return broken_bundle
 
 
-def _remove_section_entry_content(candidate_bundle):
+def _remove_medicationrequest_content(candidate_bundle):
     broken_bundle = deepcopy(candidate_bundle)
     medication = broken_bundle.candidate_bundle.fhir_bundle["entry"][5]["resource"]
-    allergy = broken_bundle.candidate_bundle.fhir_bundle["entry"][6]["resource"]
+    medication["medicationCodeableConcept"]["text"] = ""
+    return broken_bundle
+
+
+def _remove_medicationrequest_and_condition_content(candidate_bundle):
+    broken_bundle = deepcopy(candidate_bundle)
+    medication = broken_bundle.candidate_bundle.fhir_bundle["entry"][5]["resource"]
     condition = broken_bundle.candidate_bundle.fhir_bundle["entry"][7]["resource"]
     medication["medicationCodeableConcept"]["text"] = ""
-    allergy["code"]["text"] = ""
     condition["code"]["text"] = ""
     return broken_bundle
