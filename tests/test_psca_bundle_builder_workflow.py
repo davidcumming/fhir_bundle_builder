@@ -38,6 +38,7 @@ async def test_psca_bundle_builder_workflow_smoke() -> None:
     final_output = outputs[0]
     assert isinstance(final_output, WorkflowSkeletonRunResult)
     assert final_output.workflow_name == "PS-CA Bundle Builder Skeleton"
+    assert final_output.stage_order[-1] == "repair_execution"
     assert final_output.normalized_request.request.scenario_label == "pytest-smoke"
     assert final_output.specification_asset_context.normalized_assets.package_summary.package_id == "ca.infoway.io.psca"
     assert final_output.specification_asset_context.normalized_assets.package_summary.index_entry_count > 0
@@ -195,6 +196,11 @@ async def test_psca_bundle_builder_workflow_smoke() -> None:
         and route.actionable is False
         for route in final_output.repair_decision.finding_routes
     )
+    assert final_output.repair_execution.execution_outcome == "deferred"
+    assert final_output.repair_execution.requested_target == "standards_validation_external"
+    assert final_output.repair_execution.retry_eligible is False
+    assert final_output.repair_execution.attempt_count == 0
+    assert final_output.repair_execution.post_retry_candidate_bundle is None
 
     completed_executors = [
         event.executor_id

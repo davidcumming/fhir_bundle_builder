@@ -494,6 +494,43 @@ class RepairDecisionResult(StageArtifact):
     rationale: str
 
 
+RepairExecutionMode = Literal["single_targeted_retry_pass"]
+RepairExecutionOutcome = Literal["executed", "deferred", "not_needed", "unsupported"]
+
+
+class RepairExecutionEvidence(BaseModel):
+    """Provenance for the repair execution stage."""
+
+    source_repair_decision_stage_id: str
+    source_validation_stage_id: str
+    source_recommended_target: RepairRouteTarget
+    source_overall_decision: RepairOverallDecision
+    rerun_stage_ids: list[str] = Field(default_factory=list)
+    regenerated_artifact_keys: list[str] = Field(default_factory=list)
+    source_refs: list[str] = Field(default_factory=list)
+
+
+class RepairExecutionResult(StageArtifact):
+    """Structured retry execution result for one bounded repair pass."""
+
+    execution_mode: RepairExecutionMode
+    execution_outcome: RepairExecutionOutcome
+    retry_eligible: bool
+    requested_target: RepairRouteTarget
+    executed_target: RepairRouteTarget | None = None
+    recommended_next_stage: RepairRecommendedNextStage
+    attempt_count: int
+    rerun_stage_ids: list[str] = Field(default_factory=list)
+    regenerated_artifact_keys: list[str] = Field(default_factory=list)
+    post_retry_candidate_bundle: CandidateBundleResult | None = None
+    post_retry_validation_report: ValidationReport | None = None
+    post_retry_repair_decision: RepairDecisionResult | None = None
+    deferred_reason: str | None = None
+    unsupported_reason: str | None = None
+    evidence: RepairExecutionEvidence
+    rationale: str
+
+
 class WorkflowSkeletonRunResult(BaseModel):
     """Final nested output yielded by the skeleton workflow."""
 
@@ -508,3 +545,4 @@ class WorkflowSkeletonRunResult(BaseModel):
     candidate_bundle: CandidateBundleResult
     validation_report: ValidationReport
     repair_decision: RepairDecisionResult
+    repair_execution: RepairExecutionResult

@@ -15,6 +15,7 @@ from .models import (
     CandidateBundleResult,
     NormalizedBuildRequest,
     RepairDecisionResult,
+    RepairExecutionResult,
     ResourceConstructionStageResult,
     SpecificationAssetContext,
     ValidationReport,
@@ -25,6 +26,7 @@ from .models import (
 from .bundle_finalization_builder import build_psca_candidate_bundle_result
 from .build_plan_builder import build_psca_build_plan
 from .repair_decision_builder import build_psca_repair_decision
+from .repair_execution_builder import build_psca_repair_execution_result
 from .resource_construction_builder import build_psca_resource_construction_result
 from .schematic_builder import build_psca_bundle_schematic
 from .validation_builder import build_psca_validation_report
@@ -40,6 +42,7 @@ STAGE_ORDER = [
     "bundle_finalization",
     "validation",
     "repair_decision",
+    "repair_execution",
 ]
 
 _PSCA_ASSET_REPOSITORY = PscaAssetRepository()
@@ -174,14 +177,37 @@ async def validation(message: CandidateBundleResult, ctx: WorkflowContext[Valida
 @executor(
     id="repair_decision",
     input=ValidationReport,
-    workflow_output=WorkflowSkeletonRunResult,
+    output=RepairDecisionResult,
 )
 async def repair_decision(
     message: ValidationReport,
-    ctx: WorkflowContext[Any, WorkflowSkeletonRunResult],
+    ctx: WorkflowContext[RepairDecisionResult],
 ) -> None:
     decision = build_psca_repair_decision(message)
     _store_artifact(ctx, "repair_decision", decision)
+    await ctx.send_message(decision)
+
+
+@executor(
+    id="repair_execution",
+    input=RepairDecisionResult,
+    workflow_output=WorkflowSkeletonRunResult,
+)
+async def repair_execution(
+    message: RepairDecisionResult,
+    ctx: WorkflowContext[Any, WorkflowSkeletonRunResult],
+) -> None:
+    normalized_request = _get_artifact(ctx, "normalized_request")
+    schematic = _get_artifact(ctx, "bundle_schematic")
+    resource_construction_result = _get_artifact(ctx, "resource_construction")
+    execution = await build_psca_repair_execution_result(
+        message,
+        normalized_request,
+        schematic,
+        resource_construction_result,
+        _STANDARDS_VALIDATOR,
+    )
+    _store_artifact(ctx, "repair_execution", execution)
     await ctx.yield_output(
         WorkflowSkeletonRunResult(
             workflow_name=WORKFLOW_NAME,
@@ -194,6 +220,7 @@ async def repair_decision(
             resource_construction=_get_artifact(ctx, "resource_construction"),
             candidate_bundle=_get_artifact(ctx, "candidate_bundle"),
             validation_report=_get_artifact(ctx, "validation_report"),
-            repair_decision=decision,
+            repair_decision=_get_artifact(ctx, "repair_decision"),
+            repair_execution=execution,
         )
     )

@@ -11,6 +11,7 @@ from .executors import (
     bundle_finalization,
     bundle_schematic,
     repair_decision,
+    repair_execution,
     request_normalization,
     resource_construction,
     specification_asset_retrieval,
@@ -36,6 +37,7 @@ workflow = (
             bundle_finalization,
             validation,
             repair_decision,
+            repair_execution,
         ]
     )
     .build()

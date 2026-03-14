@@ -9,6 +9,7 @@ The implemented slice is intentionally narrow:
 - scaffold-oriented resource construction driven by the real build plan
 - deterministic bundle finalization into a real candidate `Bundle` scaffold
 - structured dual-channel validation over the candidate bundle scaffold
+- structured repair decision and bounded retry execution artifacts
 - inspectable structured artifacts emitted at each stage
 - no product UI
 - no full bundle population yet
@@ -64,7 +65,8 @@ Then open [http://127.0.0.1:8080](http://127.0.0.1:8080).
   - `bundle_finalization`
   - `validation`
   - `repair_decision`
-- Structured outputs for every stage, plus a final nested run result yielded by `repair_decision`.
+  - `repair_execution`
+- Structured outputs for every stage, plus a final nested run result yielded by `repair_execution`.
 
 ## Retrieval-stage output
 
@@ -78,7 +80,7 @@ The `specification_asset_retrieval` stage now emits the first normalized PS-CA a
 
 ## Current slice boundaries
 
-This slice is for workflow shape, PS-CA normalized asset retrieval, the first real schematic artifact, the first real build plan, the first scaffold-oriented resource-construction foundation, the first candidate-bundle finalization foundation, the first validation foundation, and the first repair-decision foundation.
+This slice is for workflow shape, PS-CA normalized asset retrieval, the first real schematic artifact, the first real build plan, the first scaffold-oriented resource-construction foundation, the first candidate-bundle finalization foundation, the first validation foundation, the first repair-decision foundation, and the first bounded repair-execution foundation.
 
 - The workflow reads existing PS-CA package files deterministically from the repo.
 - The spec retrieval stage exposes a normalized PS-CA asset context with foundational profiles, Composition section definitions, and selected example evidence.
@@ -92,7 +94,8 @@ This slice is for workflow shape, PS-CA normalized asset retrieval, the first re
 - The resource-construction stage emits deterministic FHIR-shaped resource scaffolds, per-step construction results, and a registry of the latest scaffold state per placeholder.
 - The bundle-finalization stage emits a real candidate `Bundle` scaffold assembled deterministically from the registry and schematic bundle-entry expectations.
 - The validation stage emits a structured report with separate standards-validation and workflow-rule results.
-- The repair-decision stage emits structured routing recommendations without executing retries or mutations yet.
+- The repair-decision stage emits structured routing recommendations.
+- The repair-execution stage can act on a narrow supported subset of those recommendations through one bounded retry pass.
 
 ## Schematic-stage output
 
@@ -196,3 +199,24 @@ The `repair_decision` stage now emits the first real structured repair-routing a
   - whether the finding is actionable in the current workflow
 - explicit separation between internal repair recommendations and deferred external standards-validation dependencies
 - a clear distinction between repair recommendation and actual repair execution, which is still deferred
+
+## Repair-execution-stage output
+
+The `repair_execution` stage now emits the first real bounded retry artifact for workflow use. In Dev UI you should see:
+
+- the incoming repair recommendation target and whether it is retry-eligible in this slice
+- one of these retry outcomes:
+  - `executed`
+  - `deferred`
+  - `not_needed`
+  - `unsupported`
+- for executed retries:
+  - the rerun stage ids
+  - the regenerated artifact keys
+  - the post-retry candidate bundle, validation report, and repair decision
+- for non-executed retries:
+  - an explicit deferred or unsupported reason
+- a clear distinction between:
+  - the original first-pass artifacts
+  - the bounded post-retry artifacts nested under `repair_execution`
+- a single-pass policy only; no recursive retry loop is implemented in this slice

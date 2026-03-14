@@ -98,11 +98,11 @@ The following status labels should be used in this plan:
 
 ## 8. Current Focus
 
-**Current Focus:** Use the structured repair-decision artifact to implement the first bounded repair-execution or targeted retry foundation while keeping the workflow deterministic and inspectable.
+**Current Focus:** Use the completed validation and repair foundation to implement the first narrow end-to-end PS-CA quality slice with more meaningful generated content while preserving deterministic inspectability.
 
 ## 9. Next Planned Slice
 
-**Next Planned Slice:** Implement the first repair execution/retry foundation for bundle-finalization and resource-construction targets using the structured repair decision.
+**Next Planned Slice:** Implement the first narrow end-to-end PS-CA quality slice with more meaningful resource or data-element content while preserving deterministic validation and bounded repair execution.
 
 ## 10. Development Phases
 
@@ -244,7 +244,7 @@ Prove that the workflow can build resources incrementally and maintain a bundle-
 ---
 
 ## Phase 7: Validation and Repair Routing Foundation
-**Status:** In Progress
+**Status:** Completed
 
 ### Goal
 Establish the first validation and repair loop for the workflow.
@@ -257,17 +257,18 @@ Establish the first validation and repair loop for the workflow.
 - implement initial routing after validation
 
 ### Current phase note
-Validation plus deterministic repair decision/routing now exist. Actual repair execution and retry behavior remain pending.
+Structured validation, deterministic repair decision/routing, and one bounded internal retry execution path now exist. Broader retry orchestration remains deferred.
 
 ### Exit criteria
 - the workflow can produce a validation report
 - the workflow can determine whether to complete, repair, or request clarification
 - repair logic is driven by structured outputs
+- one bounded internal retry path can be executed and inspected without introducing a loop engine
 
 ---
 
 ## Phase 8: Minimal End-to-End PS-CA Workflow
-**Status:** Planned
+**Status:** In Progress
 
 ### Goal
 Prove a narrow but real end-to-end PS-CA generation run.
@@ -354,7 +355,7 @@ The following assumptions currently guide the plan:
 - the first resource-construction slice uses partial FHIR-shaped scaffold artifacts and deterministic placeholder-derived local references rather than fully populated valid resources
 - the first bundle-finalization slice intentionally omits bundle identifier population, timestamp population, and entry fullUrl population while still producing a real candidate Bundle scaffold
 - the first validation slice intentionally uses a local scaffold-shape standards validator and defers full external conformance validation to a later Matchbox-backed implementation
-- the first repair slice is recommendation-only and does not mutate workflow state or automatically rerun prior stages
+- the first repair-execution slice is a single-pass retry foundation that supports only bundle_finalization as an internal executable target
 - initial development should prioritize workflow shape, artifact contracts, and inspectability over feature completeness
 
 ## 13. Known Early Risks
@@ -398,4 +399,4 @@ Codex should make targeted edits only. It should not rewrite the full document u
 
 ## 16. Immediate Next Objective
 
-The immediate next objective is to act on structured repair recommendations with a narrow repair execution or retry path rather than broadening scope into generalized repair orchestration.
+The immediate next objective is to use the completed validation and bounded repair foundation to prove a more meaningful end-to-end PS-CA generation path rather than broadening retry orchestration.

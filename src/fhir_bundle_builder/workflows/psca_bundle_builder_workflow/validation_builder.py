@@ -46,7 +46,7 @@ async def build_psca_validation_report(
         stage_id="validation",
         status="placeholder_complete",
         summary="Validated the candidate bundle scaffold through a pluggable standards-validation boundary and deterministic workflow-rule checks.",
-        placeholder_note="This slice adds real validation structure, but full external profile/conformance validation and repair routing remain deferred.",
+        placeholder_note="This slice adds real validation structure, while full external profile/conformance validation remains deferred.",
         source_refs=candidate_bundle.source_refs,
         overall_status=_status_from_results(standards_result.status, workflow_result.status),
         standards_validation=standards_result,
@@ -187,7 +187,7 @@ def _build_workflow_validation_result(
         checks_run=checks_run,
         findings=findings,
         deferred_areas=[
-            "Repair-routing decisions are deferred to a later slice.",
+            "Repair execution beyond one bounded retry pass is deferred.",
             "No terminology or full external conformance validation is performed in workflow-rule validation.",
         ],
     )
