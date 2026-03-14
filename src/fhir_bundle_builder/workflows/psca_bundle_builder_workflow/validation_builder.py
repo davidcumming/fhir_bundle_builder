@@ -91,7 +91,9 @@ def _build_workflow_validation_result(
         "bundle.medicationrequest_placeholder_content_present",
         "bundle.allergyintolerance_placeholder_content_present",
         "bundle.condition_placeholder_content_present",
-        "bundle.required_sections_present",
+        "bundle.composition_medications_section_present",
+        "bundle.composition_allergies_section_present",
+        "bundle.composition_problems_section_present",
         "bundle.references_aligned_to_entry_fullurls",
     ]
 
@@ -283,17 +285,23 @@ def _build_workflow_validation_result(
             )
         )
 
-    missing_sections: list[str] = []
     sections = composition.get("section", []) if isinstance(composition, dict) else []
+    section_code_by_key = {
+        "medications": "bundle.composition_medications_section_present",
+        "allergies": "bundle.composition_allergies_section_present",
+        "problems": "bundle.composition_problems_section_present",
+    }
     for section_scaffold in schematic.section_scaffolds:
-        if not _has_matching_section(sections, section_scaffold.title, section_scaffold.loinc_code):
-            missing_sections.append(section_scaffold.section_key)
-    if missing_sections:
+        if _composition_section_present(sections, section_scaffold):
+            continue
         findings.append(
             _workflow_error(
-                "bundle.required_sections_present",
+                section_code_by_key[section_scaffold.section_key],
                 "Bundle.entry[0].resource.section",
-                f"Missing required Composition sections: {', '.join(missing_sections)}.",
+                (
+                    f"Expected Composition to include the deterministic '{section_scaffold.section_key}' "
+                    "section block with matching title, LOINC code, and first entry reference."
+                ),
             )
         )
 
@@ -345,7 +353,13 @@ def _first_composition_coding(composition: dict[str, object]) -> dict[str, objec
     return first if isinstance(first, dict) else {}
 
 
-def _has_matching_section(sections: object, expected_title: str, expected_code: str) -> bool:
+def _composition_section_present(
+    sections: object,
+    section_scaffold: object,
+) -> bool:
+    expected_title = getattr(section_scaffold, "title", None)
+    expected_code = getattr(section_scaffold, "loinc_code", None)
+    expected_entry_placeholder_ids = getattr(section_scaffold, "entry_placeholder_ids", [])
     if not isinstance(sections, list):
         return False
     for section in sections:
@@ -356,7 +370,22 @@ def _has_matching_section(sections: object, expected_title: str, expected_code: 
         coding = code.get("coding", []) if isinstance(code, dict) else []
         first_coding = coding[0] if isinstance(coding, list) and coding else {}
         loinc_code = first_coding.get("code") if isinstance(first_coding, dict) else None
-        if title == expected_title and loinc_code == expected_code:
+        entry = section.get("entry")
+        first_entry = entry[0] if isinstance(entry, list) and entry else {}
+        entry_reference = first_entry.get("reference") if isinstance(first_entry, dict) else None
+        expected_reference = None
+        if expected_entry_placeholder_ids:
+            expected_reference = f"urn:uuid:"  # prefix match only after finalization
+        if (
+            title == expected_title
+            and loinc_code == expected_code
+            and isinstance(entry_reference, str)
+            and bool(entry_reference)
+            and (
+                expected_reference is None
+                or entry_reference.startswith(expected_reference)
+            )
+        ):
             return True
     return False
 

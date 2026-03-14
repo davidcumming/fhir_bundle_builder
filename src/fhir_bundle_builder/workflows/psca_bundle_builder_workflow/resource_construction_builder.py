@@ -21,6 +21,8 @@ from .models import (
     SectionScaffold,
 )
 
+_REQUIRED_COMPOSITION_SECTION_KEYS = ("medications", "allergies", "problems")
+
 
 def build_psca_resource_construction_result(
     plan: BuildPlan,
@@ -576,78 +578,74 @@ def _build_composition_finalize_result(
     prior_entry: ResourceRegistryEntry,
 ) -> ResourceConstructionStepResult:
     prior_scaffold = prior_entry.current_scaffold
+    if not step.owning_section_key:
+        raise ValueError("Composition finalization requires an owning_section_key for the targeted section.")
     scaffold_dict = deepcopy(prior_scaffold.fhir_scaffold)
-    section_blocks: list[dict[str, object]] = []
+    section_blocks_by_key = _existing_composition_sections_by_key(prior_scaffold.fhir_scaffold.get("section"), sections)
     reference_contributions: list[ReferenceContribution] = []
     populated_paths = list(prior_scaffold.populated_paths)
     deterministic_value_evidence: list[DeterministicValueEvidence] = []
+    target_section = sections.get(step.owning_section_key)
+    if target_section is None:
+        raise ValueError(
+            f"Missing section scaffold '{step.owning_section_key}' required for Composition finalization."
+        )
+    entry_placeholder_id = target_section.entry_placeholder_ids[0]
+    entry_reference = _local_reference_for_placeholder(entry_placeholder_id)
+    section_blocks_by_key[step.owning_section_key] = _composition_section_block(target_section, entry_reference)
 
-    for index, section_key in enumerate(("medications", "allergies", "problems")):
-        section = sections.get(section_key)
-        if section is None:
-            raise ValueError(f"Missing section scaffold '{section_key}' required for Composition finalization.")
-        entry_placeholder_id = section.entry_placeholder_ids[0]
-        entry_reference = _local_reference_for_placeholder(entry_placeholder_id)
-        section_blocks.append(
-            {
-                "title": section.title,
-                "code": {
-                    "coding": [
-                        {
-                            "system": "http://loinc.org",
-                            "code": section.loinc_code,
-                            "display": section.title,
-                        }
-                    ]
-                },
-                "entry": [{"reference": entry_reference}],
-            }
+    ordered_section_keys = [
+        section_key
+        for section_key in _REQUIRED_COMPOSITION_SECTION_KEYS
+        if section_key in section_blocks_by_key
+    ]
+    section_blocks = [section_blocks_by_key[section_key] for section_key in ordered_section_keys]
+    section_index = ordered_section_keys.index(step.owning_section_key)
+    populated_paths.extend(
+        [
+            f"section[{section_index}].title",
+            f"section[{section_index}].code.coding[0].system",
+            f"section[{section_index}].code.coding[0].code",
+            f"section[{section_index}].code.coding[0].display",
+            f"section[{section_index}].entry[0].reference",
+        ]
+    )
+    reference_contributions.append(
+        _reference_contribution(
+            f"section[{section_index}].entry[0].reference",
+            entry_placeholder_id,
+            entry_reference,
         )
-        populated_paths.extend(
-            [
-                f"section[{index}].title",
-                f"section[{index}].code.coding[0].system",
-                f"section[{index}].code.coding[0].code",
-                f"section[{index}].code.coding[0].display",
-                f"section[{index}].entry[0].reference",
-            ]
-        )
-        reference_contributions.append(
-            _reference_contribution(
-                f"section[{index}].entry[0].reference",
-                entry_placeholder_id,
-                entry_reference,
-            )
-        )
-        deterministic_value_evidence.extend(
-            [
-                _value_evidence(
-                    f"section[{index}].title",
-                    f"bundle_schematic.section_scaffolds[{section.section_key}]",
-                    "title",
-                ),
-                _value_evidence(
-                    f"section[{index}].code.coding[0].system",
-                    "deterministic_content_policy",
-                    "Composition section coding system is fixed to http://loinc.org.",
-                ),
-                _value_evidence(
-                    f"section[{index}].code.coding[0].code",
-                    f"bundle_schematic.section_scaffolds[{section.section_key}]",
-                    "loinc_code",
-                ),
-                _value_evidence(
-                    f"section[{index}].code.coding[0].display",
-                    f"bundle_schematic.section_scaffolds[{section.section_key}]",
-                    "title",
-                ),
-                _value_evidence(
-                    f"section[{index}].entry[0].reference",
-                    "deterministic_reference_policy",
-                    f"Composition section entry references {entry_placeholder_id}.",
-                ),
-            ]
-        )
+    )
+    deterministic_value_evidence.extend(
+        [
+            _value_evidence(
+                f"section[{section_index}].title",
+                f"bundle_schematic.section_scaffolds[{target_section.section_key}]",
+                "title",
+            ),
+            _value_evidence(
+                f"section[{section_index}].code.coding[0].system",
+                "deterministic_content_policy",
+                "Composition section coding system is fixed to http://loinc.org.",
+            ),
+            _value_evidence(
+                f"section[{section_index}].code.coding[0].code",
+                f"bundle_schematic.section_scaffolds[{target_section.section_key}]",
+                "loinc_code",
+            ),
+            _value_evidence(
+                f"section[{section_index}].code.coding[0].display",
+                f"bundle_schematic.section_scaffolds[{target_section.section_key}]",
+                "title",
+            ),
+            _value_evidence(
+                f"section[{section_index}].entry[0].reference",
+                "deterministic_reference_policy",
+                f"Composition section entry references {entry_placeholder_id}.",
+            ),
+        ]
+    )
 
     scaffold_dict["section"] = section_blocks
     resource_scaffold = ResourceScaffoldArtifact(
@@ -671,11 +669,66 @@ def _build_composition_finalize_result(
         reference_contributions=reference_contributions,
         deterministic_value_evidence=deterministic_value_evidence,
         assumptions=[
-            "Composition finalization only attaches deterministic section metadata and local entry references.",
+            "Composition finalization attaches one deterministic required section block at a time while preserving previously attached sections.",
         ],
         warnings=[],
         unresolved_fields=resource_scaffold.deferred_paths,
     )
+
+
+def _existing_composition_sections_by_key(
+    existing_sections: object,
+    sections: dict[str, SectionScaffold],
+) -> dict[str, dict[str, object]]:
+    if not isinstance(existing_sections, list):
+        return {}
+
+    blocks_by_key: dict[str, dict[str, object]] = {}
+    for section_block in existing_sections:
+        if not isinstance(section_block, dict):
+            continue
+        for section_key in _REQUIRED_COMPOSITION_SECTION_KEYS:
+            section = sections.get(section_key)
+            if section is None:
+                continue
+            if _section_block_matches_scaffold(section_block, section):
+                blocks_by_key[section_key] = deepcopy(section_block)
+                break
+    return blocks_by_key
+
+
+def _section_block_matches_scaffold(
+    section_block: dict[str, object],
+    section: SectionScaffold,
+) -> bool:
+    title = section_block.get("title")
+    code = section_block.get("code")
+    coding = code.get("coding") if isinstance(code, dict) else None
+    first_coding = coding[0] if isinstance(coding, list) and coding else None
+    return (
+        title == section.title
+        and isinstance(first_coding, dict)
+        and first_coding.get("code") == section.loinc_code
+    )
+
+
+def _composition_section_block(
+    section: SectionScaffold,
+    entry_reference: str,
+) -> dict[str, object]:
+    return {
+        "title": section.title,
+        "code": {
+            "coding": [
+                {
+                    "system": "http://loinc.org",
+                    "code": section.loinc_code,
+                    "display": section.title,
+                }
+            ]
+        },
+        "entry": [{"reference": entry_reference}],
+    }
 
 
 def _require_placeholder(

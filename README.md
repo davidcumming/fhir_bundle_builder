@@ -147,7 +147,7 @@ The `bundle_schematic` stage now emits the first real PS-CA schematic artifact f
 
 The `build_plan` stage now emits the first real PS-CA planning artifact for workflow use. In Dev UI you should see:
 
-- plan metadata showing deterministic schematic-derived planning and the two-step Composition strategy
+- plan metadata showing deterministic schematic-derived planning and the incremental Composition section-finalization strategy
 - ordered steps for:
   - patient
   - practitioner
@@ -155,7 +155,7 @@ The `build_plan` stage now emits the first real PS-CA planning artifact for work
   - practitioner role
   - composition scaffold
   - medication, allergy, and problem section entries
-  - composition finalization
+  - section-specific composition finalization for medications, allergies, and problems
 - explicit prerequisite relationships rather than a simple linear chain
 - expected step inputs and expected outputs that the later resource-construction slice can consume
 - deferred items that remain outside this slice, such as bundle assembly intelligence and element-level population
@@ -179,9 +179,11 @@ The `resource_construction` stage now emits the first real scaffold-oriented con
   - section-entry status and text content for medications, allergies, and problems
 - Organization remaining intentionally thin until provider inputs include organization and provider-role relationship context
 - a resource registry showing the latest scaffold state per placeholder
-- explicit `Composition` two-step behavior:
+- explicit incremental `Composition` behavior:
   - scaffold creation
-  - later section attachment update
+  - deterministic medications section attachment
+  - deterministic allergies section attachment
+  - deterministic problems section attachment
 - unresolved and deferred fields called out explicitly rather than implied
 
 ## Bundle-finalization-stage output
@@ -220,6 +222,7 @@ The `validation` stage now emits the first real structured validation artifact f
 - a separate workflow/business-rule validation section with:
   - deterministic bundle/document checks
   - deterministic bundle identity/fullUrl checks
+  - section-specific deterministic Composition section-presence checks for medications, allergies, and problems
   - resource-specific placeholder-content checks for `MedicationRequest`, `AllergyIntolerance`, and `Condition`
   - findings tied to bundle structure and PS-CA expectations
   - explicit deferred areas
@@ -247,6 +250,7 @@ The `repair_decision` stage now emits the first real structured repair-routing a
   - trigger finding codes
   - target build-step ids
   - target placeholder ids
+  - section-specific Composition finalize targeting when one or more required Composition sections are missing
   - single-resource section-entry targeting when only one section-entry placeholder-content rule fails
 - a clear distinction between repair recommendation and actual repair execution, which is still deferred
 

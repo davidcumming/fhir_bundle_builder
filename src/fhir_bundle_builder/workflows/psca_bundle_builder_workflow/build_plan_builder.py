@@ -236,54 +236,129 @@ def build_psca_build_plan(schematic: BundleSchematic) -> BuildPlan:
             ],
         ),
         BuildPlanStep(
-            step_id="finalize-composition-1",
+            step_id="finalize-composition-1-medications-section",
             sequence=9,
             step_kind="composition_finalize",
             target_placeholder_id=composition.placeholder_id,
             resource_type=composition.resource_type,
             profile_url=composition.profile_url,
-            build_purpose="Finalize the Composition by attaching planned section-entry references to the scaffold.",
+            owning_section_key="medications",
+            build_purpose="Attach the medications section block to the Composition scaffold.",
             dependencies=[
                 _dependency(
                     "build-composition-1-scaffold",
                     "requires_scaffold_ready",
-                    "Composition finalization requires the scaffold to exist before section entries are attached.",
+                    "The Composition scaffold must exist before the medications section can be attached.",
                 ),
                 _dependency(
                     "build-medicationrequest-1",
                     "requires_section_entries_attached",
-                    "The medications section entry must exist before final Composition section attachment.",
-                ),
-                _dependency(
-                    "build-allergyintolerance-1",
-                    "requires_section_entries_attached",
-                    "The allergies section entry must exist before final Composition section attachment.",
-                ),
-                _dependency(
-                    "build-condition-1",
-                    "requires_section_entries_attached",
-                    "The problems section entry must exist before final Composition section attachment.",
+                    "The medications section entry must exist before the medications section can be attached.",
                 ),
             ],
             expected_inputs=[
                 _input("composition_scaffold_ready:composition-1", "composition_scaffold_state", True, "Signal that the Composition scaffold step completed."),
                 _input("section_scaffold:medications", "SectionScaffold", True, "Medications section metadata."),
-                _input("section_scaffold:allergies", "SectionScaffold", True, "Allergies section metadata."),
-                _input("section_scaffold:problems", "SectionScaffold", True, "Problems section metadata."),
                 _input("reference_handle:medicationrequest-1", "reference_handle", True, "Section entry reference for medications."),
+            ],
+            expected_outputs=[
+                _output(
+                    "resource_artifact:composition-1:medications-section-attached",
+                    "resource_artifact",
+                    "Placeholder Composition resource artifact with the medications section attached.",
+                ),
+                _output(
+                    "composition_section_attached:composition-1:medications",
+                    "composition_section_state",
+                    "Signal that the medications section has been attached to the Composition scaffold.",
+                ),
+            ],
+        ),
+        BuildPlanStep(
+            step_id="finalize-composition-1-allergies-section",
+            sequence=10,
+            step_kind="composition_finalize",
+            target_placeholder_id=composition.placeholder_id,
+            resource_type=composition.resource_type,
+            profile_url=composition.profile_url,
+            owning_section_key="allergies",
+            build_purpose="Attach the allergies section block to the Composition scaffold.",
+            dependencies=[
+                _dependency(
+                    "finalize-composition-1-medications-section",
+                    "requires_scaffold_ready",
+                    "The medications section attachment step establishes the prior incremental Composition section state.",
+                ),
+                _dependency(
+                    "build-allergyintolerance-1",
+                    "requires_section_entries_attached",
+                    "The allergies section entry must exist before the allergies section can be attached.",
+                ),
+            ],
+            expected_inputs=[
+                _input("section_scaffold:allergies", "SectionScaffold", True, "Allergies section metadata."),
+                _input(
+                    "composition_section_attached:composition-1:medications",
+                    "composition_section_state",
+                    True,
+                    "Signal that the medications section has already been attached.",
+                ),
                 _input("reference_handle:allergyintolerance-1", "reference_handle", True, "Section entry reference for allergies."),
+            ],
+            expected_outputs=[
+                _output(
+                    "resource_artifact:composition-1:allergies-section-attached",
+                    "resource_artifact",
+                    "Placeholder Composition resource artifact with the allergies section attached.",
+                ),
+                _output(
+                    "composition_section_attached:composition-1:allergies",
+                    "composition_section_state",
+                    "Signal that the allergies section has been attached to the Composition scaffold.",
+                ),
+            ],
+        ),
+        BuildPlanStep(
+            step_id="finalize-composition-1-problems-section",
+            sequence=11,
+            step_kind="composition_finalize",
+            target_placeholder_id=composition.placeholder_id,
+            resource_type=composition.resource_type,
+            profile_url=composition.profile_url,
+            owning_section_key="problems",
+            build_purpose="Attach the problems section block to the Composition scaffold.",
+            dependencies=[
+                _dependency(
+                    "finalize-composition-1-allergies-section",
+                    "requires_scaffold_ready",
+                    "The allergies section attachment step establishes the prior incremental Composition section state.",
+                ),
+                _dependency(
+                    "build-condition-1",
+                    "requires_section_entries_attached",
+                    "The problems section entry must exist before the problems section can be attached.",
+                ),
+            ],
+            expected_inputs=[
+                _input("section_scaffold:problems", "SectionScaffold", True, "Problems section metadata."),
+                _input(
+                    "composition_section_attached:composition-1:allergies",
+                    "composition_section_state",
+                    True,
+                    "Signal that the medications and allergies sections have already been attached.",
+                ),
                 _input("reference_handle:condition-1", "reference_handle", True, "Section entry reference for problems."),
             ],
             expected_outputs=[
                 _output(
-                    "resource_artifact:composition-1:section-finalized",
+                    "resource_artifact:composition-1:problems-section-attached",
                     "resource_artifact",
-                    "Placeholder Composition resource artifact with section-entry references attached.",
+                    "Placeholder Composition resource artifact with the problems section attached.",
                 ),
                 _output(
-                    "composition_sections_attached:composition-1",
+                    "composition_section_attached:composition-1:problems",
                     "composition_section_state",
-                    "Signal that the Composition section entries are attached.",
+                    "Signal that the problems section has been attached to the Composition scaffold.",
                 ),
             ],
         ),
@@ -296,7 +371,7 @@ def build_psca_build_plan(schematic: BundleSchematic) -> BuildPlan:
         placeholder_note="This slice plans resource ordering only; resource creation, bundle assembly intelligence, and validation-driven replanning remain deferred.",
         source_refs=schematic.source_refs,
         plan_basis="deterministic_schematic_dependency_plan",
-        composition_strategy="two_step_scaffold_then_finalize",
+        composition_strategy="scaffold_then_incremental_section_finalize",
         steps=steps,
         deferred_items=[
             "Bundle entry assembly remains outside build planning.",

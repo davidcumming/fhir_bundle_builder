@@ -62,14 +62,14 @@ async def test_psca_repair_decision_routes_missing_sections_to_resource_construc
     assert decision.recommended_target == "resource_construction"
     assert decision.recommended_next_stage == "resource_construction"
     assert any(
-        route.finding_code == "bundle.required_sections_present"
+        route.finding_code == "bundle.composition_problems_section_present"
         and route.route_target == "resource_construction"
         and route.actionable is True
         for route in decision.finding_routes
     )
     assert decision.recommended_resource_construction_repair_directive is not None
     assert decision.recommended_resource_construction_repair_directive.target_step_ids == [
-        "finalize-composition-1"
+        "finalize-composition-1-problems-section"
     ]
     assert decision.recommended_resource_construction_repair_directive.target_placeholder_ids == [
         "composition-1"
@@ -144,16 +144,36 @@ async def test_psca_repair_decision_unions_multiple_resource_construction_findin
     assert decision.recommended_resource_construction_repair_directive is not None
     assert set(decision.recommended_resource_construction_repair_directive.trigger_finding_codes) == {
         "bundle.patient_identity_content_present",
-        "bundle.required_sections_present",
+        "bundle.composition_problems_section_present",
     }
     assert decision.recommended_resource_construction_repair_directive.target_step_ids == [
         "build-patient-1",
-        "finalize-composition-1",
+        "finalize-composition-1-problems-section",
     ]
     assert decision.recommended_resource_construction_repair_directive.target_placeholder_ids == [
         "patient-1",
         "composition-1",
     ]
+
+
+async def test_psca_repair_decision_unions_multiple_missing_composition_sections_in_plan_order() -> None:
+    report = await _build_validation_report(mutator=_remove_allergies_and_problems_sections)
+
+    decision = build_psca_repair_decision(report)
+
+    assert decision.recommended_target == "resource_construction"
+    assert decision.recommended_resource_construction_repair_directive is not None
+    assert decision.recommended_resource_construction_repair_directive.target_step_ids == [
+        "finalize-composition-1-allergies-section",
+        "finalize-composition-1-problems-section",
+    ]
+    assert decision.recommended_resource_construction_repair_directive.target_placeholder_ids == [
+        "composition-1",
+    ]
+    assert set(decision.recommended_resource_construction_repair_directive.trigger_finding_codes) == {
+        "bundle.composition_allergies_section_present",
+        "bundle.composition_problems_section_present",
+    }
 
 
 async def test_psca_repair_decision_unions_multiple_section_entry_failures_in_plan_order() -> None:
@@ -256,6 +276,13 @@ def _remove_required_section(candidate_bundle):
     broken_bundle = deepcopy(candidate_bundle)
     composition = broken_bundle.candidate_bundle.fhir_bundle["entry"][0]["resource"]
     composition["section"] = composition["section"][:2]
+    return broken_bundle
+
+
+def _remove_allergies_and_problems_sections(candidate_bundle):
+    broken_bundle = deepcopy(candidate_bundle)
+    composition = broken_bundle.candidate_bundle.fhir_bundle["entry"][0]["resource"]
+    composition["section"] = composition["section"][:1]
     return broken_bundle
 
 

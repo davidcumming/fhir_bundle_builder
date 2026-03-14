@@ -296,7 +296,7 @@ class BuildPlan(StageArtifact):
     """Structured PS-CA build plan for downstream resource construction."""
 
     plan_basis: Literal["deterministic_schematic_dependency_plan"]
-    composition_strategy: Literal["two_step_scaffold_then_finalize"]
+    composition_strategy: Literal["scaffold_then_incremental_section_finalize"]
     steps: list[BuildPlanStep]
     deferred_items: list[str] = Field(default_factory=list)
     evidence: BuildPlanEvidence

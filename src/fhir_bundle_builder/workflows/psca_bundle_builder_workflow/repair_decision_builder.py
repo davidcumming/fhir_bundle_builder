@@ -109,11 +109,23 @@ _FINDING_ROUTE_MAP: dict[str, tuple[str, str, bool, str]] = {
         True,
         "Condition placeholder content is populated during resource construction.",
     ),
-    "bundle.required_sections_present": (
+    "bundle.composition_medications_section_present": (
         "resource_construction",
         "resource_construction",
         True,
-        "Required Composition sections are attached during resource construction.",
+        "The medications Composition section block is attached during resource construction.",
+    ),
+    "bundle.composition_allergies_section_present": (
+        "resource_construction",
+        "resource_construction",
+        True,
+        "The allergies Composition section block is attached during resource construction.",
+    ),
+    "bundle.composition_problems_section_present": (
+        "resource_construction",
+        "resource_construction",
+        True,
+        "The problems Composition section block is attached during resource construction.",
     ),
     "bundle.references_aligned_to_entry_fullurls": (
         "bundle_finalization",
@@ -148,19 +160,39 @@ _RESOURCE_CONSTRUCTION_DIRECTIVE_MAP: dict[str, tuple[list[str], list[str], str]
         "Rerun the practitioner-role support step to restore the deterministic author-context label.",
     ),
     "bundle.composition_type_matches_psca_summary": (
-        ["build-composition-1-scaffold", "finalize-composition-1"],
+        [
+            "build-composition-1-scaffold",
+            "finalize-composition-1-medications-section",
+            "finalize-composition-1-allergies-section",
+            "finalize-composition-1-problems-section",
+        ],
         ["composition-1"],
         "Rerun the composition scaffold and finalize steps to restore deterministic composition type and section attachment state.",
     ),
     "bundle.composition_enriched_content_present": (
-        ["build-composition-1-scaffold", "finalize-composition-1"],
+        [
+            "build-composition-1-scaffold",
+            "finalize-composition-1-medications-section",
+            "finalize-composition-1-allergies-section",
+            "finalize-composition-1-problems-section",
+        ],
         ["composition-1"],
         "Rerun the composition scaffold and finalize steps to restore deterministic composition content and final section state.",
     ),
-    "bundle.required_sections_present": (
-        ["finalize-composition-1"],
+    "bundle.composition_medications_section_present": (
+        ["finalize-composition-1-medications-section"],
         ["composition-1"],
-        "Rerun composition finalization to reattach the deterministic required sections.",
+        "Rerun medications section finalization to reattach the deterministic medications section block.",
+    ),
+    "bundle.composition_allergies_section_present": (
+        ["finalize-composition-1-allergies-section"],
+        ["composition-1"],
+        "Rerun allergies section finalization to reattach the deterministic allergies section block.",
+    ),
+    "bundle.composition_problems_section_present": (
+        ["finalize-composition-1-problems-section"],
+        ["composition-1"],
+        "Rerun problems section finalization to reattach the deterministic problems section block.",
     ),
     "bundle.medicationrequest_placeholder_content_present": (
         ["build-medicationrequest-1"],
@@ -188,7 +220,9 @@ _RESOURCE_CONSTRUCTION_STEP_ORDER = {
     "build-medicationrequest-1": 6,
     "build-allergyintolerance-1": 7,
     "build-condition-1": 8,
-    "finalize-composition-1": 9,
+    "finalize-composition-1-medications-section": 9,
+    "finalize-composition-1-allergies-section": 10,
+    "finalize-composition-1-problems-section": 11,
 }
 
 

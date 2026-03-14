@@ -68,7 +68,7 @@ async def test_psca_bundle_builder_workflow_smoke() -> None:
         for relationship in final_output.bundle_schematic.relationships
     )
     assert final_output.build_plan.plan_basis == "deterministic_schematic_dependency_plan"
-    assert final_output.build_plan.composition_strategy == "two_step_scaffold_then_finalize"
+    assert final_output.build_plan.composition_strategy == "scaffold_then_incremental_section_finalize"
     assert [step.step_id for step in final_output.build_plan.steps] == [
         "build-patient-1",
         "build-practitioner-1",
@@ -78,7 +78,9 @@ async def test_psca_bundle_builder_workflow_smoke() -> None:
         "build-medicationrequest-1",
         "build-allergyintolerance-1",
         "build-condition-1",
-        "finalize-composition-1",
+        "finalize-composition-1-medications-section",
+        "finalize-composition-1-allergies-section",
+        "finalize-composition-1-problems-section",
     ]
     assert [step.step_kind for step in final_output.build_plan.steps] == [
         "anchor_resource",
@@ -90,6 +92,8 @@ async def test_psca_bundle_builder_workflow_smoke() -> None:
         "section_entry_resource",
         "section_entry_resource",
         "composition_finalize",
+        "composition_finalize",
+        "composition_finalize",
     ]
     assert [dependency.prerequisite_step_id for dependency in final_output.build_plan.steps[3].dependencies] == [
         "build-practitioner-1",
@@ -99,10 +103,22 @@ async def test_psca_bundle_builder_workflow_smoke() -> None:
         "build-patient-1",
         "build-practitionerrole-1",
     ]
-    assert [dependency.prerequisite_step_id for dependency in final_output.build_plan.steps[-1].dependencies] == [
+    assert [
+        dependency.prerequisite_step_id
+        for dependency in final_output.build_plan.steps[-3].dependencies
+    ] == [
         "build-composition-1-scaffold",
         "build-medicationrequest-1",
+    ]
+    assert [
+        dependency.prerequisite_step_id
+        for dependency in final_output.build_plan.steps[-2].dependencies
+    ] == [
+        "finalize-composition-1-medications-section",
         "build-allergyintolerance-1",
+    ]
+    assert [dependency.prerequisite_step_id for dependency in final_output.build_plan.steps[-1].dependencies] == [
+        "finalize-composition-1-allergies-section",
         "build-condition-1",
     ]
     assert final_output.resource_construction.construction_mode == "deterministic_content_enriched"
@@ -115,10 +131,16 @@ async def test_psca_bundle_builder_workflow_smoke() -> None:
         "build-medicationrequest-1",
         "build-allergyintolerance-1",
         "build-condition-1",
-        "finalize-composition-1",
+        "finalize-composition-1-medications-section",
+        "finalize-composition-1-allergies-section",
+        "finalize-composition-1-problems-section",
     ]
     assert final_output.resource_construction.step_results[4].target_placeholder_id == "composition-1"
     assert final_output.resource_construction.step_results[4].execution_status == "scaffold_created"
+    assert final_output.resource_construction.step_results[-3].target_placeholder_id == "composition-1"
+    assert final_output.resource_construction.step_results[-3].execution_status == "scaffold_updated"
+    assert final_output.resource_construction.step_results[-2].target_placeholder_id == "composition-1"
+    assert final_output.resource_construction.step_results[-2].execution_status == "scaffold_updated"
     assert final_output.resource_construction.step_results[-1].target_placeholder_id == "composition-1"
     assert final_output.resource_construction.step_results[-1].execution_status == "scaffold_updated"
     assert final_output.resource_construction.step_results[0].resource_scaffold.fhir_scaffold["identifier"][0]["value"] == "patient-smoke-test"

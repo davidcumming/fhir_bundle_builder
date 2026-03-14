@@ -19,7 +19,7 @@ def test_psca_build_plan_builder_generates_expected_order_and_dependencies() -> 
     plan = build_psca_build_plan(schematic)
 
     assert plan.plan_basis == "deterministic_schematic_dependency_plan"
-    assert plan.composition_strategy == "two_step_scaffold_then_finalize"
+    assert plan.composition_strategy == "scaffold_then_incremental_section_finalize"
     assert [step.step_id for step in plan.steps] == [
         "build-patient-1",
         "build-practitioner-1",
@@ -29,14 +29,18 @@ def test_psca_build_plan_builder_generates_expected_order_and_dependencies() -> 
         "build-medicationrequest-1",
         "build-allergyintolerance-1",
         "build-condition-1",
-        "finalize-composition-1",
+        "finalize-composition-1-medications-section",
+        "finalize-composition-1-allergies-section",
+        "finalize-composition-1-problems-section",
     ]
 
     steps = {step.step_id: step for step in plan.steps}
     assert steps["build-patient-1"].step_kind == "anchor_resource"
     assert steps["build-practitionerrole-1"].step_kind == "support_resource"
     assert steps["build-composition-1-scaffold"].step_kind == "composition_scaffold"
-    assert steps["finalize-composition-1"].step_kind == "composition_finalize"
+    assert steps["finalize-composition-1-medications-section"].step_kind == "composition_finalize"
+    assert steps["finalize-composition-1-allergies-section"].step_kind == "composition_finalize"
+    assert steps["finalize-composition-1-problems-section"].step_kind == "composition_finalize"
 
     assert [dependency.prerequisite_step_id for dependency in steps["build-practitionerrole-1"].dependencies] == [
         "build-practitioner-1",
@@ -46,10 +50,25 @@ def test_psca_build_plan_builder_generates_expected_order_and_dependencies() -> 
         "build-patient-1",
         "build-practitionerrole-1",
     ]
-    assert [dependency.prerequisite_step_id for dependency in steps["finalize-composition-1"].dependencies] == [
+    assert [
+        dependency.prerequisite_step_id
+        for dependency in steps["finalize-composition-1-medications-section"].dependencies
+    ] == [
         "build-composition-1-scaffold",
         "build-medicationrequest-1",
+    ]
+    assert [
+        dependency.prerequisite_step_id
+        for dependency in steps["finalize-composition-1-allergies-section"].dependencies
+    ] == [
+        "finalize-composition-1-medications-section",
         "build-allergyintolerance-1",
+    ]
+    assert [
+        dependency.prerequisite_step_id
+        for dependency in steps["finalize-composition-1-problems-section"].dependencies
+    ] == [
+        "finalize-composition-1-allergies-section",
         "build-condition-1",
     ]
 
@@ -59,15 +78,28 @@ def test_psca_build_plan_builder_generates_expected_order_and_dependencies() -> 
 
     assert steps["build-patient-1"].target_placeholder_id == "patient-1"
     assert steps["build-composition-1-scaffold"].target_placeholder_id == "composition-1"
-    assert steps["finalize-composition-1"].target_placeholder_id == "composition-1"
+    assert steps["finalize-composition-1-medications-section"].target_placeholder_id == "composition-1"
+    assert steps["finalize-composition-1-allergies-section"].target_placeholder_id == "composition-1"
+    assert steps["finalize-composition-1-problems-section"].target_placeholder_id == "composition-1"
+    assert steps["finalize-composition-1-medications-section"].owning_section_key == "medications"
+    assert steps["finalize-composition-1-allergies-section"].owning_section_key == "allergies"
+    assert steps["finalize-composition-1-problems-section"].owning_section_key == "problems"
 
     assert any(
         output.output_key == "composition_scaffold_ready:composition-1"
         for output in steps["build-composition-1-scaffold"].expected_outputs
     )
     assert any(
-        output.output_key == "composition_sections_attached:composition-1"
-        for output in steps["finalize-composition-1"].expected_outputs
+        output.output_key == "composition_section_attached:composition-1:medications"
+        for output in steps["finalize-composition-1-medications-section"].expected_outputs
+    )
+    assert any(
+        output.output_key == "composition_section_attached:composition-1:allergies"
+        for output in steps["finalize-composition-1-allergies-section"].expected_outputs
+    )
+    assert any(
+        output.output_key == "composition_section_attached:composition-1:problems"
+        for output in steps["finalize-composition-1-problems-section"].expected_outputs
     )
     assert plan.evidence.relationship_ids_used == [
         "composition-subject",

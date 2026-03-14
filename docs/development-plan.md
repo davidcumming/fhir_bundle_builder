@@ -98,11 +98,11 @@ The following status labels should be used in this plan:
 
 ## 8. Current Focus
 
-**Current Focus:** Implement the next bounded realism/quality slice now that section-entry validation and repair can narrow to resource-specific build steps instead of always rerunning the full section-entry trio.
+**Current Focus:** Implement the next bounded realism/quality slice now that required Composition sections can validate, route, and retry through section-specific finalize steps instead of one grouped Composition finalize step.
 
 ## 9. Next Planned Slice
 
-**Next Planned Slice:** Deepen Organization/provider-role realism or further narrow grouped Composition section validation where current build-step structure safely supports it.
+**Next Planned Slice:** Deepen Organization/provider-role realism or further narrow grouped Composition scaffold/content validation where current construction maturity safely supports it.
 
 ## 10. Development Phases
 
@@ -280,7 +280,7 @@ Prove a narrow but real end-to-end PS-CA generation run.
 - verify that the run can be demonstrated clearly in Dev UI
 
 ### Current phase note
-The workflow now has a complete deterministic structural path, validation, repair routing, bounded retry execution for both bundle finalization and resource construction, the first targeted `resource_construction` repair-directive mode based on deterministic build-step subsets, resource-specific section-entry validation and repair for the fixed PS-CA section-entry trio, meaningful deterministic content for core clinical resources, a deterministic local bundle identity/fullUrl policy, and an optional Matchbox-backed external standards-validation path with local fallback. The next step is to deepen end-to-end realism without widening into deployment, persistence, or generic lifecycle management.
+The workflow now has a complete deterministic structural path, validation, repair routing, bounded retry execution for both bundle finalization and resource construction, the first targeted `resource_construction` repair-directive mode based on deterministic build-step subsets, resource-specific section-entry validation and repair for the fixed PS-CA section-entry trio, incremental section-specific Composition finalization and required-section validation/repair for medications, allergies, and problems, meaningful deterministic content for core clinical resources, a deterministic local bundle identity/fullUrl policy, and an optional Matchbox-backed external standards-validation path with local fallback. The next step is to deepen end-to-end realism without widening into deployment, persistence, or generic lifecycle management.
 
 ### Exit criteria
 - a minimal PS-CA workflow runs end to end
@@ -354,11 +354,11 @@ The following assumptions currently guide the plan:
 - the specification ingestion pipeline should be designed to support arbitrary FHIR specifications later
 - the initial normalized PS-CA asset scope is intentionally limited to package metadata, selected foundational profiles, Composition section definitions, and example summaries rather than full IG normalization
 - the first real PS-CA schematic intentionally covers only the required sections plus minimal subject/author support placeholders
-- the first real build plan intentionally uses a two-step Composition strategy and a limited hard-dependency set derived from the current schematic
+- the first real build plan intentionally uses incremental section-specific Composition finalization and a limited hard-dependency set derived from the current schematic
 - the first resource-construction slice uses partial FHIR-shaped scaffold artifacts and deterministic placeholder-derived local references rather than fully populated valid resources
 - the first deterministic bundle identity policy uses local UUID-based candidate identifiers, synthetic timestamps, and `urn:uuid` entry fullUrls rather than persistent publication identity
 - Matchbox is optional infrastructure and the workflow must remain runnable with the local scaffold-shape standards validator alone
-- the bounded repair-execution model remains single-pass and now supports both bundle_finalization and resource_construction as internal executable targets, with section-entry narrowing operating at single-resource build-step granularity where each resource already has its own stable construction step
+- the bounded repair-execution model remains single-pass and now supports both bundle_finalization and resource_construction as internal executable targets, with section-entry narrowing operating at single-resource build-step granularity and required Composition section narrowing operating at section-specific finalize-step granularity
 - the first meaningful content slice should use deterministic placeholder content from normalized request labels and schematic section metadata rather than free-text clinical synthesis
 - meaningful Organization identity and richer PractitionerRole context depend on a future provider input expansion that includes organizations and provider-role relationships
 - initial development should prioritize workflow shape, artifact contracts, and inspectability over feature completeness
@@ -377,7 +377,7 @@ The following risks should be monitored during development:
 - the current provider input model may constrain support-resource realism until organization and provider-role context are explicitly modeled
 - deterministic synthetic timestamps and local URN fullUrls may later need refinement when publication or persistence semantics are introduced
 - Matchbox availability or response-shape variance may require a small amount of adapter hardening before broader operational use
-- Composition required-sections validation is still grouped because section attachment remains a single `finalize-composition-1` construction step
+- Composition scaffold/content validation is still grouped at the resource level even though required section attachment now occurs through section-specific finalize steps
 
 ## 14. Definition of Progress
 
@@ -408,4 +408,4 @@ Codex should make targeted edits only. It should not rewrite the full document u
 
 ## 16. Immediate Next Objective
 
-The immediate next objective is to deepen end-to-end realism or further narrow remaining grouped validation where the current build-step structure safely supports it.
+The immediate next objective is to deepen end-to-end realism or further narrow remaining grouped Composition scaffold/content validation where the current construction shape safely supports it.

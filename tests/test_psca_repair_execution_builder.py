@@ -117,13 +117,13 @@ async def test_psca_repair_execution_reruns_resource_construction_once() -> None
     ]
     assert execution.applied_resource_construction_repair_directive is not None
     assert execution.applied_resource_construction_repair_directive.target_step_ids == [
-        "finalize-composition-1"
+        "finalize-composition-1-problems-section"
     ]
     assert execution.post_retry_resource_construction is not None
     assert execution.post_retry_resource_construction.execution_scope == "targeted_repair"
     assert execution.post_retry_resource_construction.applied_repair_directive is not None
     assert [step.step_id for step in execution.post_retry_resource_construction.step_results] == [
-        "finalize-composition-1"
+        "finalize-composition-1-problems-section"
     ]
     assert execution.post_retry_resource_construction.regenerated_placeholder_ids == [
         "composition-1"
@@ -134,6 +134,38 @@ async def test_psca_repair_execution_reruns_resource_construction_once() -> None
     assert execution.post_retry_validation_report.overall_status == "passed_with_warnings"
     assert execution.post_retry_repair_decision is not None
     assert execution.post_retry_repair_decision.overall_decision == "external_validation_pending"
+
+
+async def test_psca_repair_execution_reruns_only_missing_composition_section_steps_when_multiple_sections_fail() -> None:
+    artifacts = await _build_repair_inputs(mutator=_remove_allergies_and_problems_sections)
+
+    execution = await build_psca_repair_execution_result(
+        artifacts["repair_decision"],
+        artifacts["normalized_request"],
+        artifacts["build_plan"],
+        artifacts["schematic"],
+        artifacts["resource_construction"],
+        LocalCandidateBundleScaffoldStandardsValidator(),
+    )
+
+    assert execution.execution_outcome == "executed"
+    assert execution.requested_target == "resource_construction"
+    assert execution.applied_resource_construction_repair_directive is not None
+    assert execution.applied_resource_construction_repair_directive.target_step_ids == [
+        "finalize-composition-1-allergies-section",
+        "finalize-composition-1-problems-section",
+    ]
+    assert execution.post_retry_resource_construction is not None
+    assert execution.post_retry_resource_construction.execution_scope == "targeted_repair"
+    assert [step.step_id for step in execution.post_retry_resource_construction.step_results] == [
+        "finalize-composition-1-allergies-section",
+        "finalize-composition-1-problems-section",
+    ]
+    assert execution.post_retry_resource_construction.regenerated_placeholder_ids == [
+        "composition-1"
+    ]
+    assert execution.post_retry_validation_report is not None
+    assert execution.post_retry_validation_report.overall_status == "passed_with_warnings"
 
 
 async def test_psca_repair_execution_reruns_one_section_entry_step_for_single_resource_failure() -> None:
@@ -304,6 +336,13 @@ def _remove_required_section(candidate_bundle):
     broken_bundle = deepcopy(candidate_bundle)
     composition = broken_bundle.candidate_bundle.fhir_bundle["entry"][0]["resource"]
     composition["section"] = composition["section"][:2]
+    return broken_bundle
+
+
+def _remove_allergies_and_problems_sections(candidate_bundle):
+    broken_bundle = deepcopy(candidate_bundle)
+    composition = broken_bundle.candidate_bundle.fhir_bundle["entry"][0]["resource"]
+    composition["section"] = composition["section"][:1]
     return broken_bundle
 
 

@@ -59,14 +59,16 @@ def test_psca_resource_construction_builder_generates_scaffolds_and_registry() -
 
     assert construction.construction_mode == "deterministic_content_enriched"
     assert [step.step_id for step in construction.step_results] == [step.step_id for step in plan.steps]
-    assert len(construction.step_results) == 9
+    assert len(construction.step_results) == 11
     assert len(construction.resource_registry) == 8
 
     steps = {step.step_id: step for step in construction.step_results}
     registry = {entry.placeholder_id: entry for entry in construction.resource_registry}
 
     assert steps["build-composition-1-scaffold"].execution_status == "scaffold_created"
-    assert steps["finalize-composition-1"].execution_status == "scaffold_updated"
+    assert steps["finalize-composition-1-medications-section"].execution_status == "scaffold_updated"
+    assert steps["finalize-composition-1-allergies-section"].execution_status == "scaffold_updated"
+    assert steps["finalize-composition-1-problems-section"].execution_status == "scaffold_updated"
 
     practitioner_role = registry["practitionerrole-1"].current_scaffold.fhir_scaffold
     practitioner = registry["practitioner-1"].current_scaffold.fhir_scaffold
@@ -148,7 +150,9 @@ def test_psca_resource_construction_builder_generates_scaffolds_and_registry() -
     assert finalized_composition.scaffold_state == "sections_attached"
     assert finalized_composition.source_step_ids == [
         "build-composition-1-scaffold",
-        "finalize-composition-1",
+        "finalize-composition-1-medications-section",
+        "finalize-composition-1-allergies-section",
+        "finalize-composition-1-problems-section",
     ]
     assert [section["title"] for section in finalized_composition.fhir_scaffold["section"]] == [
         section.title for section in schematic.section_scaffolds
@@ -219,11 +223,13 @@ def test_psca_resource_construction_builder_supports_targeted_patient_repair() -
     assert registry["patient-1"].current_scaffold.fhir_scaffold["name"][0]["text"] == "Resource Test Patient"
     assert registry["composition-1"].current_scaffold.source_step_ids == [
         "build-composition-1-scaffold",
-        "finalize-composition-1",
+        "finalize-composition-1-medications-section",
+        "finalize-composition-1-allergies-section",
+        "finalize-composition-1-problems-section",
     ]
 
 
-def test_psca_resource_construction_builder_supports_targeted_composition_finalize_repair() -> None:
+def test_psca_resource_construction_builder_supports_targeted_composition_section_repair() -> None:
     repository = PscaAssetRepository()
     normalized_assets = repository.load_foundation_context(PscaAssetQuery())
     schematic = build_psca_bundle_schematic(normalized_assets)
@@ -233,10 +239,10 @@ def test_psca_resource_construction_builder_supports_targeted_composition_finali
     repair_directive = ResourceConstructionRepairDirective(
         directive_basis="validation_finding_code_map",
         scope="build_step_subset",
-        trigger_finding_codes=["bundle.required_sections_present"],
-        target_step_ids=["finalize-composition-1"],
+        trigger_finding_codes=["bundle.composition_allergies_section_present"],
+        target_step_ids=["finalize-composition-1-allergies-section"],
         target_placeholder_ids=["composition-1"],
-        rationale="Rerun composition finalization to reattach the deterministic required sections.",
+        rationale="Rerun allergies section finalization to reattach the deterministic allergies section block.",
     )
 
     targeted_result = build_psca_resource_construction_result(
@@ -249,14 +255,21 @@ def test_psca_resource_construction_builder_supports_targeted_composition_finali
 
     assert targeted_result.execution_scope == "targeted_repair"
     assert targeted_result.applied_repair_directive == repair_directive
-    assert [step.step_id for step in targeted_result.step_results] == ["finalize-composition-1"]
+    assert [step.step_id for step in targeted_result.step_results] == [
+        "finalize-composition-1-allergies-section"
+    ]
     assert targeted_result.regenerated_placeholder_ids == ["composition-1"]
     assert "composition-1" not in targeted_result.reused_placeholder_ids
     registry = {entry.placeholder_id: entry for entry in targeted_result.resource_registry}
     assert len(registry["composition-1"].current_scaffold.fhir_scaffold["section"]) == 3
+    assert [
+        section["title"] for section in registry["composition-1"].current_scaffold.fhir_scaffold["section"]
+    ] == [section.title for section in schematic.section_scaffolds]
     assert registry["composition-1"].current_scaffold.source_step_ids == [
         "build-composition-1-scaffold",
-        "finalize-composition-1",
+        "finalize-composition-1-medications-section",
+        "finalize-composition-1-allergies-section",
+        "finalize-composition-1-problems-section",
     ]
 
 

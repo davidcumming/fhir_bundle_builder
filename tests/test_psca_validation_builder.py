@@ -64,11 +64,11 @@ async def test_psca_validation_builder_happy_path_reports_split_channels() -> No
     )
 
 
-async def test_psca_validation_builder_fails_when_required_section_is_missing() -> None:
+async def test_psca_validation_builder_fails_when_medications_section_is_missing() -> None:
     normalized_request, schematic, candidate_bundle = _build_validation_inputs()
     broken_bundle = deepcopy(candidate_bundle)
     composition = broken_bundle.candidate_bundle.fhir_bundle["entry"][0]["resource"]
-    composition["section"] = composition["section"][:2]
+    composition["section"] = composition["section"][1:]
 
     report = await build_psca_validation_report(
         broken_bundle,
@@ -80,7 +80,46 @@ async def test_psca_validation_builder_fails_when_required_section_is_missing() 
     assert report.workflow_validation.status == "failed"
     assert report.overall_status == "failed"
     assert any(
-        finding.code == "bundle.required_sections_present" and finding.severity == "error"
+        finding.code == "bundle.composition_medications_section_present"
+        and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.composition_allergies_section_present"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.composition_problems_section_present"
+        for finding in report.workflow_validation.findings
+    )
+
+
+async def test_psca_validation_builder_fails_when_allergies_and_problems_sections_are_missing() -> None:
+    normalized_request, schematic, candidate_bundle = _build_validation_inputs()
+    broken_bundle = deepcopy(candidate_bundle)
+    composition = broken_bundle.candidate_bundle.fhir_bundle["entry"][0]["resource"]
+    composition["section"] = composition["section"][:1]
+
+    report = await build_psca_validation_report(
+        broken_bundle,
+        schematic,
+        normalized_request,
+        LocalCandidateBundleScaffoldStandardsValidator(),
+    )
+
+    assert report.workflow_validation.status == "failed"
+    assert any(
+        finding.code == "bundle.composition_allergies_section_present"
+        and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert any(
+        finding.code == "bundle.composition_problems_section_present"
+        and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.composition_medications_section_present"
         for finding in report.workflow_validation.findings
     )
 
