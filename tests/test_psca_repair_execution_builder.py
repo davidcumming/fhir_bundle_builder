@@ -297,6 +297,50 @@ async def test_psca_repair_execution_unions_multiple_section_entry_steps_when_mu
     assert execution.post_retry_validation_report.overall_status == "passed_with_warnings"
 
 
+async def test_psca_repair_execution_reruns_only_bundle_finalization_for_practitionerrole_reference_alignment_failure() -> None:
+    artifacts = await _build_repair_inputs(mutator=_break_practitionerrole_practitioner_reference)
+
+    execution = await build_psca_repair_execution_result(
+        artifacts["repair_decision"],
+        artifacts["normalized_request"],
+        artifacts["build_plan"],
+        artifacts["schematic"],
+        artifacts["resource_construction"],
+        LocalCandidateBundleScaffoldStandardsValidator(),
+    )
+
+    assert execution.execution_outcome == "executed"
+    assert execution.requested_target == "bundle_finalization"
+    assert execution.executed_target == "bundle_finalization"
+    assert execution.applied_resource_construction_repair_directive is None
+    assert execution.rerun_stage_ids == ["bundle_finalization", "validation", "repair_decision"]
+    assert execution.post_retry_resource_construction is None
+    assert execution.post_retry_validation_report is not None
+    assert execution.post_retry_validation_report.overall_status == "passed_with_warnings"
+
+
+async def test_psca_repair_execution_reruns_only_bundle_finalization_for_composition_section_entry_alignment_failure() -> None:
+    artifacts = await _build_repair_inputs(mutator=_break_composition_section_entry_reference)
+
+    execution = await build_psca_repair_execution_result(
+        artifacts["repair_decision"],
+        artifacts["normalized_request"],
+        artifacts["build_plan"],
+        artifacts["schematic"],
+        artifacts["resource_construction"],
+        LocalCandidateBundleScaffoldStandardsValidator(),
+    )
+
+    assert execution.execution_outcome == "executed"
+    assert execution.requested_target == "bundle_finalization"
+    assert execution.executed_target == "bundle_finalization"
+    assert execution.applied_resource_construction_repair_directive is None
+    assert execution.rerun_stage_ids == ["bundle_finalization", "validation", "repair_decision"]
+    assert execution.post_retry_resource_construction is None
+    assert execution.post_retry_validation_report is not None
+    assert execution.post_retry_validation_report.overall_status == "passed_with_warnings"
+
+
 async def test_psca_repair_execution_marks_build_plan_retry_as_unsupported() -> None:
     artifacts = await _build_repair_inputs()
     repair_decision = RepairDecisionResult(
@@ -439,4 +483,19 @@ def _break_composition_subject_reference(candidate_bundle):
     broken_bundle = deepcopy(candidate_bundle)
     composition = broken_bundle.candidate_bundle.fhir_bundle["entry"][0]["resource"]
     composition["subject"]["reference"] = "Patient/patient-1"
+    return broken_bundle
+
+
+def _break_practitionerrole_practitioner_reference(candidate_bundle):
+    broken_bundle = deepcopy(candidate_bundle)
+    practitioner_role = broken_bundle.candidate_bundle.fhir_bundle["entry"][2]["resource"]
+    practitioner_role["practitioner"]["reference"] = "Practitioner/practitioner-1"
+    return broken_bundle
+
+
+def _break_composition_section_entry_reference(candidate_bundle):
+    broken_bundle = deepcopy(candidate_bundle)
+    composition = broken_bundle.candidate_bundle.fhir_bundle["entry"][0]["resource"]
+    wrong_full_url = broken_bundle.candidate_bundle.fhir_bundle["entry"][7]["fullUrl"]
+    composition["section"][1]["entry"][0]["reference"] = wrong_full_url
     return broken_bundle

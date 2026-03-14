@@ -96,7 +96,12 @@ def _build_workflow_validation_result(
         "bundle.composition_medications_section_present",
         "bundle.composition_allergies_section_present",
         "bundle.composition_problems_section_present",
-        "bundle.references_aligned_to_entry_fullurls",
+        "bundle.practitionerrole_practitioner_reference_aligned",
+        "bundle.practitionerrole_organization_reference_aligned",
+        "bundle.medicationrequest_subject_reference_aligned",
+        "bundle.allergyintolerance_patient_reference_aligned",
+        "bundle.condition_subject_reference_aligned",
+        "bundle.composition_section_entry_references_aligned",
     ]
 
     if bundle.get("type") != "document":
@@ -320,12 +325,57 @@ def _build_workflow_validation_result(
             )
         )
 
-    if not _references_aligned_to_entry_fullurls(bundle, schematic):
+    if not _practitionerrole_practitioner_reference_aligned(bundle, full_urls_by_placeholder_id):
         findings.append(
             _workflow_error(
-                "bundle.references_aligned_to_entry_fullurls",
-                "Bundle.entry.resource.reference",
-                "Expected internal bundle references to align to deterministic entry.fullUrl values.",
+                "bundle.practitionerrole_practitioner_reference_aligned",
+                "Bundle.entry[2].resource.practitioner.reference",
+                "Expected PractitionerRole.practitioner.reference to align to the Practitioner bundle entry fullUrl.",
+            )
+        )
+
+    if not _practitionerrole_organization_reference_aligned(bundle, full_urls_by_placeholder_id):
+        findings.append(
+            _workflow_error(
+                "bundle.practitionerrole_organization_reference_aligned",
+                "Bundle.entry[2].resource.organization.reference",
+                "Expected PractitionerRole.organization.reference to align to the Organization bundle entry fullUrl.",
+            )
+        )
+
+    if not _medicationrequest_subject_reference_aligned(bundle, full_urls_by_placeholder_id):
+        findings.append(
+            _workflow_error(
+                "bundle.medicationrequest_subject_reference_aligned",
+                "Bundle.entry[5].resource.subject.reference",
+                "Expected MedicationRequest.subject.reference to align to the Patient bundle entry fullUrl.",
+            )
+        )
+
+    if not _allergyintolerance_patient_reference_aligned(bundle, full_urls_by_placeholder_id):
+        findings.append(
+            _workflow_error(
+                "bundle.allergyintolerance_patient_reference_aligned",
+                "Bundle.entry[6].resource.patient.reference",
+                "Expected AllergyIntolerance.patient.reference to align to the Patient bundle entry fullUrl.",
+            )
+        )
+
+    if not _condition_subject_reference_aligned(bundle, full_urls_by_placeholder_id):
+        findings.append(
+            _workflow_error(
+                "bundle.condition_subject_reference_aligned",
+                "Bundle.entry[7].resource.subject.reference",
+                "Expected Condition.subject.reference to align to the Patient bundle entry fullUrl.",
+            )
+        )
+
+    if not _composition_section_entry_references_aligned(bundle, schematic, full_urls_by_placeholder_id):
+        findings.append(
+            _workflow_error(
+                "bundle.composition_section_entry_references_aligned",
+                "Bundle.entry[0].resource.section.entry.reference",
+                "Expected Composition section entry references to align to deterministic bundle entry fullUrls.",
             )
         )
 
@@ -449,41 +499,108 @@ def _entry_fullurls_present(bundle: dict[str, object]) -> bool:
     return all(isinstance(entry, dict) and bool(entry.get("fullUrl")) for entry in entries)
 
 
-def _references_aligned_to_entry_fullurls(
+def _expected_full_url(
+    full_urls_by_placeholder_id: dict[str, str],
+    placeholder_id: str,
+) -> str | None:
+    expected = full_urls_by_placeholder_id.get(placeholder_id)
+    if not isinstance(expected, str) or not expected:
+        return None
+    return expected
+
+
+def _reference_target_aligned(
+    actual_reference_parent: object,
+    full_urls_by_placeholder_id: dict[str, str],
+    placeholder_id: str,
+) -> bool:
+    expected_reference = _expected_full_url(full_urls_by_placeholder_id, placeholder_id)
+    if expected_reference is None:
+        return True
+    return (
+        isinstance(actual_reference_parent, dict)
+        and actual_reference_parent.get("reference") == expected_reference
+    )
+
+
+def _practitionerrole_practitioner_reference_aligned(
+    bundle: dict[str, object],
+    full_urls_by_placeholder_id: dict[str, str],
+) -> bool:
+    practitioner_role = _find_resource_by_type(bundle, "PractitionerRole")
+    return _reference_target_aligned(
+        practitioner_role.get("practitioner"),
+        full_urls_by_placeholder_id,
+        "practitioner-1",
+    )
+
+
+def _practitionerrole_organization_reference_aligned(
+    bundle: dict[str, object],
+    full_urls_by_placeholder_id: dict[str, str],
+) -> bool:
+    practitioner_role = _find_resource_by_type(bundle, "PractitionerRole")
+    return _reference_target_aligned(
+        practitioner_role.get("organization"),
+        full_urls_by_placeholder_id,
+        "organization-1",
+    )
+
+
+def _medicationrequest_subject_reference_aligned(
+    bundle: dict[str, object],
+    full_urls_by_placeholder_id: dict[str, str],
+) -> bool:
+    medication = _find_resource_by_type(bundle, "MedicationRequest")
+    return _reference_target_aligned(
+        medication.get("subject"),
+        full_urls_by_placeholder_id,
+        "patient-1",
+    )
+
+
+def _allergyintolerance_patient_reference_aligned(
+    bundle: dict[str, object],
+    full_urls_by_placeholder_id: dict[str, str],
+) -> bool:
+    allergy = _find_resource_by_type(bundle, "AllergyIntolerance")
+    return _reference_target_aligned(
+        allergy.get("patient"),
+        full_urls_by_placeholder_id,
+        "patient-1",
+    )
+
+
+def _condition_subject_reference_aligned(
+    bundle: dict[str, object],
+    full_urls_by_placeholder_id: dict[str, str],
+) -> bool:
+    condition = _find_resource_by_type(bundle, "Condition")
+    return _reference_target_aligned(
+        condition.get("subject"),
+        full_urls_by_placeholder_id,
+        "patient-1",
+    )
+
+
+def _composition_section_entry_references_aligned(
     bundle: dict[str, object],
     schematic: BundleSchematic,
+    full_urls_by_placeholder_id: dict[str, str],
 ) -> bool:
-    full_urls_by_placeholder_id = _full_urls_by_placeholder_id(bundle)
-    if not full_urls_by_placeholder_id:
-        return False
-
     composition = _find_resource_by_type(bundle, "Composition")
-    practitioner_role = _find_resource_by_type(bundle, "PractitionerRole")
-    medication = _find_resource_by_type(bundle, "MedicationRequest")
-    allergy = _find_resource_by_type(bundle, "AllergyIntolerance")
-    condition = _find_resource_by_type(bundle, "Condition")
-
-    expected_references = [
-        (practitioner_role.get("practitioner"), full_urls_by_placeholder_id.get("practitioner-1")),
-        (practitioner_role.get("organization"), full_urls_by_placeholder_id.get("organization-1")),
-        (medication.get("subject"), full_urls_by_placeholder_id.get("patient-1")),
-        (allergy.get("patient"), full_urls_by_placeholder_id.get("patient-1")),
-        (condition.get("subject"), full_urls_by_placeholder_id.get("patient-1")),
-    ]
-
-    for actual_reference, expected_reference in expected_references:
-        if not isinstance(actual_reference, dict) or actual_reference.get("reference") != expected_reference:
-            return False
-
     sections = composition.get("section")
     if not isinstance(sections, list) or len(sections) != len(schematic.section_scaffolds):
-        return False
+        return True
     for index, section_scaffold in enumerate(schematic.section_scaffolds):
+        expected_reference = _expected_full_url(
+            full_urls_by_placeholder_id,
+            section_scaffold.entry_placeholder_ids[0],
+        )
+        if expected_reference is None:
+            return True
         entry_reference = _first_list_item(sections[index].get("entry")) if isinstance(sections[index], dict) else {}
-        placeholder_id = section_scaffold.entry_placeholder_ids[0]
-        if not isinstance(entry_reference, dict) or entry_reference.get("reference") != full_urls_by_placeholder_id.get(
-            placeholder_id
-        ):
+        if not isinstance(entry_reference, dict) or entry_reference.get("reference") != expected_reference:
             return False
     return True
 

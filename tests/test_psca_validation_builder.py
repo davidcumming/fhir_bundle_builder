@@ -59,7 +59,27 @@ async def test_psca_validation_builder_happy_path_reports_split_channels() -> No
         for finding in report.workflow_validation.findings
     )
     assert not any(
-        finding.code == "bundle.references_aligned_to_entry_fullurls" and finding.severity == "error"
+        finding.code == "bundle.practitionerrole_practitioner_reference_aligned" and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.practitionerrole_organization_reference_aligned" and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.medicationrequest_subject_reference_aligned" and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.allergyintolerance_patient_reference_aligned" and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.condition_subject_reference_aligned" and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.composition_section_entry_references_aligned" and finding.severity == "error"
         for finding in report.workflow_validation.findings
     )
 
@@ -169,7 +189,7 @@ async def test_psca_validation_builder_fails_when_composition_subject_reference_
         for finding in report.workflow_validation.findings
     )
     assert not any(
-        finding.code == "bundle.references_aligned_to_entry_fullurls"
+        finding.code == "bundle.composition_section_entry_references_aligned"
         for finding in report.workflow_validation.findings
     )
 
@@ -193,7 +213,7 @@ async def test_psca_validation_builder_fails_when_composition_author_reference_i
         for finding in report.workflow_validation.findings
     )
     assert not any(
-        finding.code == "bundle.references_aligned_to_entry_fullurls"
+        finding.code == "bundle.composition_section_entry_references_aligned"
         for finding in report.workflow_validation.findings
     )
 
@@ -387,7 +407,188 @@ async def test_psca_validation_builder_fails_when_references_do_not_align_to_ful
 
     assert report.workflow_validation.status == "failed"
     assert any(
-        finding.code == "bundle.references_aligned_to_entry_fullurls" and finding.severity == "error"
+        finding.code == "bundle.practitionerrole_organization_reference_aligned" and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.practitionerrole_practitioner_reference_aligned"
+        for finding in report.workflow_validation.findings
+    )
+
+
+async def test_psca_validation_builder_fails_when_practitionerrole_practitioner_reference_is_not_aligned() -> None:
+    normalized_request, schematic, candidate_bundle = _build_validation_inputs()
+    broken_bundle = deepcopy(candidate_bundle)
+    practitioner_role = broken_bundle.candidate_bundle.fhir_bundle["entry"][2]["resource"]
+    practitioner_role["practitioner"]["reference"] = "Practitioner/practitioner-1"
+
+    report = await build_psca_validation_report(
+        broken_bundle,
+        schematic,
+        normalized_request,
+        LocalCandidateBundleScaffoldStandardsValidator(),
+    )
+
+    assert report.workflow_validation.status == "failed"
+    assert any(
+        finding.code == "bundle.practitionerrole_practitioner_reference_aligned"
+        and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.practitionerrole_organization_reference_aligned"
+        for finding in report.workflow_validation.findings
+    )
+
+
+async def test_psca_validation_builder_fails_when_medicationrequest_subject_reference_is_not_aligned() -> None:
+    normalized_request, schematic, candidate_bundle = _build_validation_inputs()
+    broken_bundle = deepcopy(candidate_bundle)
+    medication = broken_bundle.candidate_bundle.fhir_bundle["entry"][5]["resource"]
+    medication["subject"]["reference"] = "Patient/patient-1"
+
+    report = await build_psca_validation_report(
+        broken_bundle,
+        schematic,
+        normalized_request,
+        LocalCandidateBundleScaffoldStandardsValidator(),
+    )
+
+    assert report.workflow_validation.status == "failed"
+    assert any(
+        finding.code == "bundle.medicationrequest_subject_reference_aligned"
+        and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.allergyintolerance_patient_reference_aligned"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.condition_subject_reference_aligned"
+        for finding in report.workflow_validation.findings
+    )
+
+
+async def test_psca_validation_builder_fails_when_allergyintolerance_patient_reference_is_not_aligned() -> None:
+    normalized_request, schematic, candidate_bundle = _build_validation_inputs()
+    broken_bundle = deepcopy(candidate_bundle)
+    allergy = broken_bundle.candidate_bundle.fhir_bundle["entry"][6]["resource"]
+    allergy["patient"]["reference"] = "Patient/patient-1"
+
+    report = await build_psca_validation_report(
+        broken_bundle,
+        schematic,
+        normalized_request,
+        LocalCandidateBundleScaffoldStandardsValidator(),
+    )
+
+    assert report.workflow_validation.status == "failed"
+    assert any(
+        finding.code == "bundle.allergyintolerance_patient_reference_aligned"
+        and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.medicationrequest_subject_reference_aligned"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.condition_subject_reference_aligned"
+        for finding in report.workflow_validation.findings
+    )
+
+
+async def test_psca_validation_builder_fails_when_condition_subject_reference_is_not_aligned() -> None:
+    normalized_request, schematic, candidate_bundle = _build_validation_inputs()
+    broken_bundle = deepcopy(candidate_bundle)
+    condition = broken_bundle.candidate_bundle.fhir_bundle["entry"][7]["resource"]
+    condition["subject"]["reference"] = "Patient/patient-1"
+
+    report = await build_psca_validation_report(
+        broken_bundle,
+        schematic,
+        normalized_request,
+        LocalCandidateBundleScaffoldStandardsValidator(),
+    )
+
+    assert report.workflow_validation.status == "failed"
+    assert any(
+        finding.code == "bundle.condition_subject_reference_aligned"
+        and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.medicationrequest_subject_reference_aligned"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.allergyintolerance_patient_reference_aligned"
+        for finding in report.workflow_validation.findings
+    )
+
+
+async def test_psca_validation_builder_fails_when_composition_section_entry_references_are_not_aligned() -> None:
+    normalized_request, schematic, candidate_bundle = _build_validation_inputs()
+    broken_bundle = deepcopy(candidate_bundle)
+    composition = broken_bundle.candidate_bundle.fhir_bundle["entry"][0]["resource"]
+    wrong_full_url = broken_bundle.candidate_bundle.fhir_bundle["entry"][7]["fullUrl"]
+    composition["section"][1]["entry"][0]["reference"] = wrong_full_url
+
+    report = await build_psca_validation_report(
+        broken_bundle,
+        schematic,
+        normalized_request,
+        LocalCandidateBundleScaffoldStandardsValidator(),
+    )
+
+    assert report.workflow_validation.status == "failed"
+    assert any(
+        finding.code == "bundle.composition_section_entry_references_aligned"
+        and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.composition_allergies_section_present"
+        for finding in report.workflow_validation.findings
+    )
+
+
+async def test_psca_validation_builder_does_not_spray_specific_reference_findings_when_fullurls_are_missing() -> None:
+    normalized_request, schematic, candidate_bundle = _build_validation_inputs()
+    broken_bundle = deepcopy(candidate_bundle)
+    broken_bundle.candidate_bundle.fhir_bundle["entry"][2].pop("fullUrl", None)
+
+    report = await build_psca_validation_report(
+        broken_bundle,
+        schematic,
+        normalized_request,
+        LocalCandidateBundleScaffoldStandardsValidator(),
+    )
+
+    assert report.workflow_validation.status == "failed"
+    assert any(
+        finding.code == "bundle.entry_fullurls_present" and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.practitionerrole_practitioner_reference_aligned"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.practitionerrole_organization_reference_aligned"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.medicationrequest_subject_reference_aligned"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.allergyintolerance_patient_reference_aligned"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.condition_subject_reference_aligned"
         for finding in report.workflow_validation.findings
     )
 

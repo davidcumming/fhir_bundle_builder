@@ -139,11 +139,41 @@ _FINDING_ROUTE_MAP: dict[str, tuple[str, str, bool, str]] = {
         True,
         "The problems Composition section block is attached during resource construction.",
     ),
-    "bundle.references_aligned_to_entry_fullurls": (
+    "bundle.practitionerrole_practitioner_reference_aligned": (
         "bundle_finalization",
         "bundle_finalization",
         True,
-        "Bundle reference alignment to deterministic fullUrls is performed during candidate bundle assembly.",
+        "PractitionerRole.practitioner final fullUrl alignment is applied during candidate bundle assembly.",
+    ),
+    "bundle.practitionerrole_organization_reference_aligned": (
+        "bundle_finalization",
+        "bundle_finalization",
+        True,
+        "PractitionerRole.organization final fullUrl alignment is applied during candidate bundle assembly.",
+    ),
+    "bundle.medicationrequest_subject_reference_aligned": (
+        "bundle_finalization",
+        "bundle_finalization",
+        True,
+        "MedicationRequest.subject final fullUrl alignment is applied during candidate bundle assembly.",
+    ),
+    "bundle.allergyintolerance_patient_reference_aligned": (
+        "bundle_finalization",
+        "bundle_finalization",
+        True,
+        "AllergyIntolerance.patient final fullUrl alignment is applied during candidate bundle assembly.",
+    ),
+    "bundle.condition_subject_reference_aligned": (
+        "bundle_finalization",
+        "bundle_finalization",
+        True,
+        "Condition.subject final fullUrl alignment is applied during candidate bundle assembly.",
+    ),
+    "bundle.composition_section_entry_references_aligned": (
+        "bundle_finalization",
+        "bundle_finalization",
+        True,
+        "Composition section-entry final fullUrl alignment is applied during candidate bundle assembly.",
     ),
 }
 

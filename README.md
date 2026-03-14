@@ -103,7 +103,7 @@ The `specification_asset_retrieval` stage now emits the first normalized PS-CA a
 
 ## Current slice boundaries
 
-This slice is for workflow shape, PS-CA normalized asset retrieval, the first real schematic artifact, the first real build plan, the first meaningful content-enriched resource-construction path for core clinical resources, the first support-resource enrichment for the selected provider-facing author path, the first candidate-bundle finalization foundation, the first validation foundation, the first optional Matchbox-backed external standards-validation path, the first repair-decision foundation, and the first bounded repair-execution foundation with narrow step-subset repair directives for resource construction.
+This slice is for workflow shape, PS-CA normalized asset retrieval, the first real schematic artifact, the first real build plan, the first meaningful content-enriched resource-construction path for core clinical resources, the first support-resource enrichment for the selected provider-facing author path, the first candidate-bundle finalization foundation, the first validation foundation, the first optional Matchbox-backed external standards-validation path, the first repair-decision foundation, and the first bounded repair-execution foundation with narrow step-subset repair directives for resource construction plus narrower bundle-finalization-owned reference-alignment findings.
 
 - The workflow reads existing PS-CA package files deterministically from the repo.
 - The spec retrieval stage exposes a normalized PS-CA asset context with foundational profiles, Composition section definitions, and selected example evidence.
@@ -229,6 +229,13 @@ The `validation` stage now emits the first real structured validation artifact f
     - author reference alignment
   - section-specific deterministic Composition section-presence checks for medications, allergies, and problems
   - resource-specific placeholder-content checks for `MedicationRequest`, `AllergyIntolerance`, and `Condition`
+  - resource-specific non-Composition reference-alignment checks for:
+    - `PractitionerRole.practitioner`
+    - `PractitionerRole.organization`
+    - `MedicationRequest.subject`
+    - `AllergyIntolerance.patient`
+    - `Condition.subject`
+  - one intentionally grouped Composition section-entry exact fullUrl alignment check
   - findings tied to bundle structure and PS-CA expectations
   - explicit deferred areas
 - counts for errors, warnings, and informational findings
@@ -258,6 +265,9 @@ The `repair_decision` stage now emits the first real structured repair-routing a
   - scaffold-plus-finalizers targeting for Composition scaffold/content issues where replaying the scaffold step still requires replaying section-finalize steps
   - section-specific Composition finalize targeting when one or more required Composition sections are missing
   - single-resource section-entry targeting when only one section-entry placeholder-content rule fails
+- when `bundle_finalization` is recommended:
+  - narrower resource-specific reference-alignment findings for the non-Composition references that are rewritten during candidate bundle assembly
+  - an intentionally grouped Composition section-entry exact fullUrl alignment finding
 - a clear distinction between repair recommendation and actual repair execution, which is still deferred
 
 ## Repair-execution-stage output
