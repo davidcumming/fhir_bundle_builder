@@ -10,6 +10,7 @@ from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.models import (
     BundleRequestInput,
     NormalizedBuildRequest,
     ProfileReferenceInput,
+    ResourceConstructionRepairDirective,
     SpecificationSelection,
     WorkflowDefaults,
 )
@@ -162,4 +163,128 @@ def test_psca_resource_construction_builder_generates_scaffolds_and_registry() -
     assert (
         finalized_composition.fhir_scaffold["section"][0]["code"]["coding"][0]["display"]
         == schematic.section_scaffolds[0].title
+    )
+
+
+def test_psca_resource_construction_builder_supports_targeted_patient_repair() -> None:
+    repository = PscaAssetRepository()
+    normalized_assets = repository.load_foundation_context(PscaAssetQuery())
+    schematic = build_psca_bundle_schematic(normalized_assets)
+    plan = build_psca_build_plan(schematic)
+    normalized_request = _build_normalized_request("pytest-targeted-patient")
+    full_result = build_psca_resource_construction_result(plan, schematic, normalized_request)
+    repair_directive = ResourceConstructionRepairDirective(
+        directive_basis="validation_finding_code_map",
+        scope="build_step_subset",
+        trigger_finding_codes=["bundle.patient_identity_content_present"],
+        target_step_ids=["build-patient-1"],
+        target_placeholder_ids=["patient-1"],
+        rationale="Rerun the patient anchor step to restore deterministic patient identity content.",
+    )
+
+    targeted_result = build_psca_resource_construction_result(
+        plan,
+        schematic,
+        normalized_request,
+        prior_result=full_result,
+        repair_directive=repair_directive,
+    )
+
+    assert targeted_result.execution_scope == "targeted_repair"
+    assert targeted_result.applied_repair_directive == repair_directive
+    assert [step.step_id for step in targeted_result.step_results] == ["build-patient-1"]
+    assert targeted_result.regenerated_placeholder_ids == ["patient-1"]
+    assert "patient-1" not in targeted_result.reused_placeholder_ids
+    assert set(targeted_result.reused_placeholder_ids) == {
+        "practitioner-1",
+        "organization-1",
+        "practitionerrole-1",
+        "composition-1",
+        "medicationrequest-1",
+        "allergyintolerance-1",
+        "condition-1",
+    }
+    registry = {entry.placeholder_id: entry for entry in targeted_result.resource_registry}
+    assert set(registry) == {
+        "patient-1",
+        "practitioner-1",
+        "organization-1",
+        "practitionerrole-1",
+        "composition-1",
+        "medicationrequest-1",
+        "allergyintolerance-1",
+        "condition-1",
+    }
+    assert registry["patient-1"].latest_step_id == "build-patient-1"
+    assert registry["patient-1"].current_scaffold.fhir_scaffold["name"][0]["text"] == "Resource Test Patient"
+    assert registry["composition-1"].current_scaffold.source_step_ids == [
+        "build-composition-1-scaffold",
+        "finalize-composition-1",
+    ]
+
+
+def test_psca_resource_construction_builder_supports_targeted_composition_finalize_repair() -> None:
+    repository = PscaAssetRepository()
+    normalized_assets = repository.load_foundation_context(PscaAssetQuery())
+    schematic = build_psca_bundle_schematic(normalized_assets)
+    plan = build_psca_build_plan(schematic)
+    normalized_request = _build_normalized_request("pytest-targeted-composition")
+    full_result = build_psca_resource_construction_result(plan, schematic, normalized_request)
+    repair_directive = ResourceConstructionRepairDirective(
+        directive_basis="validation_finding_code_map",
+        scope="build_step_subset",
+        trigger_finding_codes=["bundle.required_sections_present"],
+        target_step_ids=["finalize-composition-1"],
+        target_placeholder_ids=["composition-1"],
+        rationale="Rerun composition finalization to reattach the deterministic required sections.",
+    )
+
+    targeted_result = build_psca_resource_construction_result(
+        plan,
+        schematic,
+        normalized_request,
+        prior_result=full_result,
+        repair_directive=repair_directive,
+    )
+
+    assert targeted_result.execution_scope == "targeted_repair"
+    assert targeted_result.applied_repair_directive == repair_directive
+    assert [step.step_id for step in targeted_result.step_results] == ["finalize-composition-1"]
+    assert targeted_result.regenerated_placeholder_ids == ["composition-1"]
+    assert "composition-1" not in targeted_result.reused_placeholder_ids
+    registry = {entry.placeholder_id: entry for entry in targeted_result.resource_registry}
+    assert len(registry["composition-1"].current_scaffold.fhir_scaffold["section"]) == 3
+    assert registry["composition-1"].current_scaffold.source_step_ids == [
+        "build-composition-1-scaffold",
+        "finalize-composition-1",
+    ]
+
+
+def _build_normalized_request(scenario_label: str) -> NormalizedBuildRequest:
+    return NormalizedBuildRequest(
+        stage_id="request_normalization",
+        status="placeholder_complete",
+        summary="Test normalized request.",
+        placeholder_note="Test artifact.",
+        source_refs=[],
+        specification=SpecificationSelection(),
+        patient_profile=ProfileReferenceInput(
+            profile_id="patient-resource-test",
+            display_name="Resource Test Patient",
+        ),
+        provider_profile=ProfileReferenceInput(
+            profile_id="provider-resource-test",
+            display_name="Resource Test Provider",
+        ),
+        request=BundleRequestInput(
+            request_text="Create a deterministic resource construction result for testing.",
+            scenario_label=scenario_label,
+        ),
+        workflow_defaults=WorkflowDefaults(
+            bundle_type="document",
+            specification_mode="normalized-asset-foundation",
+            validation_mode="foundational_dual_channel",
+            resource_construction_mode="deterministic_content_enriched_foundation",
+        ),
+        run_label=f"{scenario_label}:ca.infoway.io.psca:2.1.1-DFT",
     )

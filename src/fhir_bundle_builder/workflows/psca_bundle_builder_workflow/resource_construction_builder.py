@@ -12,6 +12,7 @@ from .models import (
     NormalizedBuildRequest,
     ReferenceContribution,
     ResourceConstructionEvidence,
+    ResourceConstructionRepairDirective,
     ResourceConstructionStageResult,
     ResourceConstructionStepResult,
     ResourceRegistryEntry,
@@ -25,16 +26,23 @@ def build_psca_resource_construction_result(
     plan: BuildPlan,
     schematic: BundleSchematic,
     normalized_request: NormalizedBuildRequest,
+    prior_result: ResourceConstructionStageResult | None = None,
+    repair_directive: ResourceConstructionRepairDirective | None = None,
 ) -> ResourceConstructionStageResult:
     """Build deterministic enriched PS-CA resource scaffolds for the current build plan."""
 
+    if repair_directive is not None and prior_result is None:
+        raise ValueError("Targeted resource construction repair requires a prior construction result.")
+
     placeholders = {placeholder.placeholder_id: placeholder for placeholder in schematic.resource_placeholders}
     sections = {section.section_key: section for section in schematic.section_scaffolds}
-    registry: dict[str, ResourceRegistryEntry] = {}
-    registry_order: list[str] = []
+    registry, registry_order = _initialize_registry(prior_result)
     step_results: list[ResourceConstructionStepResult] = []
+    targeted_step_ids = _targeted_step_ids(plan, repair_directive)
 
     for step in plan.steps:
+        if targeted_step_ids is not None and step.step_id not in targeted_step_ids:
+            continue
         placeholder = _require_placeholder(placeholders, step.target_placeholder_id)
         prior_entry = registry.get(step.target_placeholder_id)
         result = _build_step_result(step, placeholder, sections, prior_entry, normalized_request)
@@ -49,14 +57,35 @@ def build_psca_resource_construction_result(
         if result.target_placeholder_id not in registry_order:
             registry_order.append(result.target_placeholder_id)
 
+    regenerated_placeholder_ids = _regenerated_placeholder_ids(step_results)
+    reused_placeholder_ids = _reused_placeholder_ids(registry_order, regenerated_placeholder_ids)
+    step_result_history = _step_result_history(plan, prior_result, step_results)
+    execution_scope = "targeted_repair" if repair_directive is not None else "full_build"
+    summary = (
+        "Applied a deterministic targeted repair directive to rerun only selected resource-construction steps "
+        "and merged the regenerated scaffolds back into the registry."
+        if repair_directive is not None
+        else "Constructed deterministic content-enriched PS-CA resource scaffolds for the current build plan and tracked the latest scaffold state per placeholder."
+    )
+    placeholder_note = (
+        "This targeted repair reruns only the directive-selected construction steps; untouched registry entries are reused from the prior result."
+        if repair_directive is not None
+        else "Resources now include a narrow deterministic content layer only; full clinical/provider population, bundle identity policy, and rich terminology remain deferred."
+    )
+
     return ResourceConstructionStageResult(
         stage_id="resource_construction",
         status="placeholder_complete",
-        summary="Constructed deterministic content-enriched PS-CA resource scaffolds for the current build plan and tracked the latest scaffold state per placeholder.",
-        placeholder_note="Resources now include a narrow deterministic content layer only; full clinical/provider population, bundle identity policy, and rich terminology remain deferred.",
+        summary=summary,
+        placeholder_note=placeholder_note,
         source_refs=plan.source_refs,
         construction_mode="deterministic_content_enriched",
+        execution_scope=execution_scope,
+        applied_repair_directive=repair_directive,
+        regenerated_placeholder_ids=regenerated_placeholder_ids,
+        reused_placeholder_ids=reused_placeholder_ids,
         step_results=step_results,
+        step_result_history=step_result_history,
         resource_registry=[registry[placeholder_id] for placeholder_id in registry_order],
         deferred_items=[
             "Broad clinical data-element population remains deferred.",
@@ -69,6 +98,13 @@ def build_psca_resource_construction_result(
             "Only a narrow deterministic content policy has been implemented for core PS-CA resources.",
             "Support-resource enrichment is currently limited by the provider input model to Practitioner identity plus a narrow PractitionerRole author label.",
             "No full bundle patching or entry ordering logic exists yet.",
+            *(
+                [
+                    "Grouped validation findings still require grouped repair directives rather than single-element repair patches."
+                ]
+                if repair_directive is not None
+                else []
+            ),
         ],
         evidence=ResourceConstructionEvidence(
             source_build_plan_stage_id=plan.stage_id,
@@ -78,6 +114,72 @@ def build_psca_resource_construction_result(
             source_refs=plan.source_refs,
         ),
     )
+
+
+def _initialize_registry(
+    prior_result: ResourceConstructionStageResult | None,
+) -> tuple[dict[str, ResourceRegistryEntry], list[str]]:
+    if prior_result is None:
+        return {}, []
+    registry = {
+        entry.placeholder_id: ResourceRegistryEntry.model_validate(entry.model_dump())
+        for entry in prior_result.resource_registry
+    }
+    return registry, [entry.placeholder_id for entry in prior_result.resource_registry]
+
+
+def _targeted_step_ids(
+    plan: BuildPlan,
+    repair_directive: ResourceConstructionRepairDirective | None,
+) -> set[str] | None:
+    if repair_directive is None:
+        return None
+
+    valid_step_ids = {step.step_id for step in plan.steps}
+    unknown_step_ids = [step_id for step_id in repair_directive.target_step_ids if step_id not in valid_step_ids]
+    if unknown_step_ids:
+        raise ValueError(
+            "Resource construction repair directive referenced unknown build-plan steps: "
+            f"{', '.join(unknown_step_ids)}."
+        )
+    return set(repair_directive.target_step_ids)
+
+
+def _regenerated_placeholder_ids(step_results: list[ResourceConstructionStepResult]) -> list[str]:
+    ordered: list[str] = []
+    for step_result in step_results:
+        if step_result.target_placeholder_id not in ordered:
+            ordered.append(step_result.target_placeholder_id)
+    return ordered
+
+
+def _reused_placeholder_ids(
+    registry_order: list[str],
+    regenerated_placeholder_ids: list[str],
+) -> list[str]:
+    regenerated = set(regenerated_placeholder_ids)
+    return [placeholder_id for placeholder_id in registry_order if placeholder_id not in regenerated]
+
+
+def _step_result_history(
+    plan: BuildPlan,
+    prior_result: ResourceConstructionStageResult | None,
+    step_results: list[ResourceConstructionStepResult],
+) -> list[ResourceConstructionStepResult]:
+    latest_by_step_id = {
+        step_result.step_id: step_result
+        for step_result in (
+            prior_result.step_result_history
+            if prior_result is not None and prior_result.step_result_history
+            else (prior_result.step_results if prior_result is not None else [])
+        )
+    }
+    latest_by_step_id.update({step_result.step_id: step_result for step_result in step_results})
+    return [
+        latest_by_step_id[step.step_id]
+        for step in plan.steps
+        if step.step_id in latest_by_step_id
+    ]
 
 
 def _build_step_result(
@@ -556,7 +658,7 @@ def _build_composition_finalize_result(
         fhir_scaffold=scaffold_dict,
         populated_paths=_dedupe_paths(populated_paths),
         deferred_paths=_merge_deferred_paths(placeholder.required_later_fields, ["date"], populated_paths),
-        source_step_ids=prior_scaffold.source_step_ids + [step.step_id],
+        source_step_ids=_dedupe_paths(prior_scaffold.source_step_ids + [step.step_id]),
     )
 
     return ResourceConstructionStepResult(

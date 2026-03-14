@@ -303,6 +303,9 @@ class BuildPlan(StageArtifact):
 
 
 ResourceConstructionMode = Literal["deterministic_content_enriched"]
+ResourceConstructionExecutionScope = Literal["full_build", "targeted_repair"]
+ResourceConstructionRepairDirectiveScope = Literal["build_step_subset"]
+ResourceConstructionRepairDirectiveBasis = Literal["validation_finding_code_map"]
 ResourceConstructionExecutionStatus = Literal["scaffold_created", "scaffold_updated"]
 ReferenceContributionStatus = Literal["applied"]
 ResourceScaffoldState = Literal[
@@ -328,6 +331,17 @@ class DeterministicValueEvidence(BaseModel):
     target_path: str
     source_artifact: str
     source_detail: str
+
+
+class ResourceConstructionRepairDirective(BaseModel):
+    """Deterministic directive for narrowing resource construction repair."""
+
+    directive_basis: ResourceConstructionRepairDirectiveBasis
+    scope: ResourceConstructionRepairDirectiveScope
+    trigger_finding_codes: list[str] = Field(default_factory=list)
+    target_step_ids: list[str] = Field(default_factory=list)
+    target_placeholder_ids: list[str] = Field(default_factory=list)
+    rationale: str
 
 
 class ResourceScaffoldArtifact(BaseModel):
@@ -382,7 +396,12 @@ class ResourceConstructionStageResult(StageArtifact):
     """Structured scaffold-oriented outputs from the resource construction stage."""
 
     construction_mode: ResourceConstructionMode
+    execution_scope: ResourceConstructionExecutionScope = "full_build"
+    applied_repair_directive: ResourceConstructionRepairDirective | None = None
+    regenerated_placeholder_ids: list[str] = Field(default_factory=list)
+    reused_placeholder_ids: list[str] = Field(default_factory=list)
     step_results: list[ResourceConstructionStepResult]
+    step_result_history: list[ResourceConstructionStepResult] = Field(default_factory=list)
     resource_registry: list[ResourceRegistryEntry]
     deferred_items: list[str] = Field(default_factory=list)
     unresolved_items: list[str] = Field(default_factory=list)
@@ -499,6 +518,7 @@ class RepairDecisionResult(StageArtifact):
     overall_decision: RepairOverallDecision
     recommended_target: RepairRouteTarget
     recommended_next_stage: RepairRecommendedNextStage
+    recommended_resource_construction_repair_directive: ResourceConstructionRepairDirective | None = None
     finding_routes: list[RepairFindingRoute] = Field(default_factory=list)
     deferred_external_dependencies: list[str] = Field(default_factory=list)
     evidence: RepairDecisionEvidence
@@ -533,6 +553,7 @@ class RepairExecutionResult(StageArtifact):
     attempt_count: int
     rerun_stage_ids: list[str] = Field(default_factory=list)
     regenerated_artifact_keys: list[str] = Field(default_factory=list)
+    applied_resource_construction_repair_directive: ResourceConstructionRepairDirective | None = None
     post_retry_resource_construction: ResourceConstructionStageResult | None = None
     post_retry_candidate_bundle: CandidateBundleResult | None = None
     post_retry_validation_report: ValidationReport | None = None

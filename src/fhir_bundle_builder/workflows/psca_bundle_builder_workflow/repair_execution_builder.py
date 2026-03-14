@@ -12,6 +12,7 @@ from .models import (
     RepairDecisionResult,
     RepairExecutionEvidence,
     RepairExecutionResult,
+    ResourceConstructionRepairDirective,
     ResourceConstructionStageResult,
 )
 from .repair_decision_builder import build_psca_repair_decision
@@ -95,10 +96,13 @@ async def build_psca_repair_execution_result(
 
     if repair_decision.overall_decision == "repair_recommended" and requested_target in _SUPPORTED_RETRY_TARGETS:
         if requested_target == "resource_construction":
+            applied_repair_directive = repair_decision.recommended_resource_construction_repair_directive
             post_retry_resource_construction = build_psca_resource_construction_result(
                 build_plan,
                 schematic,
                 normalized_request,
+                prior_result=resource_construction,
+                repair_directive=applied_repair_directive,
             )
             return await _build_executed_retry_result(
                 repair_decision=repair_decision,
@@ -120,6 +124,7 @@ async def build_psca_repair_execution_result(
                     "The repair recommendation targeted resource construction, so the retry "
                     "reran that deterministic stage and all of its downstream artifacts."
                 ),
+                applied_resource_construction_repair_directive=applied_repair_directive,
                 post_retry_resource_construction=post_retry_resource_construction,
             )
 
@@ -134,6 +139,7 @@ async def build_psca_repair_execution_result(
             summary="Executed one bounded internal retry pass and regenerated downstream artifacts from the supported repair target.",
             placeholder_note="This stage reruns only the supported downstream slice once and stops even if the post-retry decision still recommends repair.",
             rationale="The repair recommendation targeted bundle finalization, which remains a supported internal retry layer in this slice.",
+            applied_resource_construction_repair_directive=None,
             post_retry_resource_construction=None,
         )
 
@@ -171,6 +177,7 @@ async def _build_executed_retry_result(
     summary: str,
     placeholder_note: str,
     rationale: str,
+    applied_resource_construction_repair_directive: ResourceConstructionRepairDirective | None,
     post_retry_resource_construction: ResourceConstructionStageResult | None,
 ) -> RepairExecutionResult:
     post_retry_candidate_bundle = build_psca_candidate_bundle_result(
@@ -201,6 +208,7 @@ async def _build_executed_retry_result(
         attempt_count=1,
         rerun_stage_ids=list(rerun_stage_ids),
         regenerated_artifact_keys=list(regenerated_artifact_keys),
+        applied_resource_construction_repair_directive=applied_resource_construction_repair_directive,
         post_retry_resource_construction=post_retry_resource_construction,
         post_retry_candidate_bundle=post_retry_candidate_bundle,
         post_retry_validation_report=post_retry_validation_report,

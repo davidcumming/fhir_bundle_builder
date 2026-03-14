@@ -35,7 +35,14 @@ def build_psca_candidate_bundle_result(
     """Assemble the first real candidate bundle scaffold from constructed resource scaffolds."""
 
     registry = {entry.placeholder_id: entry for entry in construction.resource_registry}
-    step_results_by_id = {step.step_id: step for step in construction.step_results}
+    step_results_by_id = {
+        step.step_id: step
+        for step in (
+            construction.step_result_history
+            if construction.step_result_history
+            else construction.step_results
+        )
+    }
     required_entry_ids = list(schematic.bundle_scaffold.required_entry_placeholder_ids)
     ordered_placeholder_ids = [
         relationship.target_id

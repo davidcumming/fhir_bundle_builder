@@ -8,6 +8,7 @@ from .models import (
     RepairDecisionEvidence,
     RepairDecisionResult,
     RepairFindingRoute,
+    ResourceConstructionRepairDirective,
     ValidationReport,
 )
 
@@ -118,6 +119,60 @@ _TARGET_PRIORITY = {
     "none_required": 4,
 }
 
+_RESOURCE_CONSTRUCTION_DIRECTIVE_MAP: dict[str, tuple[list[str], list[str], str]] = {
+    "bundle.patient_identity_content_present": (
+        ["build-patient-1"],
+        ["patient-1"],
+        "Rerun the patient anchor step to restore deterministic patient identity content.",
+    ),
+    "bundle.practitioner_identity_content_present": (
+        ["build-practitioner-1"],
+        ["practitioner-1"],
+        "Rerun the practitioner support step to restore deterministic practitioner identity content.",
+    ),
+    "bundle.practitionerrole_author_context_present": (
+        ["build-practitionerrole-1"],
+        ["practitionerrole-1"],
+        "Rerun the practitioner-role support step to restore the deterministic author-context label.",
+    ),
+    "bundle.composition_type_matches_psca_summary": (
+        ["build-composition-1-scaffold", "finalize-composition-1"],
+        ["composition-1"],
+        "Rerun the composition scaffold and finalize steps to restore deterministic composition type and section attachment state.",
+    ),
+    "bundle.composition_enriched_content_present": (
+        ["build-composition-1-scaffold", "finalize-composition-1"],
+        ["composition-1"],
+        "Rerun the composition scaffold and finalize steps to restore deterministic composition content and final section state.",
+    ),
+    "bundle.required_sections_present": (
+        ["finalize-composition-1"],
+        ["composition-1"],
+        "Rerun composition finalization to reattach the deterministic required sections.",
+    ),
+    "bundle.section_entry_content_present": (
+        [
+            "build-medicationrequest-1",
+            "build-allergyintolerance-1",
+            "build-condition-1",
+        ],
+        ["medicationrequest-1", "allergyintolerance-1", "condition-1"],
+        "Rerun the grouped section-entry construction steps because the current validation finding is still aggregated across all section-entry resources.",
+    ),
+}
+
+_RESOURCE_CONSTRUCTION_STEP_ORDER = {
+    "build-patient-1": 1,
+    "build-practitioner-1": 2,
+    "build-organization-1": 3,
+    "build-practitionerrole-1": 4,
+    "build-composition-1-scaffold": 5,
+    "build-medicationrequest-1": 6,
+    "build-allergyintolerance-1": 7,
+    "build-condition-1": 8,
+    "finalize-composition-1": 9,
+}
+
 
 def build_psca_repair_decision(validation_report: ValidationReport) -> RepairDecisionResult:
     """Build the first real repair-decision artifact from structured validation findings."""
@@ -169,6 +224,12 @@ def build_psca_repair_decision(validation_report: ValidationReport) -> RepairDec
         recommended_next_stage = "none"
         rationale = "No actionable repair is currently recommended from the structured validation findings."
 
+    recommended_resource_construction_repair_directive = None
+    if recommended_target == "resource_construction":
+        recommended_resource_construction_repair_directive = _build_resource_construction_repair_directive(
+            finding_routes
+        )
+
     return RepairDecisionResult(
         stage_id="repair_decision",
         status="placeholder_complete",
@@ -178,6 +239,7 @@ def build_psca_repair_decision(validation_report: ValidationReport) -> RepairDec
         overall_decision=overall_decision,
         recommended_target=recommended_target,
         recommended_next_stage=recommended_next_stage,
+        recommended_resource_construction_repair_directive=recommended_resource_construction_repair_directive,
         finding_routes=finding_routes,
         deferred_external_dependencies=_dedupe(
             [
@@ -261,6 +323,52 @@ def _route_finding(finding: ValidationFinding) -> RepairFindingRoute:
         recommended_next_stage="none",
         actionable=True,
         reason="This finding does not have a safe deterministic internal repair mapping in the current slice.",
+    )
+
+
+def _build_resource_construction_repair_directive(
+    finding_routes: list[RepairFindingRoute],
+) -> ResourceConstructionRepairDirective | None:
+    target_routes = [
+        route
+        for route in finding_routes
+        if route.actionable and route.route_target == "resource_construction"
+    ]
+    if not target_routes:
+        return None
+
+    trigger_finding_codes: list[str] = []
+    target_step_ids: list[str] = []
+    target_placeholder_ids: list[str] = []
+    rationale_parts: list[str] = []
+    for route in target_routes:
+        mapped = _RESOURCE_CONSTRUCTION_DIRECTIVE_MAP.get(route.finding_code)
+        if mapped is None:
+            continue
+        step_ids, placeholder_ids, rationale = mapped
+        if route.finding_code not in trigger_finding_codes:
+            trigger_finding_codes.append(route.finding_code)
+        for step_id in step_ids:
+            if step_id not in target_step_ids:
+                target_step_ids.append(step_id)
+        for placeholder_id in placeholder_ids:
+            if placeholder_id not in target_placeholder_ids:
+                target_placeholder_ids.append(placeholder_id)
+        if rationale not in rationale_parts:
+            rationale_parts.append(rationale)
+
+    if not target_step_ids:
+        return None
+
+    target_step_ids.sort(key=lambda step_id: _RESOURCE_CONSTRUCTION_STEP_ORDER[step_id])
+
+    return ResourceConstructionRepairDirective(
+        directive_basis="validation_finding_code_map",
+        scope="build_step_subset",
+        trigger_finding_codes=trigger_finding_codes,
+        target_step_ids=target_step_ids,
+        target_placeholder_ids=target_placeholder_ids,
+        rationale=" ".join(rationale_parts),
     )
 
 

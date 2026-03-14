@@ -103,7 +103,7 @@ The `specification_asset_retrieval` stage now emits the first normalized PS-CA a
 
 ## Current slice boundaries
 
-This slice is for workflow shape, PS-CA normalized asset retrieval, the first real schematic artifact, the first real build plan, the first meaningful content-enriched resource-construction path for core clinical resources, the first support-resource enrichment for the selected provider-facing author path, the first candidate-bundle finalization foundation, the first validation foundation, the first optional Matchbox-backed external standards-validation path, the first repair-decision foundation, and the first bounded repair-execution foundation.
+This slice is for workflow shape, PS-CA normalized asset retrieval, the first real schematic artifact, the first real build plan, the first meaningful content-enriched resource-construction path for core clinical resources, the first support-resource enrichment for the selected provider-facing author path, the first candidate-bundle finalization foundation, the first validation foundation, the first optional Matchbox-backed external standards-validation path, the first repair-decision foundation, and the first bounded repair-execution foundation with narrow step-subset repair directives for resource construction.
 
 - The workflow reads existing PS-CA package files deterministically from the repo.
 - The spec retrieval stage exposes a normalized PS-CA asset context with foundational profiles, Composition section definitions, and selected example evidence.
@@ -122,6 +122,11 @@ This slice is for workflow shape, PS-CA normalized asset retrieval, the first re
 - That bounded retry pass now supports rerunning either:
   - `bundle_finalization`
   - `resource_construction` plus its downstream stages
+- `resource_construction` retries now use the first narrow repair-directive model:
+  - deterministic build-step-subset directives derived from stable validation finding codes
+  - explicit applied directive evidence
+  - explicit regenerated vs reused placeholder reporting
+  - no element-level patching or generic repair DSL
 
 ## Schematic-stage output
 
@@ -236,6 +241,11 @@ The `repair_decision` stage now emits the first real structured repair-routing a
   - the deterministic route target
   - whether the finding is actionable in the current workflow
 - explicit separation between internal repair recommendations and deferred external standards-validation dependencies
+- when `resource_construction` is recommended:
+  - a structured deterministic repair directive
+  - trigger finding codes
+  - target build-step ids
+  - target placeholder ids
 - a clear distinction between repair recommendation and actual repair execution, which is still deferred
 
 ## Repair-execution-stage output
@@ -249,10 +259,15 @@ The `repair_execution` stage now emits the first real bounded retry artifact for
   - `not_needed`
   - `unsupported`
 - for executed retries:
+  - the applied `resource_construction` repair directive when that target is retried
   - the regenerated `resource_construction` artifact when that target is retried
   - the rerun stage ids
   - the regenerated artifact keys
   - the post-retry resource construction result, candidate bundle, validation report, and repair decision
+  - whether the construction rerun was:
+    - `full_build`
+    - `targeted_repair`
+  - which placeholder resources were regenerated versus reused
 - for non-executed retries:
   - an explicit deferred or unsupported reason
 - a clear distinction between:

@@ -248,6 +248,7 @@ async def test_psca_bundle_builder_workflow_smoke() -> None:
     assert final_output.repair_decision.overall_decision == "external_validation_pending"
     assert final_output.repair_decision.recommended_target == "standards_validation_external"
     assert final_output.repair_decision.recommended_next_stage == "none"
+    assert final_output.repair_decision.recommended_resource_construction_repair_directive is None
     assert any(
         route.finding_code == "external_profile_validation_deferred"
         and route.route_target == "standards_validation_external"
@@ -258,6 +259,9 @@ async def test_psca_bundle_builder_workflow_smoke() -> None:
         route.finding_code == "bundle.deferred_fields_recorded"
         for route in final_output.repair_decision.finding_routes
     )
+    assert final_output.repair_execution.execution_outcome == "deferred"
+    assert final_output.repair_execution.post_retry_resource_construction is None
+    assert final_output.repair_execution.applied_resource_construction_repair_directive is None
     assert final_output.repair_execution.execution_outcome == "deferred"
     assert final_output.repair_execution.requested_target == "standards_validation_external"
     assert final_output.repair_execution.retry_eligible is False
