@@ -119,6 +119,9 @@ This slice is for workflow shape, PS-CA normalized asset retrieval, the first re
 - The validation stage emits a structured report with separate standards-validation and workflow-rule results.
 - The repair-decision stage emits structured routing recommendations.
 - The repair-execution stage can act on a narrow supported subset of those recommendations through one bounded retry pass.
+- That bounded retry pass now supports rerunning either:
+  - `bundle_finalization`
+  - `resource_construction` plus its downstream stages
 
 ## Schematic-stage output
 
@@ -246,12 +249,16 @@ The `repair_execution` stage now emits the first real bounded retry artifact for
   - `not_needed`
   - `unsupported`
 - for executed retries:
+  - the regenerated `resource_construction` artifact when that target is retried
   - the rerun stage ids
   - the regenerated artifact keys
-  - the post-retry candidate bundle, validation report, and repair decision
+  - the post-retry resource construction result, candidate bundle, validation report, and repair decision
 - for non-executed retries:
   - an explicit deferred or unsupported reason
 - a clear distinction between:
   - the original first-pass artifacts
   - the bounded post-retry artifacts nested under `repair_execution`
 - a single-pass policy only; no recursive retry loop is implemented in this slice
+- support for only these executable internal retry targets:
+  - `bundle_finalization`
+  - `resource_construction`

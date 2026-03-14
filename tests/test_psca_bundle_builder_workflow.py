@@ -262,6 +262,7 @@ async def test_psca_bundle_builder_workflow_smoke() -> None:
     assert final_output.repair_execution.requested_target == "standards_validation_external"
     assert final_output.repair_execution.retry_eligible is False
     assert final_output.repair_execution.attempt_count == 0
+    assert final_output.repair_execution.post_retry_resource_construction is None
     assert final_output.repair_execution.post_retry_candidate_bundle is None
 
     completed_executors = [

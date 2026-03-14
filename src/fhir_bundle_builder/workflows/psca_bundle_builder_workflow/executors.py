@@ -219,11 +219,13 @@ async def repair_execution(
     ctx: WorkflowContext[Any, WorkflowSkeletonRunResult],
 ) -> None:
     normalized_request = _get_artifact(ctx, "normalized_request")
+    build_plan = _get_artifact(ctx, "build_plan")
     schematic = _get_artifact(ctx, "bundle_schematic")
     resource_construction_result = _get_artifact(ctx, "resource_construction")
     execution = await build_psca_repair_execution_result(
         message,
         normalized_request,
+        build_plan,
         schematic,
         resource_construction_result,
         _get_standards_validator(ctx),

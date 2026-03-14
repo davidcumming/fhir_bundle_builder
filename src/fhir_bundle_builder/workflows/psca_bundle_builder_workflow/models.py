@@ -533,6 +533,7 @@ class RepairExecutionResult(StageArtifact):
     attempt_count: int
     rerun_stage_ids: list[str] = Field(default_factory=list)
     regenerated_artifact_keys: list[str] = Field(default_factory=list)
+    post_retry_resource_construction: ResourceConstructionStageResult | None = None
     post_retry_candidate_bundle: CandidateBundleResult | None = None
     post_retry_validation_report: ValidationReport | None = None
     post_retry_repair_decision: RepairDecisionResult | None = None

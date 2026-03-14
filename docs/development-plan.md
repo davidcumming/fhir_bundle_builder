@@ -98,11 +98,11 @@ The following status labels should be used in this plan:
 
 ## 8. Current Focus
 
-**Current Focus:** Implement the next bounded realism/hardening slice after the first optional Matchbox-backed external standards-validation path, without broadening into deployment or generic validator-platform work.
+**Current Focus:** Implement the next bounded realism/quality slice now that bounded repair execution supports both bundle finalization and resource construction as executable targets.
 
 ## 9. Next Planned Slice
 
-**Next Planned Slice:** Implement the next narrow realism slice by deepening Organization/provider-role context or expanding repair execution for resource_construction on top of the stronger standards-validation foundation.
+**Next Planned Slice:** Deepen Organization/provider-role realism or introduce the first narrower targeted repair directives within resource_construction without broadening into a generic repair engine.
 
 ## 10. Development Phases
 
@@ -280,7 +280,7 @@ Prove a narrow but real end-to-end PS-CA generation run.
 - verify that the run can be demonstrated clearly in Dev UI
 
 ### Current phase note
-The workflow now has a complete deterministic structural path, validation, repair routing, one bounded retry path, meaningful deterministic content for core clinical resources, a deterministic local bundle identity/fullUrl policy, and an optional Matchbox-backed external standards-validation path with local fallback. The next step is to deepen end-to-end realism without widening into deployment, persistence, or generic lifecycle management.
+The workflow now has a complete deterministic structural path, validation, repair routing, bounded retry execution for both bundle finalization and resource construction, meaningful deterministic content for core clinical resources, a deterministic local bundle identity/fullUrl policy, and an optional Matchbox-backed external standards-validation path with local fallback. The next step is to deepen end-to-end realism without widening into deployment, persistence, or generic lifecycle management.
 
 ### Exit criteria
 - a minimal PS-CA workflow runs end to end
@@ -358,7 +358,7 @@ The following assumptions currently guide the plan:
 - the first resource-construction slice uses partial FHIR-shaped scaffold artifacts and deterministic placeholder-derived local references rather than fully populated valid resources
 - the first deterministic bundle identity policy uses local UUID-based candidate identifiers, synthetic timestamps, and `urn:uuid` entry fullUrls rather than persistent publication identity
 - Matchbox is optional infrastructure and the workflow must remain runnable with the local scaffold-shape standards validator alone
-- the first repair-execution slice is a single-pass retry foundation that supports only bundle_finalization as an internal executable target
+- the bounded repair-execution model remains single-pass and now supports both bundle_finalization and resource_construction as internal executable targets
 - the first meaningful content slice should use deterministic placeholder content from normalized request labels and schematic section metadata rather than free-text clinical synthesis
 - meaningful Organization identity and richer PractitionerRole context depend on a future provider input expansion that includes organizations and provider-role relationships
 - initial development should prioritize workflow shape, artifact contracts, and inspectability over feature completeness
@@ -377,6 +377,7 @@ The following risks should be monitored during development:
 - the current provider input model may constrain support-resource realism until organization and provider-role context are explicitly modeled
 - deterministic synthetic timestamps and local URN fullUrls may later need refinement when publication or persistence semantics are introduced
 - Matchbox availability or response-shape variance may require a small amount of adapter hardening before broader operational use
+- resource_construction retry is still a whole-stage deterministic rebuild and may later need narrower repair directives to avoid coarse retry behavior
 
 ## 14. Definition of Progress
 
@@ -407,4 +408,4 @@ Codex should make targeted edits only. It should not rewrite the full document u
 
 ## 16. Immediate Next Objective
 
-The immediate next objective is to deepen end-to-end realism or repair depth in a narrow way now that the first optional external standards-validation path exists.
+The immediate next objective is to deepen end-to-end realism or introduce narrower repair directives without further broadening retry orchestration.

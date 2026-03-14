@@ -16,6 +16,8 @@ from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.models import (
     BundleRequestInput,
     NormalizedBuildRequest,
     ProfileReferenceInput,
+    RepairDecisionEvidence,
+    RepairDecisionResult,
     SpecificationSelection,
     WorkflowDefaults,
 )
@@ -42,6 +44,7 @@ async def test_psca_repair_execution_happy_path_is_deferred_external_dependency(
     execution = await build_psca_repair_execution_result(
         artifacts["repair_decision"],
         artifacts["normalized_request"],
+        artifacts["build_plan"],
         artifacts["schematic"],
         artifacts["resource_construction"],
         LocalCandidateBundleScaffoldStandardsValidator(),
@@ -61,6 +64,7 @@ async def test_psca_repair_execution_reruns_bundle_finalization_once() -> None:
     execution = await build_psca_repair_execution_result(
         artifacts["repair_decision"],
         artifacts["normalized_request"],
+        artifacts["build_plan"],
         artifacts["schematic"],
         artifacts["resource_construction"],
         LocalCandidateBundleScaffoldStandardsValidator(),
@@ -73,6 +77,7 @@ async def test_psca_repair_execution_reruns_bundle_finalization_once() -> None:
     assert execution.attempt_count == 1
     assert execution.rerun_stage_ids == ["bundle_finalization", "validation", "repair_decision"]
     assert execution.regenerated_artifact_keys == ["candidate_bundle", "validation_report", "repair_decision"]
+    assert execution.post_retry_resource_construction is None
     assert execution.post_retry_candidate_bundle is not None
     assert execution.post_retry_candidate_bundle.candidate_bundle.fhir_bundle["type"] == "document"
     assert execution.post_retry_validation_report is not None
@@ -81,22 +86,81 @@ async def test_psca_repair_execution_reruns_bundle_finalization_once() -> None:
     assert execution.post_retry_repair_decision.overall_decision == "external_validation_pending"
 
 
-async def test_psca_repair_execution_marks_resource_construction_retry_as_unsupported() -> None:
+async def test_psca_repair_execution_reruns_resource_construction_once() -> None:
     artifacts = await _build_repair_inputs(mutator=_remove_required_section)
 
     execution = await build_psca_repair_execution_result(
         artifacts["repair_decision"],
         artifacts["normalized_request"],
+        artifacts["build_plan"],
+        artifacts["schematic"],
+        artifacts["resource_construction"],
+        LocalCandidateBundleScaffoldStandardsValidator(),
+    )
+
+    assert execution.execution_outcome == "executed"
+    assert execution.requested_target == "resource_construction"
+    assert execution.executed_target == "resource_construction"
+    assert execution.retry_eligible is True
+    assert execution.attempt_count == 1
+    assert execution.rerun_stage_ids == [
+        "resource_construction",
+        "bundle_finalization",
+        "validation",
+        "repair_decision",
+    ]
+    assert execution.regenerated_artifact_keys == [
+        "resource_construction",
+        "candidate_bundle",
+        "validation_report",
+        "repair_decision",
+    ]
+    assert execution.post_retry_resource_construction is not None
+    assert execution.post_retry_resource_construction.resource_registry != []
+    assert execution.post_retry_candidate_bundle is not None
+    assert execution.post_retry_validation_report is not None
+    assert execution.post_retry_validation_report.overall_status == "passed_with_warnings"
+    assert execution.post_retry_repair_decision is not None
+    assert execution.post_retry_repair_decision.overall_decision == "external_validation_pending"
+
+
+async def test_psca_repair_execution_marks_build_plan_retry_as_unsupported() -> None:
+    artifacts = await _build_repair_inputs()
+    repair_decision = RepairDecisionResult(
+        stage_id="repair_decision",
+        status="placeholder_complete",
+        summary="Synthetic unsupported retry target for testing.",
+        placeholder_note="Test artifact.",
+        source_refs=[],
+        overall_decision="repair_recommended",
+        recommended_target="build_plan_or_schematic",
+        recommended_next_stage="build_plan",
+        finding_routes=[],
+        deferred_external_dependencies=[],
+        evidence=RepairDecisionEvidence(
+            source_validation_stage_id="validation",
+            source_overall_validation_status="failed",
+            routed_finding_codes=["synthetic.build_plan_retry"],
+            source_refs=[],
+        ),
+        rationale="Synthetic unsupported target.",
+    )
+
+    execution = await build_psca_repair_execution_result(
+        repair_decision,
+        artifacts["normalized_request"],
+        artifacts["build_plan"],
         artifacts["schematic"],
         artifacts["resource_construction"],
         LocalCandidateBundleScaffoldStandardsValidator(),
     )
 
     assert execution.execution_outcome == "unsupported"
-    assert execution.requested_target == "resource_construction"
+    assert execution.requested_target == "build_plan_or_schematic"
     assert execution.retry_eligible is False
     assert execution.attempt_count == 0
     assert execution.rerun_stage_ids == []
+    assert execution.post_retry_resource_construction is None
     assert execution.post_retry_candidate_bundle is None
     assert execution.unsupported_reason is not None
 
@@ -146,6 +210,7 @@ async def _build_repair_inputs(mutator=None):
     repair_decision = build_psca_repair_decision(validation_report)
     return {
         "normalized_request": normalized_request,
+        "build_plan": plan,
         "schematic": schematic,
         "resource_construction": resource_construction,
         "candidate_bundle": candidate_bundle,
