@@ -77,7 +77,7 @@ async def request_normalization(message: WorkflowBuildInput, ctx: WorkflowContex
             bundle_type="document",
             specification_mode="normalized-asset-foundation",
             validation_mode="foundational_dual_channel",
-            resource_construction_mode="scaffold_only_foundation",
+            resource_construction_mode="deterministic_content_enriched_foundation",
         ),
         run_label=f"{message.request.scenario_label}:{message.specification.package_id}:{message.specification.version}",
     )
@@ -143,7 +143,8 @@ async def resource_construction(
     ctx: WorkflowContext[ResourceConstructionStageResult],
 ) -> None:
     schematic = _get_artifact(ctx, "bundle_schematic")
-    result = build_psca_resource_construction_result(message, schematic)
+    normalized_request = _get_artifact(ctx, "normalized_request")
+    result = build_psca_resource_construction_result(message, schematic, normalized_request)
     _store_artifact(ctx, "resource_construction", result)
     await ctx.send_message(result)
 

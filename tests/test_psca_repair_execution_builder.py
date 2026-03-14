@@ -106,7 +106,6 @@ async def _build_repair_inputs(mutator=None):
     normalized_assets = repository.load_foundation_context(PscaAssetQuery())
     schematic = build_psca_bundle_schematic(normalized_assets)
     plan = build_psca_build_plan(schematic)
-    resource_construction = build_psca_resource_construction_result(plan, schematic)
     normalized_request = NormalizedBuildRequest(
         stage_id="request_normalization",
         status="placeholder_complete",
@@ -130,10 +129,11 @@ async def _build_repair_inputs(mutator=None):
             bundle_type="document",
             specification_mode="normalized-asset-foundation",
             validation_mode="foundational_dual_channel",
-            resource_construction_mode="scaffold_only_foundation",
+            resource_construction_mode="deterministic_content_enriched_foundation",
         ),
         run_label="pytest-retry:ca.infoway.io.psca:2.1.1-DFT",
     )
+    resource_construction = build_psca_resource_construction_result(plan, schematic, normalized_request)
     candidate_bundle = build_psca_candidate_bundle_result(resource_construction, schematic, normalized_request)
     if mutator is not None:
         candidate_bundle = mutator(candidate_bundle)

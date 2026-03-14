@@ -48,6 +48,24 @@ _FINDING_ROUTE_MAP: dict[str, tuple[str, str, bool, str]] = {
         True,
         "Composition type coding originates in resource construction.",
     ),
+    "bundle.composition_enriched_content_present": (
+        "resource_construction",
+        "resource_construction",
+        True,
+        "Composition deterministic content is populated during resource construction.",
+    ),
+    "bundle.patient_identity_content_present": (
+        "resource_construction",
+        "resource_construction",
+        True,
+        "Patient identity placeholder content is populated during resource construction.",
+    ),
+    "bundle.section_entry_content_present": (
+        "resource_construction",
+        "resource_construction",
+        True,
+        "Section-entry placeholder content is populated during resource construction.",
+    ),
     "bundle.required_sections_present": (
         "resource_construction",
         "resource_construction",

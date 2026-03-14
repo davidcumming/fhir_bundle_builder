@@ -8,6 +8,8 @@ from .models import (
     BuildPlan,
     BuildPlanStep,
     BundleSchematic,
+    DeterministicValueEvidence,
+    NormalizedBuildRequest,
     ReferenceContribution,
     ResourceConstructionEvidence,
     ResourceConstructionStageResult,
@@ -22,8 +24,9 @@ from .models import (
 def build_psca_resource_construction_result(
     plan: BuildPlan,
     schematic: BundleSchematic,
+    normalized_request: NormalizedBuildRequest,
 ) -> ResourceConstructionStageResult:
-    """Build deterministic scaffold artifacts for the current PS-CA build plan."""
+    """Build deterministic enriched PS-CA resource scaffolds for the current build plan."""
 
     placeholders = {placeholder.placeholder_id: placeholder for placeholder in schematic.resource_placeholders}
     sections = {section.section_key: section for section in schematic.section_scaffolds}
@@ -34,7 +37,7 @@ def build_psca_resource_construction_result(
     for step in plan.steps:
         placeholder = _require_placeholder(placeholders, step.target_placeholder_id)
         prior_entry = registry.get(step.target_placeholder_id)
-        result = _build_step_result(step, placeholder, sections, prior_entry)
+        result = _build_step_result(step, placeholder, sections, prior_entry, normalized_request)
         step_results.append(result)
 
         registry[result.target_placeholder_id] = ResourceRegistryEntry(
@@ -49,20 +52,20 @@ def build_psca_resource_construction_result(
     return ResourceConstructionStageResult(
         stage_id="resource_construction",
         status="placeholder_complete",
-        summary="Constructed deterministic PS-CA resource scaffolds for the current build plan and tracked the latest scaffold state per placeholder.",
-        placeholder_note="Scaffolds are partial FHIR-shaped artifacts only; full clinical population, full bundle assembly, and validation remain deferred.",
+        summary="Constructed deterministic content-enriched PS-CA resource scaffolds for the current build plan and tracked the latest scaffold state per placeholder.",
+        placeholder_note="Resources now include a narrow deterministic content layer only; full clinical population, bundle identity policy, and rich terminology remain deferred.",
         source_refs=plan.source_refs,
-        construction_mode="deterministic_scaffold_only",
+        construction_mode="deterministic_content_enriched",
         step_results=step_results,
         resource_registry=[registry[placeholder_id] for placeholder_id in registry_order],
         deferred_items=[
-            "Clinical data-element population remains deferred.",
+            "Broad clinical data-element population remains deferred.",
             "Generated ids and UUID replacement remain deferred.",
             "Full bundle-in-progress assembly logic remains deferred.",
             "Validation-driven reconstruction remains deferred.",
         ],
         unresolved_items=[
-            "No element-level construction beyond minimal deterministic scaffolds has been implemented.",
+            "Only a narrow deterministic content policy has been implemented for core PS-CA resources.",
             "No full bundle patching or entry ordering logic exists yet.",
         ],
         evidence=ResourceConstructionEvidence(
@@ -80,17 +83,18 @@ def _build_step_result(
     placeholder: ResourcePlaceholder,
     sections: dict[str, SectionScaffold],
     prior_entry: ResourceRegistryEntry | None,
+    normalized_request: NormalizedBuildRequest,
 ) -> ResourceConstructionStepResult:
     if step.step_kind == "anchor_resource":
-        return _build_anchor_result(step, placeholder)
+        return _build_anchor_result(step, placeholder, normalized_request)
     if step.step_kind == "support_resource":
         if step.resource_type == "PractitionerRole":
             return _build_practitioner_role_result(step, placeholder)
-        return _build_anchor_result(step, placeholder)
+        return _build_anchor_result(step, placeholder, normalized_request)
     if step.step_kind == "section_entry_resource":
-        return _build_section_entry_result(step, placeholder)
+        return _build_section_entry_result(step, placeholder, sections, normalized_request)
     if step.step_kind == "composition_scaffold":
-        return _build_composition_scaffold_result(step, placeholder)
+        return _build_composition_scaffold_result(step, placeholder, normalized_request)
     if step.step_kind == "composition_finalize":
         if prior_entry is None:
             raise ValueError("Composition finalization requires an existing registry entry for the Composition scaffold.")
@@ -98,22 +102,52 @@ def _build_step_result(
     raise ValueError(f"Unsupported build step kind '{step.step_kind}'.")
 
 
-def _build_anchor_result(step: BuildPlanStep, placeholder: ResourcePlaceholder) -> ResourceConstructionStepResult:
+def _build_anchor_result(
+    step: BuildPlanStep,
+    placeholder: ResourcePlaceholder,
+    normalized_request: NormalizedBuildRequest,
+) -> ResourceConstructionStepResult:
     scaffold_dict = _base_scaffold(placeholder)
     populated_paths = _base_populated_paths(placeholder)
     extra_deferred: list[str] = []
     warnings: list[str] = []
+    deterministic_value_evidence: list[DeterministicValueEvidence] = []
     assumptions = [
-        "This scaffold only establishes deterministic base metadata.",
-        "No business or clinical content has been populated yet.",
+        "This scaffold establishes deterministic base metadata first.",
     ]
 
     if step.resource_type == "Patient":
+        scaffold_dict["active"] = True
+        scaffold_dict["identifier"] = [{"value": normalized_request.patient_profile.profile_id}]
+        scaffold_dict["name"] = [{"text": normalized_request.patient_profile.display_name}]
+        populated_paths += ["active", "identifier[0].value", "name[0].text"]
+        deterministic_value_evidence.extend(
+            [
+                _value_evidence(
+                    "active",
+                    "deterministic_content_policy",
+                    "Patient active flag is fixed to true for the first meaningful content slice.",
+                ),
+                _value_evidence(
+                    "identifier[0].value",
+                    "normalized_request.patient_profile",
+                    "patient_profile.profile_id",
+                ),
+                _value_evidence(
+                    "name[0].text",
+                    "normalized_request.patient_profile",
+                    "patient_profile.display_name",
+                ),
+            ]
+        )
         extra_deferred = ["gender", "birthDate"]
+        assumptions.append("Patient identity content is derived deterministically from the selected patient profile stub.")
     elif step.resource_type == "Practitioner":
         extra_deferred = ["name"]
+        assumptions.append("Practitioner content remains base metadata only in this slice.")
     elif step.resource_type == "Organization":
         extra_deferred = ["name"]
+        assumptions.append("Organization content remains base metadata only in this slice.")
 
     resource_scaffold = ResourceScaffoldArtifact(
         placeholder_id=placeholder.placeholder_id,
@@ -133,6 +167,7 @@ def _build_anchor_result(step: BuildPlanStep, placeholder: ResourcePlaceholder) 
         target_placeholder_id=step.target_placeholder_id,
         execution_status="scaffold_created",
         resource_scaffold=resource_scaffold,
+        deterministic_value_evidence=deterministic_value_evidence,
         assumptions=assumptions,
         warnings=warnings,
         unresolved_fields=resource_scaffold.deferred_paths,
@@ -166,6 +201,7 @@ def _build_practitioner_role_result(step: BuildPlanStep, placeholder: ResourcePl
             _reference_contribution("practitioner.reference", "practitioner-1", "Practitioner/practitioner-1"),
             _reference_contribution("organization.reference", "organization-1", "Organization/organization-1"),
         ],
+        deterministic_value_evidence=[],
         assumptions=[
             "PractitionerRole is scaffolded with deterministic local references only.",
         ],
@@ -174,12 +210,118 @@ def _build_practitioner_role_result(step: BuildPlanStep, placeholder: ResourcePl
     )
 
 
-def _build_section_entry_result(step: BuildPlanStep, placeholder: ResourcePlaceholder) -> ResourceConstructionStepResult:
+def _build_section_entry_result(
+    step: BuildPlanStep,
+    placeholder: ResourcePlaceholder,
+    sections: dict[str, SectionScaffold],
+    normalized_request: NormalizedBuildRequest,
+) -> ResourceConstructionStepResult:
     scaffold_dict = _base_scaffold(placeholder)
     reference_path, reference_value = _section_subject_reference(step.resource_type)
     parent_key = reference_path.split(".")[0]
     scaffold_dict[parent_key] = {"reference": reference_value}
+    section = sections.get(step.owning_section_key or "")
+    if section is None:
+        raise ValueError(f"Missing section scaffold for section-entry step '{step.step_id}'.")
+    placeholder_text = f"{section.title} placeholder for {normalized_request.request.scenario_label}"
     populated_paths = _base_populated_paths(placeholder) + [reference_path]
+    deterministic_value_evidence = [
+        _value_evidence(reference_path, "deterministic_reference_policy", f"{step.resource_type} references patient-1."),
+    ]
+
+    if step.resource_type == "MedicationRequest":
+        scaffold_dict["status"] = "draft"
+        scaffold_dict["intent"] = "proposal"
+        scaffold_dict["medicationCodeableConcept"] = {"text": placeholder_text}
+        populated_paths += ["status", "intent", "medicationCodeableConcept.text"]
+        deterministic_value_evidence.extend(
+            [
+                _value_evidence("status", "deterministic_content_policy", "MedicationRequest status is fixed to draft for placeholder content."),
+                _value_evidence("intent", "deterministic_content_policy", "MedicationRequest intent is fixed to proposal for placeholder content."),
+                _value_evidence(
+                    "medicationCodeableConcept.text",
+                    f"bundle_schematic.section_scaffolds[{section.section_key}] + normalized_request.request",
+                    f"{section.title} + scenario_label",
+                ),
+            ]
+        )
+    elif step.resource_type == "AllergyIntolerance":
+        scaffold_dict["clinicalStatus"] = {
+            "coding": [
+                {
+                    "system": "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
+                    "code": "active",
+                }
+            ]
+        }
+        scaffold_dict["verificationStatus"] = {
+            "coding": [
+                {
+                    "system": "http://terminology.hl7.org/CodeSystem/allergyintolerance-verification",
+                    "code": "unconfirmed",
+                }
+            ]
+        }
+        scaffold_dict["code"] = {"text": placeholder_text}
+        populated_paths += [
+            "clinicalStatus.coding[0].system",
+            "clinicalStatus.coding[0].code",
+            "verificationStatus.coding[0].system",
+            "verificationStatus.coding[0].code",
+            "code.text",
+        ]
+        deterministic_value_evidence.extend(
+            [
+                _value_evidence("clinicalStatus.coding[0].system", "deterministic_content_policy", "Fixed AllergyIntolerance clinical status coding system."),
+                _value_evidence("clinicalStatus.coding[0].code", "deterministic_content_policy", "Fixed AllergyIntolerance clinical status code."),
+                _value_evidence("verificationStatus.coding[0].system", "deterministic_content_policy", "Fixed AllergyIntolerance verification status coding system."),
+                _value_evidence("verificationStatus.coding[0].code", "deterministic_content_policy", "Fixed AllergyIntolerance verification status code."),
+                _value_evidence(
+                    "code.text",
+                    f"bundle_schematic.section_scaffolds[{section.section_key}] + normalized_request.request",
+                    f"{section.title} + scenario_label",
+                ),
+            ]
+        )
+    elif step.resource_type == "Condition":
+        scaffold_dict["clinicalStatus"] = {
+            "coding": [
+                {
+                    "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+                    "code": "active",
+                }
+            ]
+        }
+        scaffold_dict["verificationStatus"] = {
+            "coding": [
+                {
+                    "system": "http://terminology.hl7.org/CodeSystem/condition-ver-status",
+                    "code": "provisional",
+                }
+            ]
+        }
+        scaffold_dict["code"] = {"text": placeholder_text}
+        populated_paths += [
+            "clinicalStatus.coding[0].system",
+            "clinicalStatus.coding[0].code",
+            "verificationStatus.coding[0].system",
+            "verificationStatus.coding[0].code",
+            "code.text",
+        ]
+        deterministic_value_evidence.extend(
+            [
+                _value_evidence("clinicalStatus.coding[0].system", "deterministic_content_policy", "Fixed Condition clinical status coding system."),
+                _value_evidence("clinicalStatus.coding[0].code", "deterministic_content_policy", "Fixed Condition clinical status code."),
+                _value_evidence("verificationStatus.coding[0].system", "deterministic_content_policy", "Fixed Condition verification status coding system."),
+                _value_evidence("verificationStatus.coding[0].code", "deterministic_content_policy", "Fixed Condition verification status code."),
+                _value_evidence(
+                    "code.text",
+                    f"bundle_schematic.section_scaffolds[{section.section_key}] + normalized_request.request",
+                    f"{section.title} + scenario_label",
+                ),
+            ]
+        )
+
     resource_scaffold = ResourceScaffoldArtifact(
         placeholder_id=placeholder.placeholder_id,
         resource_type=placeholder.resource_type,
@@ -203,15 +345,20 @@ def _build_section_entry_result(step: BuildPlanStep, placeholder: ResourcePlaceh
         execution_status="scaffold_created",
         resource_scaffold=resource_scaffold,
         reference_contributions=[_reference_contribution(reference_path, "patient-1", reference_value)],
+        deterministic_value_evidence=deterministic_value_evidence,
         assumptions=[
-            "Section-entry resources are scaffolded with only the minimal patient-linked reference for this slice.",
+            "Section-entry resources use deterministic placeholder content derived from the section scaffold and scenario label.",
         ],
         warnings=[],
         unresolved_fields=resource_scaffold.deferred_paths,
     )
 
 
-def _build_composition_scaffold_result(step: BuildPlanStep, placeholder: ResourcePlaceholder) -> ResourceConstructionStepResult:
+def _build_composition_scaffold_result(
+    step: BuildPlanStep,
+    placeholder: ResourcePlaceholder,
+    normalized_request: NormalizedBuildRequest,
+) -> ResourceConstructionStepResult:
     scaffold_dict = _base_scaffold(placeholder)
     scaffold_dict["type"] = {
         "coding": [
@@ -222,6 +369,8 @@ def _build_composition_scaffold_result(step: BuildPlanStep, placeholder: Resourc
             }
         ]
     }
+    scaffold_dict["status"] = "final"
+    scaffold_dict["title"] = f"{normalized_request.request.bundle_intent} - {normalized_request.request.scenario_label}"
     scaffold_dict["subject"] = {"reference": "Patient/patient-1"}
     scaffold_dict["author"] = [{"reference": "PractitionerRole/practitionerrole-1"}]
     scaffold_dict["section"] = []
@@ -229,9 +378,24 @@ def _build_composition_scaffold_result(step: BuildPlanStep, placeholder: Resourc
         "type.coding[0].system",
         "type.coding[0].code",
         "type.coding[0].display",
+        "status",
+        "title",
         "subject.reference",
         "author[0].reference",
         "section",
+    ]
+    deterministic_value_evidence = [
+        _value_evidence("type.coding[0].system", "bundle_schematic.composition_scaffold", "expected_type_system"),
+        _value_evidence("type.coding[0].code", "bundle_schematic.composition_scaffold", "expected_type_code"),
+        _value_evidence("type.coding[0].display", "bundle_schematic.composition_scaffold", "expected_type_display"),
+        _value_evidence("status", "deterministic_content_policy", "Composition status is fixed to final for the first meaningful content slice."),
+        _value_evidence(
+            "title",
+            "normalized_request.request",
+            "bundle_intent + scenario_label",
+        ),
+        _value_evidence("subject.reference", "deterministic_reference_policy", "Composition subject references patient-1."),
+        _value_evidence("author[0].reference", "deterministic_reference_policy", "Composition author references practitionerrole-1."),
     ]
     resource_scaffold = ResourceScaffoldArtifact(
         placeholder_id=placeholder.placeholder_id,
@@ -240,7 +404,7 @@ def _build_composition_scaffold_result(step: BuildPlanStep, placeholder: Resourc
         scaffold_state="composition_scaffold_created",
         fhir_scaffold=scaffold_dict,
         populated_paths=populated_paths,
-        deferred_paths=_merge_deferred_paths(placeholder.required_later_fields, ["status", "title", "date"], populated_paths),
+        deferred_paths=_merge_deferred_paths(placeholder.required_later_fields, ["date"], populated_paths),
         source_step_ids=[step.step_id],
     )
 
@@ -255,8 +419,9 @@ def _build_composition_scaffold_result(step: BuildPlanStep, placeholder: Resourc
             _reference_contribution("subject.reference", "patient-1", "Patient/patient-1"),
             _reference_contribution("author[0].reference", "practitionerrole-1", "PractitionerRole/practitionerrole-1"),
         ],
+        deterministic_value_evidence=deterministic_value_evidence,
         assumptions=[
-            "Composition scaffold is created before section entries are attached.",
+            "Composition scaffold content is enriched deterministically before section entries are attached.",
         ],
         warnings=[],
         unresolved_fields=resource_scaffold.deferred_paths,
@@ -274,6 +439,7 @@ def _build_composition_finalize_result(
     section_blocks: list[dict[str, object]] = []
     reference_contributions: list[ReferenceContribution] = []
     populated_paths = list(prior_scaffold.populated_paths)
+    deterministic_value_evidence: list[DeterministicValueEvidence] = []
 
     for index, section_key in enumerate(("medications", "allergies", "problems")):
         section = sections.get(section_key)
@@ -284,7 +450,15 @@ def _build_composition_finalize_result(
         section_blocks.append(
             {
                 "title": section.title,
-                "code": {"coding": [{"system": "http://loinc.org", "code": section.loinc_code}]},
+                "code": {
+                    "coding": [
+                        {
+                            "system": "http://loinc.org",
+                            "code": section.loinc_code,
+                            "display": section.title,
+                        }
+                    ]
+                },
                 "entry": [{"reference": entry_reference}],
             }
         )
@@ -293,6 +467,7 @@ def _build_composition_finalize_result(
                 f"section[{index}].title",
                 f"section[{index}].code.coding[0].system",
                 f"section[{index}].code.coding[0].code",
+                f"section[{index}].code.coding[0].display",
                 f"section[{index}].entry[0].reference",
             ]
         )
@@ -303,6 +478,35 @@ def _build_composition_finalize_result(
                 entry_reference,
             )
         )
+        deterministic_value_evidence.extend(
+            [
+                _value_evidence(
+                    f"section[{index}].title",
+                    f"bundle_schematic.section_scaffolds[{section.section_key}]",
+                    "title",
+                ),
+                _value_evidence(
+                    f"section[{index}].code.coding[0].system",
+                    "deterministic_content_policy",
+                    "Composition section coding system is fixed to http://loinc.org.",
+                ),
+                _value_evidence(
+                    f"section[{index}].code.coding[0].code",
+                    f"bundle_schematic.section_scaffolds[{section.section_key}]",
+                    "loinc_code",
+                ),
+                _value_evidence(
+                    f"section[{index}].code.coding[0].display",
+                    f"bundle_schematic.section_scaffolds[{section.section_key}]",
+                    "title",
+                ),
+                _value_evidence(
+                    f"section[{index}].entry[0].reference",
+                    "deterministic_reference_policy",
+                    f"Composition section entry references {entry_placeholder_id}.",
+                ),
+            ]
+        )
 
     scaffold_dict["section"] = section_blocks
     resource_scaffold = ResourceScaffoldArtifact(
@@ -312,7 +516,7 @@ def _build_composition_finalize_result(
         scaffold_state="sections_attached",
         fhir_scaffold=scaffold_dict,
         populated_paths=_dedupe_paths(populated_paths),
-        deferred_paths=_merge_deferred_paths(placeholder.required_later_fields, ["status", "title", "date"], populated_paths),
+        deferred_paths=_merge_deferred_paths(placeholder.required_later_fields, ["date"], populated_paths),
         source_step_ids=prior_scaffold.source_step_ids + [step.step_id],
     )
 
@@ -324,6 +528,7 @@ def _build_composition_finalize_result(
         execution_status="scaffold_updated",
         resource_scaffold=resource_scaffold,
         reference_contributions=reference_contributions,
+        deterministic_value_evidence=deterministic_value_evidence,
         assumptions=[
             "Composition finalization only attaches deterministic section metadata and local entry references.",
         ],
@@ -375,11 +580,11 @@ def _merge_deferred_paths(
 
 def _extra_deferred_paths_for_resource(resource_type: str) -> list[str]:
     if resource_type == "MedicationRequest":
-        return ["status", "intent", "medication[x]"]
+        return ["authoredOn"]
     if resource_type == "AllergyIntolerance":
-        return ["clinicalStatus", "code"]
+        return ["reaction"]
     if resource_type == "Condition":
-        return ["clinicalStatus", "code"]
+        return ["onset[x]"]
     return []
 
 
@@ -399,6 +604,14 @@ def _reference_contribution(reference_path: str, target_placeholder_id: str, ref
         target_placeholder_id=target_placeholder_id,
         reference_value=reference_value,
         status="applied",
+    )
+
+
+def _value_evidence(target_path: str, source_artifact: str, source_detail: str) -> DeterministicValueEvidence:
+    return DeterministicValueEvidence(
+        target_path=target_path,
+        source_artifact=source_artifact,
+        source_detail=source_detail,
     )
 
 

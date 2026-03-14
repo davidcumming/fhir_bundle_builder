@@ -54,6 +54,7 @@ async def test_psca_validation_builder_happy_path_reports_split_channels() -> No
         and finding.severity == "information"
         for finding in report.workflow_validation.findings
     )
+    assert report.information_count >= 1
 
 
 async def test_psca_validation_builder_fails_when_required_section_is_missing() -> None:
@@ -77,12 +78,57 @@ async def test_psca_validation_builder_fails_when_required_section_is_missing() 
     )
 
 
+async def test_psca_validation_builder_fails_when_composition_or_patient_content_is_missing() -> None:
+    normalized_request, schematic, candidate_bundle = _build_validation_inputs()
+    broken_bundle = deepcopy(candidate_bundle)
+    composition = broken_bundle.candidate_bundle.fhir_bundle["entry"][0]["resource"]
+    patient = broken_bundle.candidate_bundle.fhir_bundle["entry"][1]["resource"]
+    composition.pop("title", None)
+    patient["name"] = []
+
+    report = await build_psca_validation_report(
+        broken_bundle,
+        schematic,
+        normalized_request,
+        LocalCandidateBundleScaffoldStandardsValidator(),
+    )
+
+    assert report.workflow_validation.status == "failed"
+    assert any(
+        finding.code == "bundle.composition_enriched_content_present" and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert any(
+        finding.code == "bundle.patient_identity_content_present" and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+
+
+async def test_psca_validation_builder_fails_when_section_entry_content_is_missing() -> None:
+    normalized_request, schematic, candidate_bundle = _build_validation_inputs()
+    broken_bundle = deepcopy(candidate_bundle)
+    medication = broken_bundle.candidate_bundle.fhir_bundle["entry"][5]["resource"]
+    medication.pop("medicationCodeableConcept", None)
+
+    report = await build_psca_validation_report(
+        broken_bundle,
+        schematic,
+        normalized_request,
+        LocalCandidateBundleScaffoldStandardsValidator(),
+    )
+
+    assert report.workflow_validation.status == "failed"
+    assert any(
+        finding.code == "bundle.section_entry_content_present" and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+
+
 def _build_validation_inputs() -> tuple[NormalizedBuildRequest, object, object]:
     repository = PscaAssetRepository()
     normalized_assets = repository.load_foundation_context(PscaAssetQuery())
     schematic = build_psca_bundle_schematic(normalized_assets)
     plan = build_psca_build_plan(schematic)
-    construction = build_psca_resource_construction_result(plan, schematic)
     normalized_request = NormalizedBuildRequest(
         stage_id="request_normalization",
         status="placeholder_complete",
@@ -106,9 +152,10 @@ def _build_validation_inputs() -> tuple[NormalizedBuildRequest, object, object]:
             bundle_type="document",
             specification_mode="normalized-asset-foundation",
             validation_mode="foundational_dual_channel",
-            resource_construction_mode="scaffold_only_foundation",
+            resource_construction_mode="deterministic_content_enriched_foundation",
         ),
         run_label="pytest-validation:ca.infoway.io.psca:2.1.1-DFT",
     )
+    construction = build_psca_resource_construction_result(plan, schematic, normalized_request)
     candidate_bundle = build_psca_candidate_bundle_result(construction, schematic, normalized_request)
     return normalized_request, schematic, candidate_bundle

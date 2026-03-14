@@ -142,6 +142,7 @@ def build_psca_build_plan(schematic: BundleSchematic) -> BuildPlan:
                 ),
             ],
             expected_inputs=[
+                _input("normalized_request", "NormalizedBuildRequest", True, "Scenario and request context used for deterministic Composition content."),
                 _input("composition_placeholder", "ResourcePlaceholder", True, "Composition placeholder from the schematic."),
                 _input("reference_handle:patient-1", "reference_handle", True, "Patient reference for Composition.subject."),
                 _input("reference_handle:practitionerrole-1", "reference_handle", True, "PractitionerRole reference for Composition.author."),
@@ -170,6 +171,7 @@ def build_psca_build_plan(schematic: BundleSchematic) -> BuildPlan:
                 ),
             ],
             expected_inputs=[
+                _input("normalized_request", "NormalizedBuildRequest", True, "Scenario and request context used for deterministic placeholder content."),
                 _input("section_scaffold:medications", "SectionScaffold", True, "Medications section scaffold."),
                 _input("medication_placeholder", "ResourcePlaceholder", True, "MedicationRequest placeholder from the schematic."),
                 _input("reference_handle:patient-1", "reference_handle", True, "Patient reference for the section entry resource."),
@@ -196,6 +198,7 @@ def build_psca_build_plan(schematic: BundleSchematic) -> BuildPlan:
                 ),
             ],
             expected_inputs=[
+                _input("normalized_request", "NormalizedBuildRequest", True, "Scenario and request context used for deterministic placeholder content."),
                 _input("section_scaffold:allergies", "SectionScaffold", True, "Allergies section scaffold."),
                 _input("allergy_placeholder", "ResourcePlaceholder", True, "AllergyIntolerance placeholder from the schematic."),
                 _input("reference_handle:patient-1", "reference_handle", True, "Patient reference for the section entry resource."),
@@ -222,6 +225,7 @@ def build_psca_build_plan(schematic: BundleSchematic) -> BuildPlan:
                 ),
             ],
             expected_inputs=[
+                _input("normalized_request", "NormalizedBuildRequest", True, "Scenario and request context used for deterministic placeholder content."),
                 _input("section_scaffold:problems", "SectionScaffold", True, "Problems section scaffold."),
                 _input("condition_placeholder", "ResourcePlaceholder", True, "Condition placeholder from the schematic."),
                 _input("reference_handle:patient-1", "reference_handle", True, "Patient reference for the section entry resource."),

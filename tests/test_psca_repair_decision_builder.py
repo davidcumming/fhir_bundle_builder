@@ -71,6 +71,21 @@ async def test_psca_repair_decision_routes_missing_sections_to_resource_construc
     )
 
 
+async def test_psca_repair_decision_routes_enriched_content_failures_to_resource_construction() -> None:
+    report = await _build_validation_report(mutator=_remove_patient_name)
+
+    decision = build_psca_repair_decision(report)
+
+    assert decision.overall_decision == "repair_recommended"
+    assert decision.recommended_target == "resource_construction"
+    assert any(
+        route.finding_code == "bundle.patient_identity_content_present"
+        and route.route_target == "resource_construction"
+        and route.actionable is True
+        for route in decision.finding_routes
+    )
+
+
 async def test_psca_repair_decision_routes_bundle_shape_errors_to_bundle_finalization() -> None:
     report = await _build_validation_report(mutator=_break_bundle_type)
 
@@ -92,7 +107,6 @@ async def _build_validation_report(mutator=None):
     normalized_assets = repository.load_foundation_context(PscaAssetQuery())
     schematic = build_psca_bundle_schematic(normalized_assets)
     plan = build_psca_build_plan(schematic)
-    construction = build_psca_resource_construction_result(plan, schematic)
     normalized_request = NormalizedBuildRequest(
         stage_id="request_normalization",
         status="placeholder_complete",
@@ -116,10 +130,11 @@ async def _build_validation_report(mutator=None):
             bundle_type="document",
             specification_mode="normalized-asset-foundation",
             validation_mode="foundational_dual_channel",
-            resource_construction_mode="scaffold_only_foundation",
+            resource_construction_mode="deterministic_content_enriched_foundation",
         ),
         run_label="pytest-repair:ca.infoway.io.psca:2.1.1-DFT",
     )
+    construction = build_psca_resource_construction_result(plan, schematic, normalized_request)
     candidate_bundle = build_psca_candidate_bundle_result(construction, schematic, normalized_request)
     if mutator is not None:
         candidate_bundle = mutator(candidate_bundle)
@@ -141,4 +156,11 @@ def _remove_required_section(candidate_bundle):
 def _break_bundle_type(candidate_bundle):
     broken_bundle = deepcopy(candidate_bundle)
     broken_bundle.candidate_bundle.fhir_bundle["type"] = "collection"
+    return broken_bundle
+
+
+def _remove_patient_name(candidate_bundle):
+    broken_bundle = deepcopy(candidate_bundle)
+    patient = broken_bundle.candidate_bundle.fhir_bundle["entry"][1]["resource"]
+    patient["name"] = []
     return broken_bundle

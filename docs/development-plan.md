@@ -98,11 +98,11 @@ The following status labels should be used in this plan:
 
 ## 8. Current Focus
 
-**Current Focus:** Use the completed validation and repair foundation to implement the first narrow end-to-end PS-CA quality slice with more meaningful generated content while preserving deterministic inspectability.
+**Current Focus:** Implement the first meaningful content-enrichment slice so the PS-CA workflow produces a more useful candidate bundle while preserving deterministic inspectability and bounded repair behavior.
 
 ## 9. Next Planned Slice
 
-**Next Planned Slice:** Implement the first narrow end-to-end PS-CA quality slice with more meaningful resource or data-element content while preserving deterministic validation and bounded repair execution.
+**Next Planned Slice:** Implement the first narrow deterministic content-enrichment slice for Composition, Patient, and current section-entry resources without introducing a generic data-element engine.
 
 ## 10. Development Phases
 
@@ -279,6 +279,9 @@ Prove a narrow but real end-to-end PS-CA generation run.
 - verify inspectability across all major stages
 - verify that the run can be demonstrated clearly in Dev UI
 
+### Current phase note
+The workflow now has a complete deterministic structural path, validation, repair routing, and one bounded retry path. The next step is to make the generated PS-CA content more useful without broadening into a generic data-element engine.
+
 ### Exit criteria
 - a minimal PS-CA workflow runs end to end
 - intermediate artifacts are visible
@@ -356,6 +359,7 @@ The following assumptions currently guide the plan:
 - the first bundle-finalization slice intentionally omits bundle identifier population, timestamp population, and entry fullUrl population while still producing a real candidate Bundle scaffold
 - the first validation slice intentionally uses a local scaffold-shape standards validator and defers full external conformance validation to a later Matchbox-backed implementation
 - the first repair-execution slice is a single-pass retry foundation that supports only bundle_finalization as an internal executable target
+- the first meaningful content slice should use deterministic placeholder content from normalized request labels and schematic section metadata rather than free-text clinical synthesis
 - initial development should prioritize workflow shape, artifact contracts, and inspectability over feature completeness
 
 ## 13. Known Early Risks
@@ -399,4 +403,4 @@ Codex should make targeted edits only. It should not rewrite the full document u
 
 ## 16. Immediate Next Objective
 
-The immediate next objective is to use the completed validation and bounded repair foundation to prove a more meaningful end-to-end PS-CA generation path rather than broadening retry orchestration.
+The immediate next objective is to enrich the end-to-end PS-CA bundle content in a narrow deterministic way rather than broadening workflow orchestration or retry depth.

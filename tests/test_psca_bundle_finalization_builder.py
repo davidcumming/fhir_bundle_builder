@@ -83,7 +83,6 @@ def _build_construction_inputs() -> tuple[NormalizedBuildRequest, object, object
     normalized_assets = repository.load_foundation_context(PscaAssetQuery())
     schematic = build_psca_bundle_schematic(normalized_assets)
     plan = build_psca_build_plan(schematic)
-    construction = build_psca_resource_construction_result(plan, schematic)
     normalized_request = NormalizedBuildRequest(
         stage_id="request_normalization",
         status="placeholder_complete",
@@ -107,8 +106,9 @@ def _build_construction_inputs() -> tuple[NormalizedBuildRequest, object, object
             bundle_type="document",
             specification_mode="normalized-asset-foundation",
             validation_mode="foundational_dual_channel",
-            resource_construction_mode="scaffold_only_foundation",
+            resource_construction_mode="deterministic_content_enriched_foundation",
         ),
         run_label="pytest-finalization:ca.infoway.io.psca:2.1.1-DFT",
     )
+    construction = build_psca_resource_construction_result(plan, schematic, normalized_request)
     return normalized_request, schematic, construction

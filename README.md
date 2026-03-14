@@ -6,7 +6,7 @@ The implemented slice is intentionally narrow:
 
 - structured top-level workflow input
 - deterministic workflow stages for request normalization, PS-CA asset retrieval, bundle schematic generation, and build planning
-- scaffold-oriented resource construction driven by the real build plan
+- deterministic content-enriched resource construction driven by the real build plan
 - deterministic bundle finalization into a real candidate `Bundle` scaffold
 - structured dual-channel validation over the candidate bundle scaffold
 - structured repair decision and bounded retry execution artifacts
@@ -80,7 +80,7 @@ The `specification_asset_retrieval` stage now emits the first normalized PS-CA a
 
 ## Current slice boundaries
 
-This slice is for workflow shape, PS-CA normalized asset retrieval, the first real schematic artifact, the first real build plan, the first scaffold-oriented resource-construction foundation, the first candidate-bundle finalization foundation, the first validation foundation, the first repair-decision foundation, and the first bounded repair-execution foundation.
+This slice is for workflow shape, PS-CA normalized asset retrieval, the first real schematic artifact, the first real build plan, the first meaningful content-enriched resource-construction path, the first candidate-bundle finalization foundation, the first validation foundation, the first repair-decision foundation, and the first bounded repair-execution foundation.
 
 - The workflow reads existing PS-CA package files deterministically from the repo.
 - The spec retrieval stage exposes a normalized PS-CA asset context with foundational profiles, Composition section definitions, and selected example evidence.
@@ -91,7 +91,7 @@ This slice is for workflow shape, PS-CA normalized asset retrieval, the first re
   - explicit resource placeholders
   - explicit schematic relationships and provenance
 - The build-plan stage emits a structured deterministic build plan with explicit steps, dependencies, expected inputs, and expected outputs.
-- The resource-construction stage emits deterministic FHIR-shaped resource scaffolds, per-step construction results, and a registry of the latest scaffold state per placeholder.
+- The resource-construction stage emits deterministic content-enriched FHIR-shaped resource scaffolds, per-step construction results, and a registry of the latest scaffold state per placeholder.
 - The bundle-finalization stage emits a real candidate `Bundle` scaffold assembled deterministically from the registry and schematic bundle-entry expectations.
 - The validation stage emits a structured report with separate standards-validation and workflow-rule results.
 - The repair-decision stage emits structured routing recommendations.
@@ -133,13 +133,17 @@ The `build_plan` stage now emits the first real PS-CA planning artifact for work
 
 The `resource_construction` stage now emits the first real scaffold-oriented construction artifact for workflow use. In Dev UI you should see:
 
-- construction mode metadata showing deterministic scaffold-only construction
+- construction mode metadata showing deterministic content-enriched construction
 - ordered per-step construction results aligned to the build plan
-- shallow FHIR-shaped scaffolds for all currently planned placeholders
+- FHIR-shaped scaffolds with narrow deterministic content for core patient, composition, and section-entry resources
 - deterministic local references such as:
   - `Patient/patient-1`
   - `PractitionerRole/practitionerrole-1`
   - section-entry references attached to `Composition`
+- deterministic placeholder content such as:
+  - a Patient identifier and display name
+  - a Composition status and title
+  - section-entry status and text content for medications, allergies, and problems
 - a resource registry showing the latest scaffold state per placeholder
 - explicit `Composition` two-step behavior:
   - scaffold creation

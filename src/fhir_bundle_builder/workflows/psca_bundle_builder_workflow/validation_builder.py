@@ -81,6 +81,9 @@ def _build_workflow_validation_result(
         "bundle.composition_first_placeholder",
         "bundle.first_entry_is_composition",
         "bundle.composition_type_matches_psca_summary",
+        "bundle.composition_enriched_content_present",
+        "bundle.patient_identity_content_present",
+        "bundle.section_entry_content_present",
         "bundle.required_sections_present",
         "bundle.deferred_fields_recorded",
     ]
@@ -143,6 +146,49 @@ def _build_workflow_validation_result(
                 f"Expected Composition type coding to equal {expected_system}|{expected_code}.",
             )
         )
+    if (
+        not isinstance(composition, dict)
+        or composition.get("status") != "final"
+        or not composition.get("title")
+    ):
+        findings.append(
+            _workflow_error(
+                "bundle.composition_enriched_content_present",
+                "Bundle.entry[0].resource",
+                "Expected Composition enriched content to include status='final' and a deterministic title.",
+            )
+        )
+
+    patient = _find_resource_by_type(bundle, "Patient")
+    patient_identifier = patient.get("identifier") if isinstance(patient, dict) else None
+    patient_name = patient.get("name") if isinstance(patient, dict) else None
+    identifier_value = (
+        patient_identifier[0].get("value")
+        if isinstance(patient_identifier, list) and patient_identifier and isinstance(patient_identifier[0], dict)
+        else None
+    )
+    patient_name_text = (
+        patient_name[0].get("text")
+        if isinstance(patient_name, list) and patient_name and isinstance(patient_name[0], dict)
+        else None
+    )
+    if patient.get("active") is not True or not identifier_value or not patient_name_text:
+        findings.append(
+            _workflow_error(
+                "bundle.patient_identity_content_present",
+                "Bundle.entry[1].resource",
+                "Expected Patient enriched content to include active=true, identifier[0].value, and name[0].text.",
+            )
+        )
+
+    if not _section_entry_content_present(bundle):
+        findings.append(
+            _workflow_error(
+                "bundle.section_entry_content_present",
+                "Bundle.entry",
+                "Expected MedicationRequest, AllergyIntolerance, and Condition entries to include deterministic placeholder content fields.",
+            )
+        )
 
     missing_sections: list[str] = []
     sections = composition.get("section", []) if isinstance(composition, dict) else []
@@ -194,6 +240,10 @@ def _build_workflow_validation_result(
 
 
 def _find_composition_resource(bundle: dict[str, object]) -> dict[str, object]:
+    return _find_resource_by_type(bundle, "Composition")
+
+
+def _find_resource_by_type(bundle: dict[str, object], resource_type: str) -> dict[str, object]:
     entries = bundle.get("entry", [])
     if not isinstance(entries, list):
         return {}
@@ -201,7 +251,7 @@ def _find_composition_resource(bundle: dict[str, object]) -> dict[str, object]:
         if not isinstance(entry, dict):
             continue
         resource = entry.get("resource")
-        if isinstance(resource, dict) and resource.get("resourceType") == "Composition":
+        if isinstance(resource, dict) and resource.get("resourceType") == resource_type:
             return resource
     return {}
 
@@ -241,6 +291,47 @@ def _workflow_error(code: str, location: str, message: str) -> ValidationFinding
         location=location,
         message=message,
     )
+
+
+def _section_entry_content_present(bundle: dict[str, object]) -> bool:
+    medication = _find_resource_by_type(bundle, "MedicationRequest")
+    allergy = _find_resource_by_type(bundle, "AllergyIntolerance")
+    condition = _find_resource_by_type(bundle, "Condition")
+
+    medication_ok = (
+        medication.get("status") == "draft"
+        and medication.get("intent") == "proposal"
+        and isinstance(medication.get("medicationCodeableConcept"), dict)
+        and bool(medication["medicationCodeableConcept"].get("text"))
+    )
+    allergy_clinical = _first_coding(allergy.get("clinicalStatus"))
+    allergy_verification = _first_coding(allergy.get("verificationStatus"))
+    allergy_ok = (
+        allergy_clinical.get("code") == "active"
+        and allergy_verification.get("code") == "unconfirmed"
+        and isinstance(allergy.get("code"), dict)
+        and bool(allergy["code"].get("text"))
+    )
+    condition_clinical = _first_coding(condition.get("clinicalStatus"))
+    condition_verification = _first_coding(condition.get("verificationStatus"))
+    condition_ok = (
+        condition_clinical.get("code") == "active"
+        and condition_verification.get("code") == "provisional"
+        and isinstance(condition.get("code"), dict)
+        and bool(condition["code"].get("text"))
+    )
+
+    return medication_ok and allergy_ok and condition_ok
+
+
+def _first_coding(value: object) -> dict[str, object]:
+    if not isinstance(value, dict):
+        return {}
+    coding = value.get("coding")
+    if not isinstance(coding, list) or not coding:
+        return {}
+    first = coding[0]
+    return first if isinstance(first, dict) else {}
 
 
 def _status_from_findings(findings: list[ValidationFinding]) -> str:

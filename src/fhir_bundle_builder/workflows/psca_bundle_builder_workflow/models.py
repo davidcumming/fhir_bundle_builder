@@ -126,7 +126,7 @@ class WorkflowDefaults(BaseModel):
     bundle_type: str
     specification_mode: Literal["normalized-asset-foundation"]
     validation_mode: Literal["foundational_dual_channel"]
-    resource_construction_mode: Literal["scaffold_only_foundation"]
+    resource_construction_mode: Literal["deterministic_content_enriched_foundation"]
 
 
 class NormalizedBuildRequest(StageArtifact):
@@ -302,7 +302,7 @@ class BuildPlan(StageArtifact):
     evidence: BuildPlanEvidence
 
 
-ResourceConstructionMode = Literal["deterministic_scaffold_only"]
+ResourceConstructionMode = Literal["deterministic_content_enriched"]
 ResourceConstructionExecutionStatus = Literal["scaffold_created", "scaffold_updated"]
 ReferenceContributionStatus = Literal["applied"]
 ResourceScaffoldState = Literal[
@@ -320,6 +320,14 @@ class ReferenceContribution(BaseModel):
     target_placeholder_id: str
     reference_value: str
     status: ReferenceContributionStatus
+
+
+class DeterministicValueEvidence(BaseModel):
+    """Provenance for one deterministic populated field."""
+
+    target_path: str
+    source_artifact: str
+    source_detail: str
 
 
 class ResourceScaffoldArtifact(BaseModel):
@@ -345,6 +353,7 @@ class ResourceConstructionStepResult(BaseModel):
     execution_status: ResourceConstructionExecutionStatus
     resource_scaffold: ResourceScaffoldArtifact
     reference_contributions: list[ReferenceContribution] = Field(default_factory=list)
+    deterministic_value_evidence: list[DeterministicValueEvidence] = Field(default_factory=list)
     assumptions: list[str] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
     unresolved_fields: list[str] = Field(default_factory=list)

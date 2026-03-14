@@ -105,7 +105,7 @@ async def test_psca_bundle_builder_workflow_smoke() -> None:
         "build-allergyintolerance-1",
         "build-condition-1",
     ]
-    assert final_output.resource_construction.construction_mode == "deterministic_scaffold_only"
+    assert final_output.resource_construction.construction_mode == "deterministic_content_enriched"
     assert [step.step_id for step in final_output.resource_construction.step_results] == [
         "build-patient-1",
         "build-practitioner-1",
@@ -121,6 +121,12 @@ async def test_psca_bundle_builder_workflow_smoke() -> None:
     assert final_output.resource_construction.step_results[4].execution_status == "scaffold_created"
     assert final_output.resource_construction.step_results[-1].target_placeholder_id == "composition-1"
     assert final_output.resource_construction.step_results[-1].execution_status == "scaffold_updated"
+    assert final_output.resource_construction.step_results[0].resource_scaffold.fhir_scaffold["identifier"][0]["value"] == "patient-smoke-test"
+    assert final_output.resource_construction.step_results[0].resource_scaffold.fhir_scaffold["name"][0]["text"] == "Smoke Test Patient"
+    assert final_output.resource_construction.step_results[4].resource_scaffold.fhir_scaffold["status"] == "final"
+    assert final_output.resource_construction.step_results[4].resource_scaffold.fhir_scaffold["title"] == (
+        "PS-CA document bundle skeleton - pytest-smoke"
+    )
     assert {entry.placeholder_id for entry in final_output.resource_construction.resource_registry} == {
         "patient-1",
         "practitioner-1",
@@ -162,6 +168,20 @@ async def test_psca_bundle_builder_workflow_smoke() -> None:
         "AllergyIntolerance",
         "Condition",
     ]
+    assert final_output.candidate_bundle.candidate_bundle.fhir_bundle["entry"][0]["resource"]["status"] == "final"
+    assert final_output.candidate_bundle.candidate_bundle.fhir_bundle["entry"][0]["resource"]["title"] == (
+        "PS-CA document bundle skeleton - pytest-smoke"
+    )
+    assert final_output.candidate_bundle.candidate_bundle.fhir_bundle["entry"][1]["resource"]["name"][0]["text"] == "Smoke Test Patient"
+    assert final_output.candidate_bundle.candidate_bundle.fhir_bundle["entry"][5]["resource"]["status"] == "draft"
+    assert (
+        final_output.candidate_bundle.candidate_bundle.fhir_bundle["entry"][6]["resource"]["code"]["text"]
+        == f"{final_output.bundle_schematic.section_scaffolds[1].title} placeholder for pytest-smoke"
+    )
+    assert (
+        final_output.candidate_bundle.candidate_bundle.fhir_bundle["entry"][7]["resource"]["code"]["text"]
+        == f"{final_output.bundle_schematic.section_scaffolds[2].title} placeholder for pytest-smoke"
+    )
     assert final_output.candidate_bundle.candidate_bundle.deferred_paths == [
         "identifier",
         "timestamp",
