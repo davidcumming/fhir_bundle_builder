@@ -167,7 +167,19 @@ async def test_psca_bundle_builder_workflow_smoke() -> None:
         "entry.fullUrl",
     ]
     assert len(final_output.candidate_bundle.candidate_bundle.fhir_bundle["entry"][0]["resource"]["section"]) == 3
-    assert final_output.validation_report.outcome == "placeholder_pass_with_warnings"
+    assert final_output.validation_report.overall_status == "passed_with_warnings"
+    assert final_output.validation_report.standards_validation.validator_id == "local_candidate_bundle_scaffold_validator"
+    assert final_output.validation_report.standards_validation.status == "passed_with_warnings"
+    assert final_output.validation_report.workflow_validation.status == "passed"
+    assert any(
+        finding.code == "external_profile_validation_deferred"
+        for finding in final_output.validation_report.standards_validation.findings
+    )
+    assert any(
+        finding.code == "bundle.deferred_fields_recorded"
+        and finding.severity == "information"
+        for finding in final_output.validation_report.workflow_validation.findings
+    )
     assert final_output.repair_decision.decision == "complete_for_slice"
 
     completed_executors = [

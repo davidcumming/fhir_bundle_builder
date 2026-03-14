@@ -106,7 +106,7 @@ def _build_construction_inputs() -> tuple[NormalizedBuildRequest, object, object
         workflow_defaults=WorkflowDefaults(
             bundle_type="document",
             specification_mode="normalized-asset-foundation",
-            validation_mode="placeholder",
+            validation_mode="foundational_dual_channel",
             resource_construction_mode="scaffold_only_foundation",
         ),
         run_label="pytest-finalization:ca.infoway.io.psca:2.1.1-DFT",

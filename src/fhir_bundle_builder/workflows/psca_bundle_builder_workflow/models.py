@@ -8,6 +8,12 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 from fhir_bundle_builder.specifications.psca import PscaNormalizedAssetContext
+from fhir_bundle_builder.validation.models import (
+    StandardsValidationResult,
+    ValidationEvidence,
+    ValidationStatus,
+    WorkflowValidationResult,
+)
 
 
 class SpecificationSelection(BaseModel):
@@ -117,7 +123,7 @@ class WorkflowDefaults(BaseModel):
 
     bundle_type: str
     specification_mode: Literal["normalized-asset-foundation"]
-    validation_mode: Literal["placeholder"]
+    validation_mode: Literal["foundational_dual_channel"]
     resource_construction_mode: Literal["scaffold_only_foundation"]
 
 
@@ -423,20 +429,17 @@ class CandidateBundleResult(StageArtifact):
     evidence: CandidateBundleEvidence
 
 
-class ValidationFindingStub(BaseModel):
-    """Placeholder validation finding."""
+class ValidationReport(StageArtifact):
+    """Structured validation report with separated standards and workflow channels."""
 
-    severity: Literal["information"]
-    location: str
-    message: str
-    repair_target: Literal["future-validation-logic"]
-
-
-class ValidationReportStub(StageArtifact):
-    """Structured placeholder validation report."""
-
-    outcome: Literal["placeholder_pass_with_warnings"]
-    findings: list[ValidationFindingStub]
+    overall_status: ValidationStatus
+    standards_validation: StandardsValidationResult
+    workflow_validation: WorkflowValidationResult
+    error_count: int
+    warning_count: int
+    information_count: int
+    deferred_validation_areas: list[str] = Field(default_factory=list)
+    evidence: ValidationEvidence
 
 
 class RepairDecisionStub(StageArtifact):
@@ -459,5 +462,5 @@ class WorkflowSkeletonRunResult(BaseModel):
     build_plan: BuildPlan
     resource_construction: ResourceConstructionStageResult
     candidate_bundle: CandidateBundleResult
-    validation_report: ValidationReportStub
+    validation_report: ValidationReport
     repair_decision: RepairDecisionStub

@@ -7,6 +7,7 @@ from typing import Any
 from agent_framework import WorkflowContext, executor
 
 from fhir_bundle_builder.specifications.psca import PscaAssetQuery, PscaAssetRepository
+from fhir_bundle_builder.validation import LocalCandidateBundleScaffoldStandardsValidator
 
 from .models import (
     BuildPlan,
@@ -16,8 +17,7 @@ from .models import (
     RepairDecisionStub,
     ResourceConstructionStageResult,
     SpecificationAssetContext,
-    ValidationFindingStub,
-    ValidationReportStub,
+    ValidationReport,
     WorkflowBuildInput,
     WorkflowDefaults,
     WorkflowSkeletonRunResult,
@@ -26,6 +26,7 @@ from .bundle_finalization_builder import build_psca_candidate_bundle_result
 from .build_plan_builder import build_psca_build_plan
 from .resource_construction_builder import build_psca_resource_construction_result
 from .schematic_builder import build_psca_bundle_schematic
+from .validation_builder import build_psca_validation_report
 
 WORKFLOW_NAME = "PS-CA Bundle Builder Skeleton"
 WORKFLOW_VERSION = "0.1.0"
@@ -41,6 +42,7 @@ STAGE_ORDER = [
 ]
 
 _PSCA_ASSET_REPOSITORY = PscaAssetRepository()
+_STANDARDS_VALIDATOR = LocalCandidateBundleScaffoldStandardsValidator()
 
 
 def _store_artifact(ctx: WorkflowContext[Any], key: str, artifact: Any) -> None:
@@ -70,7 +72,7 @@ async def request_normalization(message: WorkflowBuildInput, ctx: WorkflowContex
         workflow_defaults=WorkflowDefaults(
             bundle_type="document",
             specification_mode="normalized-asset-foundation",
-            validation_mode="placeholder",
+            validation_mode="foundational_dual_channel",
             resource_construction_mode="scaffold_only_foundation",
         ),
         run_label=f"{message.request.scenario_label}:{message.specification.package_id}:{message.specification.version}",
@@ -154,23 +156,15 @@ async def bundle_finalization(
     await ctx.send_message(candidate)
 
 
-@executor(id="validation", input=CandidateBundleResult, output=ValidationReportStub)
-async def validation(message: CandidateBundleResult, ctx: WorkflowContext[ValidationReportStub]) -> None:
-    report = ValidationReportStub(
-        stage_id="validation",
-        status="placeholder_warning",
-        summary="Emitted a deterministic placeholder validation report for the candidate bundle scaffold.",
-        placeholder_note="Validation logic is not implemented yet; findings here are explanatory placeholders only, even though bundle finalization now produces a real Bundle-shaped candidate scaffold.",
-        source_refs=message.source_refs,
-        outcome="placeholder_pass_with_warnings",
-        findings=[
-            ValidationFindingStub(
-                severity="information",
-                location="Bundle",
-                message="Validation is stubbed for this slice; no structural or profile checks were executed against the candidate bundle scaffold.",
-                repair_target="future-validation-logic",
-            )
-        ],
+@executor(id="validation", input=CandidateBundleResult, output=ValidationReport)
+async def validation(message: CandidateBundleResult, ctx: WorkflowContext[ValidationReport]) -> None:
+    schematic = _get_artifact(ctx, "bundle_schematic")
+    normalized_request = _get_artifact(ctx, "normalized_request")
+    report = await build_psca_validation_report(
+        message,
+        schematic,
+        normalized_request,
+        _STANDARDS_VALIDATOR,
     )
     _store_artifact(ctx, "validation_report", report)
     await ctx.send_message(report)
@@ -178,22 +172,22 @@ async def validation(message: CandidateBundleResult, ctx: WorkflowContext[Valida
 
 @executor(
     id="repair_decision",
-    input=ValidationReportStub,
+    input=ValidationReport,
     workflow_output=WorkflowSkeletonRunResult,
 )
 async def repair_decision(
-    message: ValidationReportStub,
+    message: ValidationReport,
     ctx: WorkflowContext[Any, WorkflowSkeletonRunResult],
 ) -> None:
     decision = RepairDecisionStub(
         stage_id="repair_decision",
         status="placeholder_complete",
-        summary="Marked the workflow slice complete because the goal is inspectable workflow shape, not bundle correctness.",
-        placeholder_note="Future slices will replace this with structured repair routing driven by real validation output.",
+        summary="Marked the workflow slice complete because this iteration establishes structured validation output, not repair routing.",
+        placeholder_note="Future slices will replace this with structured repair routing driven by the standards and workflow validation channels.",
         source_refs=message.source_refs,
         decision="complete_for_slice",
         next_stage="none",
-        rationale="The first implementation slice is successful once the workflow runs end-to-end in Dev UI with inspectable structured artifacts.",
+        rationale="This validation-foundation slice is successful once the workflow emits a structured multi-channel validation report that a later repair stage can consume.",
     )
     _store_artifact(ctx, "repair_decision", decision)
     await ctx.yield_output(

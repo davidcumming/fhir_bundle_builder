@@ -8,6 +8,7 @@ The implemented slice is intentionally narrow:
 - deterministic workflow stages for request normalization, PS-CA asset retrieval, bundle schematic generation, and build planning
 - scaffold-oriented resource construction driven by the real build plan
 - deterministic bundle finalization into a real candidate `Bundle` scaffold
+- structured dual-channel validation over the candidate bundle scaffold
 - inspectable structured artifacts emitted at each stage
 - no product UI
 - no full bundle population yet
@@ -77,7 +78,7 @@ The `specification_asset_retrieval` stage now emits the first normalized PS-CA a
 
 ## Current slice boundaries
 
-This slice is for workflow shape, PS-CA normalized asset retrieval, the first real schematic artifact, the first real build plan, the first scaffold-oriented resource-construction foundation, and the first candidate-bundle finalization foundation.
+This slice is for workflow shape, PS-CA normalized asset retrieval, the first real schematic artifact, the first real build plan, the first scaffold-oriented resource-construction foundation, the first candidate-bundle finalization foundation, and the first validation foundation.
 
 - The workflow reads existing PS-CA package files deterministically from the repo.
 - The spec retrieval stage exposes a normalized PS-CA asset context with foundational profiles, Composition section definitions, and selected example evidence.
@@ -90,7 +91,8 @@ This slice is for workflow shape, PS-CA normalized asset retrieval, the first re
 - The build-plan stage emits a structured deterministic build plan with explicit steps, dependencies, expected inputs, and expected outputs.
 - The resource-construction stage emits deterministic FHIR-shaped resource scaffolds, per-step construction results, and a registry of the latest scaffold state per placeholder.
 - The bundle-finalization stage emits a real candidate `Bundle` scaffold assembled deterministically from the registry and schematic bundle-entry expectations.
-- Validation and repair are placeholder stages used to prove the end-to-end workflow path.
+- The validation stage emits a structured report with separate standards-validation and workflow-rule results.
+- Repair remains a placeholder stage used to prove the end-to-end workflow path.
 
 ## Schematic-stage output
 
@@ -159,3 +161,21 @@ The `bundle_finalization` stage now emits the first real candidate-bundle artifa
   - `timestamp`
   - `entry.fullUrl`
 - a clear distinction between the candidate bundle scaffold and a future validated bundle
+
+## Validation-stage output
+
+The `validation` stage now emits the first real structured validation artifact for workflow use. In Dev UI you should see:
+
+- overall validation status derived from deterministic channel results
+- a separate standards-validation section with:
+  - validator identity
+  - checks run
+  - findings
+  - explicit deferred areas
+- a separate workflow/business-rule validation section with:
+  - deterministic bundle/document checks
+  - findings tied to bundle structure and PS-CA expectations
+  - explicit deferred areas
+- counts for errors, warnings, and informational findings
+- validation evidence linking back to the candidate bundle, schematic, build plan, and resource construction artifacts
+- clear warnings that external profile/conformance validation is still deferred

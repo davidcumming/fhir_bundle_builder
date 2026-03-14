@@ -98,11 +98,11 @@ The following status labels should be used in this plan:
 
 ## 8. Current Focus
 
-**Current Focus:** Use the real candidate bundle scaffold to implement the first bounded validation foundation while keeping the workflow deterministic and inspectable.
+**Current Focus:** Use the structured validation artifact to implement the first bounded repair-routing foundation while keeping the workflow deterministic and inspectable.
 
 ## 9. Next Planned Slice
 
-**Next Planned Slice:** Implement the first validation foundation against the real candidate bundle scaffold, without repair routing intelligence.
+**Next Planned Slice:** Implement the first repair-decision and repair-routing foundation against the structured validation report.
 
 ## 10. Development Phases
 
@@ -244,7 +244,7 @@ Prove that the workflow can build resources incrementally and maintain a bundle-
 ---
 
 ## Phase 7: Validation and Repair Routing Foundation
-**Status:** Planned
+**Status:** In Progress
 
 ### Goal
 Establish the first validation and repair loop for the workflow.
@@ -350,6 +350,7 @@ The following assumptions currently guide the plan:
 - the first real build plan intentionally uses a two-step Composition strategy and a limited hard-dependency set derived from the current schematic
 - the first resource-construction slice uses partial FHIR-shaped scaffold artifacts and deterministic placeholder-derived local references rather than fully populated valid resources
 - the first bundle-finalization slice intentionally omits bundle identifier population, timestamp population, and entry fullUrl population while still producing a real candidate Bundle scaffold
+- the first validation slice intentionally uses a local scaffold-shape standards validator and defers full external conformance validation to a later Matchbox-backed implementation
 - initial development should prioritize workflow shape, artifact contracts, and inspectability over feature completeness
 
 ## 13. Known Early Risks
@@ -393,4 +394,4 @@ Codex should make targeted edits only. It should not rewrite the full document u
 
 ## 16. Immediate Next Objective
 
-The immediate next objective is to validate the real candidate bundle scaffold without broadening scope into repair routing or deeper assembly policy.
+The immediate next objective is to consume the structured validation artifact for repair decision and routing without broadening scope into full external conformance validation or generalized repair logic.
