@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from typing import Any
 from typing import Literal
 
 from pydantic import BaseModel, Field
@@ -117,7 +118,7 @@ class WorkflowDefaults(BaseModel):
     bundle_type: str
     specification_mode: Literal["normalized-asset-foundation"]
     validation_mode: Literal["placeholder"]
-    resource_construction_mode: Literal["placeholder"]
+    resource_construction_mode: Literal["scaffold_only_foundation"]
 
 
 class NormalizedBuildRequest(StageArtifact):
@@ -293,22 +294,82 @@ class BuildPlan(StageArtifact):
     evidence: BuildPlanEvidence
 
 
-class PlaceholderResourceBuildResult(BaseModel):
-    """Per-resource placeholder output for the construction stage."""
+ResourceConstructionMode = Literal["deterministic_scaffold_only"]
+ResourceConstructionExecutionStatus = Literal["scaffold_created", "scaffold_updated"]
+ReferenceContributionStatus = Literal["applied"]
+ResourceScaffoldState = Literal[
+    "base_scaffold_created",
+    "references_attached",
+    "composition_scaffold_created",
+    "sections_attached",
+]
+
+
+class ReferenceContribution(BaseModel):
+    """Reference field contribution applied while constructing a scaffold."""
+
+    reference_path: str
+    target_placeholder_id: str
+    reference_value: str
+    status: ReferenceContributionStatus
+
+
+class ResourceScaffoldArtifact(BaseModel):
+    """Partial FHIR-shaped scaffold for a constructed placeholder resource."""
+
+    placeholder_id: str
+    resource_type: str
+    profile_url: str | None = None
+    scaffold_state: ResourceScaffoldState
+    fhir_scaffold: dict[str, Any]
+    populated_paths: list[str] = Field(default_factory=list)
+    deferred_paths: list[str] = Field(default_factory=list)
+    source_step_ids: list[str] = Field(default_factory=list)
+
+
+class ResourceConstructionStepResult(BaseModel):
+    """Per-step construction result aligned to the build plan."""
 
     step_id: str
     step_kind: BuildStepKind
     resource_type: str
-    placeholder_resource_id: str
-    build_status: Literal["placeholder_created"]
+    target_placeholder_id: str
+    execution_status: ResourceConstructionExecutionStatus
+    resource_scaffold: ResourceScaffoldArtifact
+    reference_contributions: list[ReferenceContribution] = Field(default_factory=list)
     assumptions: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    unresolved_fields: list[str] = Field(default_factory=list)
+
+
+class ResourceRegistryEntry(BaseModel):
+    """Latest scaffold state for a constructed placeholder resource."""
+
+    placeholder_id: str
+    resource_type: str
+    latest_step_id: str
+    current_scaffold: ResourceScaffoldArtifact
+
+
+class ResourceConstructionEvidence(BaseModel):
+    """Provenance for the resource construction stage."""
+
+    source_build_plan_stage_id: str
+    source_build_plan_basis: str
+    source_schematic_stage_id: str
+    planned_step_ids: list[str] = Field(default_factory=list)
+    source_refs: list[str] = Field(default_factory=list)
 
 
 class ResourceConstructionStageResult(StageArtifact):
-    """Placeholder outputs from the resource construction stage."""
+    """Structured scaffold-oriented outputs from the resource construction stage."""
 
-    built_resources: list[PlaceholderResourceBuildResult]
-    unresolved_items: list[str]
+    construction_mode: ResourceConstructionMode
+    step_results: list[ResourceConstructionStepResult]
+    resource_registry: list[ResourceRegistryEntry]
+    deferred_items: list[str] = Field(default_factory=list)
+    unresolved_items: list[str] = Field(default_factory=list)
+    evidence: ResourceConstructionEvidence
 
 
 class CandidateBundleEntry(BaseModel):
@@ -317,6 +378,8 @@ class CandidateBundleEntry(BaseModel):
     full_url: str
     resource_type: str
     placeholder_resource_id: str
+    scaffold_state: ResourceScaffoldState
+    resource_scaffold: dict[str, Any]
 
 
 class CandidateBundleStub(StageArtifact):

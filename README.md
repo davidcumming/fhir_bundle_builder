@@ -6,10 +6,10 @@ The implemented slice is intentionally narrow:
 
 - structured top-level workflow input
 - deterministic workflow stages for request normalization, PS-CA asset retrieval, bundle schematic generation, and build planning
+- scaffold-oriented resource construction driven by the real build plan
 - inspectable structured artifacts emitted at each stage
 - no product UI
-- no real bundle population yet
-- no real resource construction yet
+- no full bundle population yet
 - no arbitrary-spec ingestion yet
 
 ## Repository shape
@@ -76,7 +76,7 @@ The `specification_asset_retrieval` stage now emits the first normalized PS-CA a
 
 ## Current slice boundaries
 
-This slice is for workflow shape, PS-CA normalized asset retrieval, the first real schematic artifact, and the first real build plan only.
+This slice is for workflow shape, PS-CA normalized asset retrieval, the first real schematic artifact, the first real build plan, and the first scaffold-oriented resource-construction foundation.
 
 - The workflow reads existing PS-CA package files deterministically from the repo.
 - The spec retrieval stage exposes a normalized PS-CA asset context with foundational profiles, Composition section definitions, and selected example evidence.
@@ -87,7 +87,7 @@ This slice is for workflow shape, PS-CA normalized asset retrieval, the first re
   - explicit resource placeholders
   - explicit schematic relationships and provenance
 - The build-plan stage emits a structured deterministic build plan with explicit steps, dependencies, expected inputs, and expected outputs.
-- Resource construction emits placeholder resource build results only.
+- The resource-construction stage emits deterministic FHIR-shaped resource scaffolds, per-step construction results, and a registry of the latest scaffold state per placeholder.
 - Validation and repair are placeholder stages used to prove the end-to-end workflow path.
 
 ## Schematic-stage output
@@ -121,3 +121,20 @@ The `build_plan` stage now emits the first real PS-CA planning artifact for work
 - explicit prerequisite relationships rather than a simple linear chain
 - expected step inputs and expected outputs that the later resource-construction slice can consume
 - deferred items that remain outside this slice, such as bundle assembly intelligence and element-level population
+
+## Resource-construction-stage output
+
+The `resource_construction` stage now emits the first real scaffold-oriented construction artifact for workflow use. In Dev UI you should see:
+
+- construction mode metadata showing deterministic scaffold-only construction
+- ordered per-step construction results aligned to the build plan
+- shallow FHIR-shaped scaffolds for all currently planned placeholders
+- deterministic local references such as:
+  - `Patient/patient-1`
+  - `PractitionerRole/practitionerrole-1`
+  - section-entry references attached to `Composition`
+- a resource registry showing the latest scaffold state per placeholder
+- explicit `Composition` two-step behavior:
+  - scaffold creation
+  - later section attachment update
+- unresolved and deferred fields called out explicitly rather than implied

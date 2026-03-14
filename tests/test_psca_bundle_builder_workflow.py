@@ -104,8 +104,32 @@ async def test_psca_bundle_builder_workflow_smoke() -> None:
         "build-allergyintolerance-1",
         "build-condition-1",
     ]
-    assert final_output.resource_construction.built_resources[4].placeholder_resource_id == "composition-1"
-    assert final_output.resource_construction.built_resources[-1].placeholder_resource_id == "composition-1"
+    assert final_output.resource_construction.construction_mode == "deterministic_scaffold_only"
+    assert [step.step_id for step in final_output.resource_construction.step_results] == [
+        "build-patient-1",
+        "build-practitioner-1",
+        "build-organization-1",
+        "build-practitionerrole-1",
+        "build-composition-1-scaffold",
+        "build-medicationrequest-1",
+        "build-allergyintolerance-1",
+        "build-condition-1",
+        "finalize-composition-1",
+    ]
+    assert final_output.resource_construction.step_results[4].target_placeholder_id == "composition-1"
+    assert final_output.resource_construction.step_results[4].execution_status == "scaffold_created"
+    assert final_output.resource_construction.step_results[-1].target_placeholder_id == "composition-1"
+    assert final_output.resource_construction.step_results[-1].execution_status == "scaffold_updated"
+    assert {entry.placeholder_id for entry in final_output.resource_construction.resource_registry} == {
+        "patient-1",
+        "practitioner-1",
+        "organization-1",
+        "practitionerrole-1",
+        "composition-1",
+        "medicationrequest-1",
+        "allergyintolerance-1",
+        "condition-1",
+    }
     assert final_output.candidate_bundle.entry_count == 8
     assert {entry.placeholder_resource_id for entry in final_output.candidate_bundle.entries} == {
         "patient-1",
@@ -117,6 +141,11 @@ async def test_psca_bundle_builder_workflow_smoke() -> None:
         "allergyintolerance-1",
         "condition-1",
     }
+    composition_entry = next(
+        entry for entry in final_output.candidate_bundle.entries if entry.placeholder_resource_id == "composition-1"
+    )
+    assert composition_entry.scaffold_state == "sections_attached"
+    assert len(composition_entry.resource_scaffold["section"]) == 3
     assert final_output.validation_report.outcome == "placeholder_pass_with_warnings"
     assert final_output.repair_decision.decision == "complete_for_slice"
 

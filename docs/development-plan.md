@@ -98,11 +98,11 @@ The following status labels should be used in this plan:
 
 ## 8. Current Focus
 
-**Current Focus:** Use the real build plan artifact to implement the first bounded resource-construction slice while keeping the workflow deterministic and inspectable.
+**Current Focus:** Use the constructed scaffold artifacts and resource registry to implement the first bounded bundle-finalization / bundle-in-progress slice while keeping the workflow deterministic and inspectable.
 
 ## 9. Next Planned Slice
 
-**Next Planned Slice:** Implement the first PS-CA resource-construction slice from the real build plan, without full bundle population.
+**Next Planned Slice:** Implement the first bundle-finalization foundation using the constructed resource registry and scaffold artifacts, without full validation logic.
 
 ## 10. Development Phases
 
@@ -218,7 +218,7 @@ Enable the workflow to derive an ordered resource build plan from the bundle sch
 ---
 
 ## Phase 6: Resource Construction Foundation
-**Status:** Planned
+**Status:** In Progress
 
 ### Goal
 Prove that the workflow can build resources incrementally and maintain a bundle-in-progress.
@@ -348,6 +348,7 @@ The following assumptions currently guide the plan:
 - the initial normalized PS-CA asset scope is intentionally limited to package metadata, selected foundational profiles, Composition section definitions, and example summaries rather than full IG normalization
 - the first real PS-CA schematic intentionally covers only the required sections plus minimal subject/author support placeholders
 - the first real build plan intentionally uses a two-step Composition strategy and a limited hard-dependency set derived from the current schematic
+- the first resource-construction slice uses partial FHIR-shaped scaffold artifacts and deterministic placeholder-derived local references rather than fully populated valid resources
 - initial development should prioritize workflow shape, artifact contracts, and inspectability over feature completeness
 
 ## 13. Known Early Risks
@@ -391,4 +392,4 @@ Codex should make targeted edits only. It should not rewrite the full document u
 
 ## 16. Immediate Next Objective
 
-The immediate next objective is to execute the first narrow resource-construction path from the structured build plan without broadening scope into full generation.
+The immediate next objective is to turn the constructed scaffolds and resource registry into a real bundle-in-progress / candidate-bundle path without broadening scope into full validation or repair.

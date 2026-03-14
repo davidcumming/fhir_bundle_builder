@@ -14,7 +14,6 @@ from .models import (
     CandidateBundleEntry,
     CandidateBundleStub,
     NormalizedBuildRequest,
-    PlaceholderResourceBuildResult,
     RepairDecisionStub,
     ResourceConstructionStageResult,
     SpecificationAssetContext,
@@ -25,6 +24,7 @@ from .models import (
     WorkflowSkeletonRunResult,
 )
 from .build_plan_builder import build_psca_build_plan
+from .resource_construction_builder import build_psca_resource_construction_result
 from .schematic_builder import build_psca_bundle_schematic
 
 WORKFLOW_NAME = "PS-CA Bundle Builder Skeleton"
@@ -71,7 +71,7 @@ async def request_normalization(message: WorkflowBuildInput, ctx: WorkflowContex
             bundle_type="document",
             specification_mode="normalized-asset-foundation",
             validation_mode="placeholder",
-            resource_construction_mode="placeholder",
+            resource_construction_mode="scaffold_only_foundation",
         ),
         run_label=f"{message.request.scenario_label}:{message.specification.package_id}:{message.specification.version}",
     )
@@ -136,33 +136,8 @@ async def resource_construction(
     message: BuildPlan,
     ctx: WorkflowContext[ResourceConstructionStageResult],
 ) -> None:
-    built_resources = [
-        PlaceholderResourceBuildResult(
-            step_id=step.step_id,
-            step_kind=step.step_kind,
-            resource_type=step.resource_type,
-            placeholder_resource_id=step.target_placeholder_id,
-            build_status="placeholder_created",
-            assumptions=[
-                "No clinical content was generated in this slice.",
-                "Resource payloads are represented only by typed placeholder metadata.",
-                "Expected inputs and outputs are declared in the build plan, but no real resource execution exists yet.",
-            ],
-        )
-        for step in message.steps
-    ]
-    result = ResourceConstructionStageResult(
-        stage_id="resource_construction",
-        status="placeholder_complete",
-        summary="Produced placeholder per-resource build results for the ordered plan.",
-        placeholder_note="This stage demonstrates ordered execution only; it does not build real FHIR resources yet.",
-        source_refs=message.source_refs,
-        built_resources=built_resources,
-        unresolved_items=[
-            "No element-level construction has been implemented.",
-            "No reference registry or bundle patching logic exists yet.",
-        ],
-    )
+    schematic = _get_artifact(ctx, "bundle_schematic")
+    result = build_psca_resource_construction_result(message, schematic)
     _store_artifact(ctx, "resource_construction", result)
     await ctx.send_message(result)
 
@@ -173,23 +148,21 @@ async def bundle_finalization(
     ctx: WorkflowContext[CandidateBundleStub],
 ) -> None:
     normalized_request = _get_artifact(ctx, "normalized_request")
-    deduped_resources: dict[str, PlaceholderResourceBuildResult] = {}
-    for resource in message.built_resources:
-        deduped_resources[resource.placeholder_resource_id] = resource
-
     entries = [
         CandidateBundleEntry(
-            full_url=f"urn:uuid:{resource.placeholder_resource_id}",
+            full_url=f"urn:uuid:{resource.placeholder_id}",
             resource_type=resource.resource_type,
-            placeholder_resource_id=resource.placeholder_resource_id,
+            placeholder_resource_id=resource.placeholder_id,
+            scaffold_state=resource.current_scaffold.scaffold_state,
+            resource_scaffold=resource.current_scaffold.fhir_scaffold,
         )
-        for resource in deduped_resources.values()
+        for resource in message.resource_registry
     ]
     candidate = CandidateBundleStub(
         stage_id="bundle_finalization",
         status="placeholder_complete",
-        summary="Assembled a candidate bundle stub from the placeholder resource outputs using unique placeholder ids.",
-        placeholder_note="The candidate bundle contains inspectable placeholder entries only; multiple plan steps may refine the same placeholder resource.",
+        summary="Assembled a candidate bundle stub from the latest scaffold tracked for each placeholder resource.",
+        placeholder_note="The candidate bundle contains inspectable scaffold artifacts only; multiple plan steps may refine the same placeholder resource before final assembly logic exists.",
         source_refs=message.source_refs,
         bundle_id=f"{normalized_request.specification.package_id}-{normalized_request.request.scenario_label}",
         bundle_type=normalized_request.workflow_defaults.bundle_type,
