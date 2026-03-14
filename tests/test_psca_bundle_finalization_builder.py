@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+import uuid
 
 import pytest
 
@@ -32,12 +33,17 @@ def test_psca_bundle_finalization_builder_assembles_expected_bundle_scaffold() -
     normalized_request, schematic, construction = _build_construction_inputs()
 
     result = build_psca_candidate_bundle_result(construction, schematic, normalized_request)
+    bundle_identifier_value = result.candidate_bundle.fhir_bundle["identifier"]["value"]
+    full_urls = [entry["fullUrl"] for entry in result.candidate_bundle.fhir_bundle["entry"]]
 
     assert result.assembly_mode == "deterministic_registry_bundle_scaffold"
     assert result.candidate_bundle.bundle_state == "candidate_scaffold_assembled"
     assert result.candidate_bundle.entry_count == 8
     assert result.candidate_bundle.fhir_bundle["resourceType"] == "Bundle"
     assert result.candidate_bundle.fhir_bundle["id"] == "ca.infoway.io.psca-pytest-finalization"
+    assert result.candidate_bundle.fhir_bundle["identifier"]["system"] == "urn:fhir-bundle-builder:candidate-bundle-identifier"
+    assert str(uuid.UUID(bundle_identifier_value)) == bundle_identifier_value
+    assert result.candidate_bundle.fhir_bundle["timestamp"].endswith("Z")
     assert result.candidate_bundle.fhir_bundle["meta"]["profile"] == [schematic.bundle_scaffold.profile_url]
     assert result.candidate_bundle.fhir_bundle["type"] == "document"
     assert [assembly.placeholder_id for assembly in result.entry_assembly] == [
@@ -60,10 +66,30 @@ def test_psca_bundle_finalization_builder_assembles_expected_bundle_scaffold() -
         "AllergyIntolerance",
         "Condition",
     ]
+    assert all(full_url.startswith("urn:uuid:") for full_url in full_urls)
+    assert [assembly.full_url for assembly in result.entry_assembly] == full_urls
     assert result.entry_assembly[0].required_by_bundle_scaffold is True
     assert result.entry_assembly[1].required_by_bundle_scaffold is True
-    assert result.candidate_bundle.deferred_paths == ["identifier", "timestamp", "entry.fullUrl"]
+    assert result.candidate_bundle.deferred_paths == []
     assert len(result.candidate_bundle.fhir_bundle["entry"][0]["resource"]["section"]) == 3
+    assert result.candidate_bundle.fhir_bundle["entry"][0]["resource"]["subject"]["reference"] == full_urls[1]
+    assert result.candidate_bundle.fhir_bundle["entry"][0]["resource"]["author"][0]["reference"] == full_urls[2]
+    assert result.candidate_bundle.fhir_bundle["entry"][2]["resource"]["practitioner"]["reference"] == full_urls[3]
+    assert result.candidate_bundle.fhir_bundle["entry"][2]["resource"]["organization"]["reference"] == full_urls[4]
+    assert result.candidate_bundle.fhir_bundle["entry"][5]["resource"]["subject"]["reference"] == full_urls[1]
+    assert result.candidate_bundle.fhir_bundle["entry"][6]["resource"]["patient"]["reference"] == full_urls[1]
+    assert result.candidate_bundle.fhir_bundle["entry"][7]["resource"]["subject"]["reference"] == full_urls[1]
+    assert result.candidate_bundle.fhir_bundle["entry"][0]["resource"]["section"][0]["entry"][0]["reference"] == full_urls[5]
+    assert result.candidate_bundle.fhir_bundle["entry"][0]["resource"]["section"][1]["entry"][0]["reference"] == full_urls[6]
+    assert result.candidate_bundle.fhir_bundle["entry"][0]["resource"]["section"][2]["entry"][0]["reference"] == full_urls[7]
+    assert any(
+        evidence.target_path == "identifier.value"
+        for evidence in result.candidate_bundle.deterministic_value_evidence
+    )
+    assert any(
+        evidence.target_path == "entry[0].fullUrl"
+        for evidence in result.candidate_bundle.deterministic_value_evidence
+    )
 
 
 def test_psca_bundle_finalization_builder_fails_when_composition_not_finalized() -> None:

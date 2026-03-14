@@ -31,6 +31,21 @@ class LocalCandidateBundleScaffoldStandardsValidator:
 
         self._require(bundle.get("resourceType") == "Bundle", findings, "bundle.resource_type", "Bundle", "Expected Bundle.resourceType to equal 'Bundle'.")
         self._require(bool(bundle.get("id")), findings, "bundle.id_present", "Bundle.id", "Expected Bundle.id to be present.")
+        identifier = bundle.get("identifier")
+        self._require(
+            isinstance(identifier, dict) and bool(identifier.get("system")) and bool(identifier.get("value")),
+            findings,
+            "bundle.identifier_present",
+            "Bundle.identifier",
+            "Expected Bundle.identifier.system and Bundle.identifier.value to be present.",
+        )
+        self._require(
+            isinstance(bundle.get("timestamp"), str) and bool(bundle.get("timestamp")),
+            findings,
+            "bundle.timestamp_present",
+            "Bundle.timestamp",
+            "Expected Bundle.timestamp to be present.",
+        )
 
         meta = bundle.get("meta")
         profile = meta.get("profile", []) if isinstance(meta, dict) else []
@@ -50,6 +65,13 @@ class LocalCandidateBundleScaffoldStandardsValidator:
         if entries_is_list:
             for index, entry in enumerate(entries):
                 resource = entry.get("resource") if isinstance(entry, dict) else None
+                self._require(
+                    isinstance(entry, dict) and bool(entry.get("fullUrl")),
+                    findings,
+                    "bundle.entry_fullurl_present",
+                    f"Bundle.entry[{index}].fullUrl",
+                    "Expected Bundle.entry fullUrl to be present.",
+                )
                 self._require(
                     isinstance(resource, dict) and bool(resource.get("resourceType")),
                     findings,
@@ -81,9 +103,12 @@ class LocalCandidateBundleScaffoldStandardsValidator:
             checks_run=[
                 "bundle.resource_type",
                 "bundle.id_present",
+                "bundle.identifier_present",
+                "bundle.timestamp_present",
                 "bundle.meta_profile_present",
                 "bundle.type_present",
                 "bundle.entry_list",
+                "bundle.entry_fullurl_present",
                 "bundle.entry_resource_type_present",
                 "bundle.entry_resource_id_present",
             ],

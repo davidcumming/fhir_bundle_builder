@@ -161,15 +161,15 @@ The `bundle_finalization` stage now emits the first real candidate-bundle artifa
 - a real FHIR-shaped `Bundle` scaffold with:
   - `resourceType = Bundle`
   - deterministic `id`
+  - deterministic local `identifier`
+  - deterministic synthetic `timestamp`
   - `meta.profile`
   - `type = document`
-  - ordered `entry.resource` items
+  - ordered `entry.fullUrl` + `entry.resource` items
 - deterministic entry ordering derived from the bundle schematic’s `bundle_entry` relationships
 - explicit entry assembly details for each placeholder resource
-- deferred bundle-level fields called out explicitly, including:
-  - `identifier`
-  - `timestamp`
-  - `entry.fullUrl`
+- deterministic `urn:uuid:` fullUrls aligned to internal resource references in the assembled candidate bundle copy
+- explicit local candidate-bundle identity evidence rather than deferred bundle-level identity fields
 - a clear distinction between the candidate bundle scaffold and a future validated bundle
 
 ## Validation-stage output
@@ -184,6 +184,7 @@ The `validation` stage now emits the first real structured validation artifact f
   - explicit deferred areas
 - a separate workflow/business-rule validation section with:
   - deterministic bundle/document checks
+  - deterministic bundle identity/fullUrl checks
   - findings tied to bundle structure and PS-CA expectations
   - explicit deferred areas
 - counts for errors, warnings, and informational findings

@@ -47,10 +47,8 @@ async def test_psca_repair_decision_happy_path_routes_to_external_validation_pen
         and route.actionable is False
         for route in decision.finding_routes
     )
-    assert any(
+    assert not any(
         route.finding_code == "bundle.deferred_fields_recorded"
-        and route.route_target == "none_required"
-        and route.actionable is False
         for route in decision.finding_routes
     )
 
@@ -111,6 +109,21 @@ async def test_psca_repair_decision_routes_bundle_shape_errors_to_bundle_finaliz
     assert decision.recommended_next_stage == "bundle_finalization"
     assert any(
         route.finding_code == "bundle.type_is_document"
+        and route.route_target == "bundle_finalization"
+        and route.actionable is True
+        for route in decision.finding_routes
+    )
+
+
+async def test_psca_repair_decision_routes_bundle_identity_failures_to_bundle_finalization() -> None:
+    report = await _build_validation_report(mutator=_remove_bundle_identifier)
+
+    decision = build_psca_repair_decision(report)
+
+    assert decision.overall_decision == "repair_recommended"
+    assert decision.recommended_target == "bundle_finalization"
+    assert any(
+        route.finding_code == "bundle.identifier_present"
         and route.route_target == "bundle_finalization"
         and route.actionable is True
         for route in decision.finding_routes
@@ -185,4 +198,10 @@ def _remove_practitioner_identity(candidate_bundle):
     broken_bundle = deepcopy(candidate_bundle)
     practitioner = broken_bundle.candidate_bundle.fhir_bundle["entry"][3]["resource"]
     practitioner["identifier"] = []
+    return broken_bundle
+
+
+def _remove_bundle_identifier(candidate_bundle):
+    broken_bundle = deepcopy(candidate_bundle)
+    broken_bundle.candidate_bundle.fhir_bundle.pop("identifier", None)
     return broken_bundle

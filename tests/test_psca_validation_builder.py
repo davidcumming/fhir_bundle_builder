@@ -48,13 +48,14 @@ async def test_psca_validation_builder_happy_path_reports_split_channels() -> No
         finding.code == "external_profile_validation_deferred"
         for finding in report.standards_validation.findings
     )
-    assert any(
-        finding.channel == "workflow"
-        and finding.code == "bundle.deferred_fields_recorded"
-        and finding.severity == "information"
+    assert not any(
+        finding.code == "bundle.identifier_present" and finding.severity == "error"
         for finding in report.workflow_validation.findings
     )
-    assert report.information_count >= 1
+    assert not any(
+        finding.code == "bundle.references_aligned_to_entry_fullurls" and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
 
 
 async def test_psca_validation_builder_fails_when_required_section_is_missing() -> None:
@@ -146,6 +147,55 @@ async def test_psca_validation_builder_fails_when_section_entry_content_is_missi
     assert report.workflow_validation.status == "failed"
     assert any(
         finding.code == "bundle.section_entry_content_present" and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+
+
+async def test_psca_validation_builder_fails_when_bundle_identity_fields_are_missing() -> None:
+    normalized_request, schematic, candidate_bundle = _build_validation_inputs()
+    broken_bundle = deepcopy(candidate_bundle)
+    broken_bundle.candidate_bundle.fhir_bundle.pop("identifier", None)
+    broken_bundle.candidate_bundle.fhir_bundle.pop("timestamp", None)
+    broken_bundle.candidate_bundle.fhir_bundle["entry"][0].pop("fullUrl", None)
+
+    report = await build_psca_validation_report(
+        broken_bundle,
+        schematic,
+        normalized_request,
+        LocalCandidateBundleScaffoldStandardsValidator(),
+    )
+
+    assert report.overall_status == "failed"
+    assert any(
+        finding.code == "bundle.identifier_present" and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert any(
+        finding.code == "bundle.timestamp_present" and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert any(
+        finding.code == "bundle.entry_fullurls_present" and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+
+
+async def test_psca_validation_builder_fails_when_references_do_not_align_to_fullurls() -> None:
+    normalized_request, schematic, candidate_bundle = _build_validation_inputs()
+    broken_bundle = deepcopy(candidate_bundle)
+    composition = broken_bundle.candidate_bundle.fhir_bundle["entry"][0]["resource"]
+    composition["subject"]["reference"] = "Patient/patient-1"
+
+    report = await build_psca_validation_report(
+        broken_bundle,
+        schematic,
+        normalized_request,
+        LocalCandidateBundleScaffoldStandardsValidator(),
+    )
+
+    assert report.workflow_validation.status == "failed"
+    assert any(
+        finding.code == "bundle.references_aligned_to_entry_fullurls" and finding.severity == "error"
         for finding in report.workflow_validation.findings
     )
 

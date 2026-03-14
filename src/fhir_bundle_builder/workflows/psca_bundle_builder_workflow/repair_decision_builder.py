@@ -30,6 +30,24 @@ _FINDING_ROUTE_MAP: dict[str, tuple[str, str, bool, str]] = {
         True,
         "Missing required entries indicate candidate bundle assembly needs to be corrected.",
     ),
+    "bundle.identifier_present": (
+        "bundle_finalization",
+        "bundle_finalization",
+        True,
+        "Bundle identifier policy is applied during candidate bundle assembly.",
+    ),
+    "bundle.timestamp_present": (
+        "bundle_finalization",
+        "bundle_finalization",
+        True,
+        "Bundle timestamp policy is applied during candidate bundle assembly.",
+    ),
+    "bundle.entry_fullurls_present": (
+        "bundle_finalization",
+        "bundle_finalization",
+        True,
+        "Bundle entry fullUrls are assigned during candidate bundle assembly.",
+    ),
     "bundle.composition_first_placeholder": (
         "bundle_finalization",
         "bundle_finalization",
@@ -83,6 +101,12 @@ _FINDING_ROUTE_MAP: dict[str, tuple[str, str, bool, str]] = {
         "resource_construction",
         True,
         "Required Composition sections are attached during resource construction.",
+    ),
+    "bundle.references_aligned_to_entry_fullurls": (
+        "bundle_finalization",
+        "bundle_finalization",
+        True,
+        "Bundle reference alignment to deterministic fullUrls is performed during candidate bundle assembly.",
     ),
 }
 

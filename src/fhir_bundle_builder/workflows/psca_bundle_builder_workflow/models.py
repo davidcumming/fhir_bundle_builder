@@ -399,6 +399,7 @@ class BundleEntryAssemblyResult(BaseModel):
     sequence: int
     placeholder_id: str
     resource_type: str
+    full_url: str
     required_by_bundle_scaffold: bool
     source_registry_step_id: str
     scaffold_state: ResourceScaffoldState
@@ -416,6 +417,7 @@ class CandidateBundleArtifact(BaseModel):
     fhir_bundle: dict[str, Any]
     populated_paths: list[str] = Field(default_factory=list)
     deferred_paths: list[str] = Field(default_factory=list)
+    deterministic_value_evidence: list[DeterministicValueEvidence] = Field(default_factory=list)
 
 
 class CandidateBundleEvidence(BaseModel):

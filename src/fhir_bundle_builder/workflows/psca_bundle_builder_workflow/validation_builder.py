@@ -78,6 +78,9 @@ def _build_workflow_validation_result(
     checks_run = [
         "bundle.type_is_document",
         "bundle.required_entries_present",
+        "bundle.identifier_present",
+        "bundle.timestamp_present",
+        "bundle.entry_fullurls_present",
         "bundle.composition_first_placeholder",
         "bundle.first_entry_is_composition",
         "bundle.composition_type_matches_psca_summary",
@@ -87,7 +90,7 @@ def _build_workflow_validation_result(
         "bundle.practitionerrole_author_context_present",
         "bundle.section_entry_content_present",
         "bundle.required_sections_present",
-        "bundle.deferred_fields_recorded",
+        "bundle.references_aligned_to_entry_fullurls",
     ]
 
     if bundle.get("type") != "document":
@@ -111,6 +114,34 @@ def _build_workflow_validation_result(
                 "bundle.required_entries_present",
                 "Bundle.entry",
                 f"Missing required bundle scaffold placeholders: {', '.join(missing_required)}.",
+            )
+        )
+
+    identifier = bundle.get("identifier")
+    if not isinstance(identifier, dict) or not identifier.get("system") or not identifier.get("value"):
+        findings.append(
+            _workflow_error(
+                "bundle.identifier_present",
+                "Bundle.identifier",
+                "Expected Bundle.identifier.system and Bundle.identifier.value to be present.",
+            )
+        )
+
+    if not isinstance(bundle.get("timestamp"), str) or not bundle.get("timestamp"):
+        findings.append(
+            _workflow_error(
+                "bundle.timestamp_present",
+                "Bundle.timestamp",
+                "Expected Bundle.timestamp to be present.",
+            )
+        )
+
+    if not _entry_fullurls_present(bundle):
+        findings.append(
+            _workflow_error(
+                "bundle.entry_fullurls_present",
+                "Bundle.entry.fullUrl",
+                "Expected every bundle entry to include a deterministic fullUrl.",
             )
         )
 
@@ -246,27 +277,12 @@ def _build_workflow_validation_result(
             )
         )
 
-    expected_deferred = {"identifier", "timestamp", "entry.fullUrl"}
-    deferred_paths = set(candidate_bundle.candidate_bundle.deferred_paths)
-    missing_deferred = sorted(expected_deferred - deferred_paths)
-    if missing_deferred:
+    if not _references_aligned_to_entry_fullurls(bundle, schematic):
         findings.append(
-            ValidationFinding(
-                channel="workflow",
-                severity="warning",
-                code="bundle.deferred_fields_recorded",
-                location="CandidateBundleArtifact.deferred_paths",
-                message=f"Expected deferred bundle fields are missing from deferred_paths: {', '.join(missing_deferred)}.",
-            )
-        )
-    else:
-        findings.append(
-            ValidationFinding(
-                channel="workflow",
-                severity="information",
-                code="bundle.deferred_fields_recorded",
-                location="CandidateBundleArtifact.deferred_paths",
-                message="Expected deferred bundle fields are explicitly recorded for identifier, timestamp, and entry.fullUrl.",
+            _workflow_error(
+                "bundle.references_aligned_to_entry_fullurls",
+                "Bundle.entry.resource.reference",
+                "Expected internal bundle references to align to deterministic entry.fullUrl values.",
             )
         )
 
@@ -323,6 +339,79 @@ def _has_matching_section(sections: object, expected_title: str, expected_code: 
         if title == expected_title and loinc_code == expected_code:
             return True
     return False
+
+
+def _entry_fullurls_present(bundle: dict[str, object]) -> bool:
+    entries = bundle.get("entry", [])
+    if not isinstance(entries, list):
+        return False
+    return all(isinstance(entry, dict) and bool(entry.get("fullUrl")) for entry in entries)
+
+
+def _references_aligned_to_entry_fullurls(
+    bundle: dict[str, object],
+    schematic: BundleSchematic,
+) -> bool:
+    full_urls_by_placeholder_id = _full_urls_by_placeholder_id(bundle)
+    if not full_urls_by_placeholder_id:
+        return False
+
+    composition = _find_resource_by_type(bundle, "Composition")
+    practitioner_role = _find_resource_by_type(bundle, "PractitionerRole")
+    medication = _find_resource_by_type(bundle, "MedicationRequest")
+    allergy = _find_resource_by_type(bundle, "AllergyIntolerance")
+    condition = _find_resource_by_type(bundle, "Condition")
+
+    expected_references = [
+        (composition.get("subject"), full_urls_by_placeholder_id.get("patient-1")),
+        (_first_list_item(composition.get("author")), full_urls_by_placeholder_id.get("practitionerrole-1")),
+        (practitioner_role.get("practitioner"), full_urls_by_placeholder_id.get("practitioner-1")),
+        (practitioner_role.get("organization"), full_urls_by_placeholder_id.get("organization-1")),
+        (medication.get("subject"), full_urls_by_placeholder_id.get("patient-1")),
+        (allergy.get("patient"), full_urls_by_placeholder_id.get("patient-1")),
+        (condition.get("subject"), full_urls_by_placeholder_id.get("patient-1")),
+    ]
+
+    for actual_reference, expected_reference in expected_references:
+        if not isinstance(actual_reference, dict) or actual_reference.get("reference") != expected_reference:
+            return False
+
+    sections = composition.get("section")
+    if not isinstance(sections, list) or len(sections) != len(schematic.section_scaffolds):
+        return False
+    for index, section_scaffold in enumerate(schematic.section_scaffolds):
+        entry_reference = _first_list_item(sections[index].get("entry")) if isinstance(sections[index], dict) else {}
+        placeholder_id = section_scaffold.entry_placeholder_ids[0]
+        if not isinstance(entry_reference, dict) or entry_reference.get("reference") != full_urls_by_placeholder_id.get(
+            placeholder_id
+        ):
+            return False
+    return True
+
+
+def _full_urls_by_placeholder_id(bundle: dict[str, object]) -> dict[str, str]:
+    entries = bundle.get("entry", [])
+    if not isinstance(entries, list):
+        return {}
+    values: dict[str, str] = {}
+    for entry in entries:
+        if not isinstance(entry, dict):
+            return {}
+        full_url = entry.get("fullUrl")
+        resource = entry.get("resource")
+        if not isinstance(full_url, str) or not isinstance(resource, dict):
+            return {}
+        resource_id = resource.get("id")
+        if not isinstance(resource_id, str):
+            return {}
+        values[resource_id] = full_url
+    return values
+
+
+def _first_list_item(value: object) -> dict[str, object]:
+    if not isinstance(value, list) or not value or not isinstance(value[0], dict):
+        return {}
+    return value[0]
 
 
 def _workflow_error(code: str, location: str, message: str) -> ValidationFinding:

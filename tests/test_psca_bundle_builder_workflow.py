@@ -161,6 +161,11 @@ async def test_psca_bundle_builder_workflow_smoke() -> None:
     ]
     assert final_output.candidate_bundle.candidate_bundle.fhir_bundle["resourceType"] == "Bundle"
     assert final_output.candidate_bundle.candidate_bundle.fhir_bundle["id"] == "ca.infoway.io.psca-pytest-smoke"
+    assert (
+        final_output.candidate_bundle.candidate_bundle.fhir_bundle["identifier"]["system"]
+        == "urn:fhir-bundle-builder:candidate-bundle-identifier"
+    )
+    assert final_output.candidate_bundle.candidate_bundle.fhir_bundle["timestamp"].endswith("Z")
     assert final_output.candidate_bundle.candidate_bundle.fhir_bundle["meta"]["profile"] == [
         final_output.bundle_schematic.bundle_scaffold.profile_url
     ]
@@ -177,12 +182,33 @@ async def test_psca_bundle_builder_workflow_smoke() -> None:
         "AllergyIntolerance",
         "Condition",
     ]
+    full_urls = [
+        entry["fullUrl"] for entry in final_output.candidate_bundle.candidate_bundle.fhir_bundle["entry"]
+    ]
+    assert all(full_url.startswith("urn:uuid:") for full_url in full_urls)
+    assert [entry.full_url for entry in final_output.candidate_bundle.entry_assembly] == full_urls
     assert final_output.candidate_bundle.candidate_bundle.fhir_bundle["entry"][0]["resource"]["status"] == "final"
     assert final_output.candidate_bundle.candidate_bundle.fhir_bundle["entry"][0]["resource"]["title"] == (
         "PS-CA document bundle skeleton - pytest-smoke"
     )
+    assert (
+        final_output.candidate_bundle.candidate_bundle.fhir_bundle["entry"][0]["resource"]["subject"]["reference"]
+        == full_urls[1]
+    )
+    assert (
+        final_output.candidate_bundle.candidate_bundle.fhir_bundle["entry"][0]["resource"]["author"][0]["reference"]
+        == full_urls[2]
+    )
     assert final_output.candidate_bundle.candidate_bundle.fhir_bundle["entry"][1]["resource"]["name"][0]["text"] == "Smoke Test Patient"
     assert final_output.candidate_bundle.candidate_bundle.fhir_bundle["entry"][2]["resource"]["code"][0]["text"] == "document-author"
+    assert (
+        final_output.candidate_bundle.candidate_bundle.fhir_bundle["entry"][2]["resource"]["practitioner"]["reference"]
+        == full_urls[3]
+    )
+    assert (
+        final_output.candidate_bundle.candidate_bundle.fhir_bundle["entry"][2]["resource"]["organization"]["reference"]
+        == full_urls[4]
+    )
     assert final_output.candidate_bundle.candidate_bundle.fhir_bundle["entry"][3]["resource"]["identifier"][0]["value"] == "provider-smoke-test"
     assert final_output.candidate_bundle.candidate_bundle.fhir_bundle["entry"][3]["resource"]["name"][0]["text"] == "Smoke Test Provider"
     assert "name" not in final_output.candidate_bundle.candidate_bundle.fhir_bundle["entry"][4]["resource"]
@@ -195,11 +221,7 @@ async def test_psca_bundle_builder_workflow_smoke() -> None:
         final_output.candidate_bundle.candidate_bundle.fhir_bundle["entry"][7]["resource"]["code"]["text"]
         == f"{final_output.bundle_schematic.section_scaffolds[2].title} placeholder for pytest-smoke"
     )
-    assert final_output.candidate_bundle.candidate_bundle.deferred_paths == [
-        "identifier",
-        "timestamp",
-        "entry.fullUrl",
-    ]
+    assert final_output.candidate_bundle.candidate_bundle.deferred_paths == []
     assert len(final_output.candidate_bundle.candidate_bundle.fhir_bundle["entry"][0]["resource"]["section"]) == 3
     assert final_output.validation_report.overall_status == "passed_with_warnings"
     assert final_output.validation_report.standards_validation.validator_id == "local_candidate_bundle_scaffold_validator"
@@ -209,9 +231,8 @@ async def test_psca_bundle_builder_workflow_smoke() -> None:
         finding.code == "external_profile_validation_deferred"
         for finding in final_output.validation_report.standards_validation.findings
     )
-    assert any(
+    assert not any(
         finding.code == "bundle.deferred_fields_recorded"
-        and finding.severity == "information"
         for finding in final_output.validation_report.workflow_validation.findings
     )
     assert not any(
@@ -227,10 +248,8 @@ async def test_psca_bundle_builder_workflow_smoke() -> None:
         and route.actionable is False
         for route in final_output.repair_decision.finding_routes
     )
-    assert any(
+    assert not any(
         route.finding_code == "bundle.deferred_fields_recorded"
-        and route.route_target == "none_required"
-        and route.actionable is False
         for route in final_output.repair_decision.finding_routes
     )
     assert final_output.repair_execution.execution_outcome == "deferred"
