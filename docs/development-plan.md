@@ -98,11 +98,11 @@ The following status labels should be used in this plan:
 
 ## 8. Current Focus
 
-**Current Focus:** Implement the first meaningful content-enrichment slice so the PS-CA workflow produces a more useful candidate bundle while preserving deterministic inspectability and bounded repair behavior.
+**Current Focus:** Implement the next narrow deterministic content-enrichment slice for supporting author/provider resources without widening into bundle identity policy or a generic provider-data engine.
 
 ## 9. Next Planned Slice
 
-**Next Planned Slice:** Implement the first narrow deterministic content-enrichment slice for Composition, Patient, and current section-entry resources without introducing a generic data-element engine.
+**Next Planned Slice:** Implement the first deterministic bundle identity/timestamp/fullUrl policy slice without broadening into generic bundle lifecycle management.
 
 ## 10. Development Phases
 
@@ -280,7 +280,7 @@ Prove a narrow but real end-to-end PS-CA generation run.
 - verify that the run can be demonstrated clearly in Dev UI
 
 ### Current phase note
-The workflow now has a complete deterministic structural path, validation, repair routing, and one bounded retry path. The next step is to make the generated PS-CA content more useful without broadening into a generic data-element engine.
+The workflow now has a complete deterministic structural path, validation, repair routing, one bounded retry path, and meaningful deterministic content for core clinical resources. The next step is to deepen the supporting author/provider path without inventing organization semantics that the current provider input model cannot justify.
 
 ### Exit criteria
 - a minimal PS-CA workflow runs end to end
@@ -360,6 +360,7 @@ The following assumptions currently guide the plan:
 - the first validation slice intentionally uses a local scaffold-shape standards validator and defers full external conformance validation to a later Matchbox-backed implementation
 - the first repair-execution slice is a single-pass retry foundation that supports only bundle_finalization as an internal executable target
 - the first meaningful content slice should use deterministic placeholder content from normalized request labels and schematic section metadata rather than free-text clinical synthesis
+- meaningful Organization identity and richer PractitionerRole context depend on a future provider input expansion that includes organizations and provider-role relationships
 - initial development should prioritize workflow shape, artifact contracts, and inspectability over feature completeness
 
 ## 13. Known Early Risks
@@ -373,6 +374,7 @@ The following risks should be monitored during development:
 - state handling may become implicit unless workflow artifacts are defined carefully
 - UI thinking may pressure the team to skip workflow discipline
 - prerelease Agent Framework package behavior may affect Dev UI discovery or schema rendering details between versions
+- the current provider input model may constrain support-resource realism until organization and provider-role context are explicitly modeled
 
 ## 14. Definition of Progress
 
@@ -403,4 +405,4 @@ Codex should make targeted edits only. It should not rewrite the full document u
 
 ## 16. Immediate Next Objective
 
-The immediate next objective is to enrich the end-to-end PS-CA bundle content in a narrow deterministic way rather than broadening workflow orchestration or retry depth.
+The immediate next objective is to implement a deterministic bundle identity/timestamp/fullUrl policy slice rather than broaden provider-data architecture or retry depth.

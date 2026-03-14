@@ -60,6 +60,18 @@ _FINDING_ROUTE_MAP: dict[str, tuple[str, str, bool, str]] = {
         True,
         "Patient identity placeholder content is populated during resource construction.",
     ),
+    "bundle.practitioner_identity_content_present": (
+        "resource_construction",
+        "resource_construction",
+        True,
+        "Practitioner identity placeholder content is populated during resource construction.",
+    ),
+    "bundle.practitionerrole_author_context_present": (
+        "resource_construction",
+        "resource_construction",
+        True,
+        "PractitionerRole author-context placeholder content is populated during resource construction.",
+    ),
     "bundle.section_entry_content_present": (
         "resource_construction",
         "resource_construction",

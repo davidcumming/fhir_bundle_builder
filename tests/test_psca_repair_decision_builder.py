@@ -86,6 +86,21 @@ async def test_psca_repair_decision_routes_enriched_content_failures_to_resource
     )
 
 
+async def test_psca_repair_decision_routes_support_resource_failures_to_resource_construction() -> None:
+    report = await _build_validation_report(mutator=_remove_practitioner_identity)
+
+    decision = build_psca_repair_decision(report)
+
+    assert decision.overall_decision == "repair_recommended"
+    assert decision.recommended_target == "resource_construction"
+    assert any(
+        route.finding_code == "bundle.practitioner_identity_content_present"
+        and route.route_target == "resource_construction"
+        and route.actionable is True
+        for route in decision.finding_routes
+    )
+
+
 async def test_psca_repair_decision_routes_bundle_shape_errors_to_bundle_finalization() -> None:
     report = await _build_validation_report(mutator=_break_bundle_type)
 
@@ -163,4 +178,11 @@ def _remove_patient_name(candidate_bundle):
     broken_bundle = deepcopy(candidate_bundle)
     patient = broken_bundle.candidate_bundle.fhir_bundle["entry"][1]["resource"]
     patient["name"] = []
+    return broken_bundle
+
+
+def _remove_practitioner_identity(candidate_bundle):
+    broken_bundle = deepcopy(candidate_bundle)
+    practitioner = broken_bundle.candidate_bundle.fhir_bundle["entry"][3]["resource"]
+    practitioner["identifier"] = []
     return broken_bundle

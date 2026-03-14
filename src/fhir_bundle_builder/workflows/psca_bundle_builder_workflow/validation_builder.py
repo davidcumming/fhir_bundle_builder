@@ -83,6 +83,8 @@ def _build_workflow_validation_result(
         "bundle.composition_type_matches_psca_summary",
         "bundle.composition_enriched_content_present",
         "bundle.patient_identity_content_present",
+        "bundle.practitioner_identity_content_present",
+        "bundle.practitionerrole_author_context_present",
         "bundle.section_entry_content_present",
         "bundle.required_sections_present",
         "bundle.deferred_fields_recorded",
@@ -178,6 +180,46 @@ def _build_workflow_validation_result(
                 "bundle.patient_identity_content_present",
                 "Bundle.entry[1].resource",
                 "Expected Patient enriched content to include active=true, identifier[0].value, and name[0].text.",
+            )
+        )
+
+    practitioner = _find_resource_by_type(bundle, "Practitioner")
+    practitioner_identifier = practitioner.get("identifier") if isinstance(practitioner, dict) else None
+    practitioner_name = practitioner.get("name") if isinstance(practitioner, dict) else None
+    practitioner_identifier_value = (
+        practitioner_identifier[0].get("value")
+        if isinstance(practitioner_identifier, list)
+        and practitioner_identifier
+        and isinstance(practitioner_identifier[0], dict)
+        else None
+    )
+    practitioner_name_text = (
+        practitioner_name[0].get("text")
+        if isinstance(practitioner_name, list) and practitioner_name and isinstance(practitioner_name[0], dict)
+        else None
+    )
+    if practitioner.get("active") is not True or not practitioner_identifier_value or not practitioner_name_text:
+        findings.append(
+            _workflow_error(
+                "bundle.practitioner_identity_content_present",
+                "Bundle.entry[3].resource",
+                "Expected Practitioner enriched content to include active=true, identifier[0].value, and name[0].text.",
+            )
+        )
+
+    practitioner_role = _find_resource_by_type(bundle, "PractitionerRole")
+    role_code = practitioner_role.get("code") if isinstance(practitioner_role, dict) else None
+    role_text = (
+        role_code[0].get("text")
+        if isinstance(role_code, list) and role_code and isinstance(role_code[0], dict)
+        else None
+    )
+    if role_text != "document-author":
+        findings.append(
+            _workflow_error(
+                "bundle.practitionerrole_author_context_present",
+                "Bundle.entry[2].resource.code[0].text",
+                "Expected PractitionerRole to include the deterministic author-context label 'document-author'.",
             )
         )
 

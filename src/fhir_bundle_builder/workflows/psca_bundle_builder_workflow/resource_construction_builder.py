@@ -53,19 +53,21 @@ def build_psca_resource_construction_result(
         stage_id="resource_construction",
         status="placeholder_complete",
         summary="Constructed deterministic content-enriched PS-CA resource scaffolds for the current build plan and tracked the latest scaffold state per placeholder.",
-        placeholder_note="Resources now include a narrow deterministic content layer only; full clinical population, bundle identity policy, and rich terminology remain deferred.",
+        placeholder_note="Resources now include a narrow deterministic content layer only; full clinical/provider population, bundle identity policy, and rich terminology remain deferred.",
         source_refs=plan.source_refs,
         construction_mode="deterministic_content_enriched",
         step_results=step_results,
         resource_registry=[registry[placeholder_id] for placeholder_id in registry_order],
         deferred_items=[
             "Broad clinical data-element population remains deferred.",
+            "Meaningful provider organization and provider-role relationship data remain deferred.",
             "Generated ids and UUID replacement remain deferred.",
             "Full bundle-in-progress assembly logic remains deferred.",
             "Validation-driven reconstruction remains deferred.",
         ],
         unresolved_items=[
             "Only a narrow deterministic content policy has been implemented for core PS-CA resources.",
+            "Support-resource enrichment is currently limited by the provider input model to Practitioner identity plus a narrow PractitionerRole author label.",
             "No full bundle patching or entry ordering logic exists yet.",
         ],
         evidence=ResourceConstructionEvidence(
@@ -143,11 +145,36 @@ def _build_anchor_result(
         extra_deferred = ["gender", "birthDate"]
         assumptions.append("Patient identity content is derived deterministically from the selected patient profile stub.")
     elif step.resource_type == "Practitioner":
-        extra_deferred = ["name"]
-        assumptions.append("Practitioner content remains base metadata only in this slice.")
+        scaffold_dict["active"] = True
+        scaffold_dict["identifier"] = [{"value": normalized_request.provider_profile.profile_id}]
+        scaffold_dict["name"] = [{"text": normalized_request.provider_profile.display_name}]
+        populated_paths += ["active", "identifier[0].value", "name[0].text"]
+        deterministic_value_evidence.extend(
+            [
+                _value_evidence(
+                    "active",
+                    "deterministic_content_policy",
+                    "Practitioner active flag is fixed to true for the support-resource enrichment slice.",
+                ),
+                _value_evidence(
+                    "identifier[0].value",
+                    "normalized_request.provider_profile",
+                    "provider_profile.profile_id",
+                ),
+                _value_evidence(
+                    "name[0].text",
+                    "normalized_request.provider_profile",
+                    "provider_profile.display_name",
+                ),
+            ]
+        )
+        extra_deferred = ["telecom", "address", "qualification"]
+        assumptions.append("Practitioner identity content is derived deterministically from the selected provider profile stub.")
     elif step.resource_type == "Organization":
         extra_deferred = ["name"]
-        assumptions.append("Organization content remains base metadata only in this slice.")
+        assumptions.append(
+            "Organization content remains base metadata only in this slice because the provider input model does not yet include organization identity data."
+        )
 
     resource_scaffold = ResourceScaffoldArtifact(
         placeholder_id=placeholder.placeholder_id,
@@ -178,7 +205,8 @@ def _build_practitioner_role_result(step: BuildPlanStep, placeholder: ResourcePl
     scaffold_dict = _base_scaffold(placeholder)
     scaffold_dict["practitioner"] = {"reference": "Practitioner/practitioner-1"}
     scaffold_dict["organization"] = {"reference": "Organization/organization-1"}
-    populated_paths = _base_populated_paths(placeholder) + ["practitioner.reference", "organization.reference"]
+    scaffold_dict["code"] = [{"text": placeholder.role}]
+    populated_paths = _base_populated_paths(placeholder) + ["practitioner.reference", "organization.reference", "code[0].text"]
     resource_scaffold = ResourceScaffoldArtifact(
         placeholder_id=placeholder.placeholder_id,
         resource_type=placeholder.resource_type,
@@ -186,7 +214,11 @@ def _build_practitioner_role_result(step: BuildPlanStep, placeholder: ResourcePl
         scaffold_state="references_attached",
         fhir_scaffold=scaffold_dict,
         populated_paths=populated_paths,
-        deferred_paths=_merge_deferred_paths(placeholder.required_later_fields, ["code"], populated_paths),
+        deferred_paths=_merge_deferred_paths(
+            placeholder.required_later_fields,
+            ["specialty", "telecom", "period", "availableTime"],
+            populated_paths,
+        ),
         source_step_ids=[step.step_id],
     )
 
@@ -201,9 +233,16 @@ def _build_practitioner_role_result(step: BuildPlanStep, placeholder: ResourcePl
             _reference_contribution("practitioner.reference", "practitioner-1", "Practitioner/practitioner-1"),
             _reference_contribution("organization.reference", "organization-1", "Organization/organization-1"),
         ],
-        deterministic_value_evidence=[],
+        deterministic_value_evidence=[
+            _value_evidence(
+                "code[0].text",
+                "bundle_schematic.resource_placeholders[practitionerrole-1]",
+                "role",
+            ),
+        ],
         assumptions=[
-            "PractitionerRole is scaffolded with deterministic local references only.",
+            "PractitionerRole is scaffolded with deterministic local references plus a narrow author-role label.",
+            "Meaningful PractitionerRole organizational context remains deferred until provider inputs include provider-role relationships.",
         ],
         warnings=[],
         unresolved_fields=resource_scaffold.deferred_paths,

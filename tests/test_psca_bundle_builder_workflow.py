@@ -123,6 +123,15 @@ async def test_psca_bundle_builder_workflow_smoke() -> None:
     assert final_output.resource_construction.step_results[-1].execution_status == "scaffold_updated"
     assert final_output.resource_construction.step_results[0].resource_scaffold.fhir_scaffold["identifier"][0]["value"] == "patient-smoke-test"
     assert final_output.resource_construction.step_results[0].resource_scaffold.fhir_scaffold["name"][0]["text"] == "Smoke Test Patient"
+    assert final_output.resource_construction.step_results[1].resource_scaffold.fhir_scaffold["active"] is True
+    assert final_output.resource_construction.step_results[1].resource_scaffold.fhir_scaffold["identifier"][0]["value"] == "provider-smoke-test"
+    assert final_output.resource_construction.step_results[1].resource_scaffold.fhir_scaffold["name"][0]["text"] == "Smoke Test Provider"
+    assert final_output.resource_construction.step_results[2].resource_scaffold.fhir_scaffold == {
+        "resourceType": "Organization",
+        "id": "organization-1",
+        "meta": {"profile": [final_output.bundle_schematic.resource_placeholders[2].profile_url]},
+    }
+    assert final_output.resource_construction.step_results[3].resource_scaffold.fhir_scaffold["code"][0]["text"] == "document-author"
     assert final_output.resource_construction.step_results[4].resource_scaffold.fhir_scaffold["status"] == "final"
     assert final_output.resource_construction.step_results[4].resource_scaffold.fhir_scaffold["title"] == (
         "PS-CA document bundle skeleton - pytest-smoke"
@@ -173,6 +182,10 @@ async def test_psca_bundle_builder_workflow_smoke() -> None:
         "PS-CA document bundle skeleton - pytest-smoke"
     )
     assert final_output.candidate_bundle.candidate_bundle.fhir_bundle["entry"][1]["resource"]["name"][0]["text"] == "Smoke Test Patient"
+    assert final_output.candidate_bundle.candidate_bundle.fhir_bundle["entry"][2]["resource"]["code"][0]["text"] == "document-author"
+    assert final_output.candidate_bundle.candidate_bundle.fhir_bundle["entry"][3]["resource"]["identifier"][0]["value"] == "provider-smoke-test"
+    assert final_output.candidate_bundle.candidate_bundle.fhir_bundle["entry"][3]["resource"]["name"][0]["text"] == "Smoke Test Provider"
+    assert "name" not in final_output.candidate_bundle.candidate_bundle.fhir_bundle["entry"][4]["resource"]
     assert final_output.candidate_bundle.candidate_bundle.fhir_bundle["entry"][5]["resource"]["status"] == "draft"
     assert (
         final_output.candidate_bundle.candidate_bundle.fhir_bundle["entry"][6]["resource"]["code"]["text"]
@@ -199,6 +212,10 @@ async def test_psca_bundle_builder_workflow_smoke() -> None:
     assert any(
         finding.code == "bundle.deferred_fields_recorded"
         and finding.severity == "information"
+        for finding in final_output.validation_report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.practitioner_identity_content_present"
         for finding in final_output.validation_report.workflow_validation.findings
     )
     assert final_output.repair_decision.overall_decision == "external_validation_pending"

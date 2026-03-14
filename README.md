@@ -80,7 +80,7 @@ The `specification_asset_retrieval` stage now emits the first normalized PS-CA a
 
 ## Current slice boundaries
 
-This slice is for workflow shape, PS-CA normalized asset retrieval, the first real schematic artifact, the first real build plan, the first meaningful content-enriched resource-construction path, the first candidate-bundle finalization foundation, the first validation foundation, the first repair-decision foundation, and the first bounded repair-execution foundation.
+This slice is for workflow shape, PS-CA normalized asset retrieval, the first real schematic artifact, the first real build plan, the first meaningful content-enriched resource-construction path for core clinical resources, the first support-resource enrichment for the selected provider-facing author path, the first candidate-bundle finalization foundation, the first validation foundation, the first repair-decision foundation, and the first bounded repair-execution foundation.
 
 - The workflow reads existing PS-CA package files deterministically from the repo.
 - The spec retrieval stage exposes a normalized PS-CA asset context with foundational profiles, Composition section definitions, and selected example evidence.
@@ -135,15 +135,18 @@ The `resource_construction` stage now emits the first real scaffold-oriented con
 
 - construction mode metadata showing deterministic content-enriched construction
 - ordered per-step construction results aligned to the build plan
-- FHIR-shaped scaffolds with narrow deterministic content for core patient, composition, and section-entry resources
+- FHIR-shaped scaffolds with narrow deterministic content for core patient, composition, section-entry, and selected provider-facing support resources
 - deterministic local references such as:
   - `Patient/patient-1`
   - `PractitionerRole/practitionerrole-1`
   - section-entry references attached to `Composition`
 - deterministic placeholder content such as:
   - a Patient identifier and display name
+  - a Practitioner identifier and display name from the selected provider stub
+  - a narrow PractitionerRole author label
   - a Composition status and title
   - section-entry status and text content for medications, allergies, and problems
+- Organization remaining intentionally thin until provider inputs include organization and provider-role relationship context
 - a resource registry showing the latest scaffold state per placeholder
 - explicit `Composition` two-step behavior:
   - scaffold creation

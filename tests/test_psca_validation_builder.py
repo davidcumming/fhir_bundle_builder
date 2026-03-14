@@ -104,6 +104,32 @@ async def test_psca_validation_builder_fails_when_composition_or_patient_content
     )
 
 
+async def test_psca_validation_builder_fails_when_practitioner_or_practitionerrole_content_is_missing() -> None:
+    normalized_request, schematic, candidate_bundle = _build_validation_inputs()
+    broken_bundle = deepcopy(candidate_bundle)
+    practitioner = broken_bundle.candidate_bundle.fhir_bundle["entry"][3]["resource"]
+    practitioner_role = broken_bundle.candidate_bundle.fhir_bundle["entry"][2]["resource"]
+    practitioner["identifier"] = []
+    practitioner_role["code"] = []
+
+    report = await build_psca_validation_report(
+        broken_bundle,
+        schematic,
+        normalized_request,
+        LocalCandidateBundleScaffoldStandardsValidator(),
+    )
+
+    assert report.workflow_validation.status == "failed"
+    assert any(
+        finding.code == "bundle.practitioner_identity_content_present" and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert any(
+        finding.code == "bundle.practitionerrole_author_context_present" and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+
+
 async def test_psca_validation_builder_fails_when_section_entry_content_is_missing() -> None:
     normalized_request, schematic, candidate_bundle = _build_validation_inputs()
     broken_bundle = deepcopy(candidate_bundle)

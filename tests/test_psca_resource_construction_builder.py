@@ -68,8 +68,15 @@ def test_psca_resource_construction_builder_generates_scaffolds_and_registry() -
     assert steps["finalize-composition-1"].execution_status == "scaffold_updated"
 
     practitioner_role = registry["practitionerrole-1"].current_scaffold.fhir_scaffold
+    practitioner = registry["practitioner-1"].current_scaffold.fhir_scaffold
+    organization = registry["organization-1"].current_scaffold.fhir_scaffold
     assert practitioner_role["practitioner"]["reference"] == "Practitioner/practitioner-1"
     assert practitioner_role["organization"]["reference"] == "Organization/organization-1"
+    assert practitioner_role["code"][0]["text"] == "document-author"
+    assert practitioner["active"] is True
+    assert practitioner["identifier"][0]["value"] == "provider-resource-test"
+    assert practitioner["name"][0]["text"] == "Resource Test Provider"
+    assert "name" not in organization
 
     medication = registry["medicationrequest-1"].current_scaffold.fhir_scaffold
     allergy = registry["allergyintolerance-1"].current_scaffold.fhir_scaffold
@@ -103,9 +110,29 @@ def test_psca_resource_construction_builder_generates_scaffolds_and_registry() -
     assert composition_scaffold["author"][0]["reference"] == "PractitionerRole/practitionerrole-1"
     assert composition_scaffold["section"] == []
     assert steps["build-patient-1"].resource_scaffold.deferred_paths == ["gender", "birthDate"]
+    assert steps["build-practitioner-1"].resource_scaffold.deferred_paths == ["telecom", "address", "qualification"]
+    assert steps["build-organization-1"].resource_scaffold.deferred_paths == ["identifier", "name"]
+    assert steps["build-practitionerrole-1"].resource_scaffold.deferred_paths == [
+        "specialty",
+        "telecom",
+        "period",
+        "availableTime",
+    ]
     assert any(
         evidence.target_path == "identifier[0].value" and evidence.source_detail == "patient_profile.profile_id"
         for evidence in steps["build-patient-1"].deterministic_value_evidence
+    )
+    assert any(
+        evidence.target_path == "identifier[0].value" and evidence.source_detail == "provider_profile.profile_id"
+        for evidence in steps["build-practitioner-1"].deterministic_value_evidence
+    )
+    assert any(
+        evidence.target_path == "name[0].text" and evidence.source_detail == "provider_profile.display_name"
+        for evidence in steps["build-practitioner-1"].deterministic_value_evidence
+    )
+    assert any(
+        evidence.target_path == "code[0].text" and evidence.source_detail == "role"
+        for evidence in steps["build-practitionerrole-1"].deterministic_value_evidence
     )
     assert any(
         evidence.target_path == "title" and evidence.source_detail == "bundle_intent + scenario_label"
