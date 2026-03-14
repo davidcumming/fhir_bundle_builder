@@ -46,7 +46,7 @@ async def build_psca_validation_report(
         stage_id="validation",
         status="placeholder_complete",
         summary="Validated the candidate bundle scaffold through a pluggable standards-validation boundary and deterministic workflow-rule checks.",
-        placeholder_note="This slice adds real validation structure, while full external profile/conformance validation remains deferred.",
+        placeholder_note="This slice keeps standards validation behind a pluggable boundary; local scaffold validation remains available and external validation is runtime-configurable.",
         source_refs=candidate_bundle.source_refs,
         overall_status=_status_from_results(standards_result.status, workflow_result.status),
         standards_validation=standards_result,

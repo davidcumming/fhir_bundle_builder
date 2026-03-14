@@ -226,6 +226,12 @@ async def test_psca_bundle_builder_workflow_smoke() -> None:
     assert final_output.validation_report.overall_status == "passed_with_warnings"
     assert final_output.validation_report.standards_validation.validator_id == "local_candidate_bundle_scaffold_validator"
     assert final_output.validation_report.standards_validation.status == "passed_with_warnings"
+    assert final_output.validation_report.standards_validation.requested_validator_mode == "local_scaffold"
+    assert final_output.validation_report.standards_validation.attempted_validator_ids == [
+        "local_candidate_bundle_scaffold_validator"
+    ]
+    assert final_output.validation_report.standards_validation.external_validation_executed is False
+    assert final_output.validation_report.standards_validation.fallback_used is False
     assert final_output.validation_report.workflow_validation.status == "passed"
     assert any(
         finding.code == "external_profile_validation_deferred"

@@ -99,7 +99,11 @@ class LocalCandidateBundleScaffoldStandardsValidator:
 
         return StandardsValidationResult(
             validator_id=self.validator_id,
-            status=_status_from_findings(findings),
+            status=status_from_findings(findings),
+            requested_validator_mode="local_scaffold",
+            attempted_validator_ids=[self.validator_id],
+            external_validation_executed=False,
+            fallback_used=False,
             checks_run=[
                 "bundle.resource_type",
                 "bundle.id_present",
@@ -139,7 +143,7 @@ class LocalCandidateBundleScaffoldStandardsValidator:
             )
 
 
-def _status_from_findings(findings: list[ValidationFinding]) -> str:
+def status_from_findings(findings: list[ValidationFinding]) -> str:
     if any(finding.severity == "error" for finding in findings):
         return "failed"
     if any(finding.severity == "warning" for finding in findings):

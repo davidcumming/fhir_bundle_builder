@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 ValidationChannel = Literal["standards", "workflow"]
 ValidationSeverity = Literal["information", "warning", "error"]
 ValidationStatus = Literal["passed", "passed_with_warnings", "failed"]
+StandardsValidatorMode = Literal["local_scaffold", "matchbox"]
 
 
 class ValidationFinding(BaseModel):
@@ -37,9 +38,21 @@ class StandardsValidationResult(BaseModel):
 
     validator_id: str
     status: ValidationStatus
+    requested_validator_mode: StandardsValidatorMode = "local_scaffold"
+    attempted_validator_ids: list[str] = Field(default_factory=list)
+    external_validation_executed: bool = False
+    fallback_used: bool = False
     checks_run: list[str] = Field(default_factory=list)
     findings: list[ValidationFinding] = Field(default_factory=list)
     deferred_areas: list[str] = Field(default_factory=list)
+
+
+class StandardsValidationConfig(BaseModel):
+    """Runtime config for selecting the standards validator backend."""
+
+    mode: StandardsValidatorMode = "local_scaffold"
+    matchbox_base_url: str | None = None
+    timeout_seconds: float = 10.0
 
 
 class WorkflowValidationResult(BaseModel):

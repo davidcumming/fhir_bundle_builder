@@ -9,6 +9,7 @@ The implemented slice is intentionally narrow:
 - deterministic content-enriched resource construction driven by the real build plan
 - deterministic bundle finalization into a real candidate `Bundle` scaffold
 - structured dual-channel validation over the candidate bundle scaffold
+- optional Matchbox-backed standards validation behind the existing validator boundary
 - structured repair decision and bounded retry execution artifacts
 - inspectable structured artifacts emitted at each stage
 - no product UI
@@ -37,6 +38,28 @@ pip install -e '.[dev]'
 ```bash
 pytest
 ```
+
+## Standards validator modes
+
+The workflow defaults to the local scaffold-shape standards validator, so local development and tests do not require Matchbox.
+
+- Default local mode:
+  - no env vars required
+  - runs only the local candidate-bundle scaffold validator
+- Optional Matchbox mode:
+  - `FHIR_BUNDLE_BUILDER_STANDARDS_VALIDATOR_MODE=matchbox`
+  - `FHIR_BUNDLE_BUILDER_MATCHBOX_BASE_URL=http://127.0.0.1:8081/matchbox/fhir`
+  - optional `FHIR_BUNDLE_BUILDER_MATCHBOX_TIMEOUT_SECONDS=10`
+
+Example:
+
+```bash
+export FHIR_BUNDLE_BUILDER_STANDARDS_VALIDATOR_MODE=matchbox
+export FHIR_BUNDLE_BUILDER_MATCHBOX_BASE_URL=http://127.0.0.1:8081/matchbox/fhir
+pytest
+```
+
+If Matchbox mode is selected but the service is unavailable or misconfigured, the workflow falls back to the local scaffold validator and records that fallback explicitly in the standards-validation result.
 
 ## Launch in Dev UI
 
@@ -80,7 +103,7 @@ The `specification_asset_retrieval` stage now emits the first normalized PS-CA a
 
 ## Current slice boundaries
 
-This slice is for workflow shape, PS-CA normalized asset retrieval, the first real schematic artifact, the first real build plan, the first meaningful content-enriched resource-construction path for core clinical resources, the first support-resource enrichment for the selected provider-facing author path, the first candidate-bundle finalization foundation, the first validation foundation, the first repair-decision foundation, and the first bounded repair-execution foundation.
+This slice is for workflow shape, PS-CA normalized asset retrieval, the first real schematic artifact, the first real build plan, the first meaningful content-enriched resource-construction path for core clinical resources, the first support-resource enrichment for the selected provider-facing author path, the first candidate-bundle finalization foundation, the first validation foundation, the first optional Matchbox-backed external standards-validation path, the first repair-decision foundation, and the first bounded repair-execution foundation.
 
 - The workflow reads existing PS-CA package files deterministically from the repo.
 - The spec retrieval stage exposes a normalized PS-CA asset context with foundational profiles, Composition section definitions, and selected example evidence.
@@ -179,6 +202,10 @@ The `validation` stage now emits the first real structured validation artifact f
 - overall validation status derived from deterministic channel results
 - a separate standards-validation section with:
   - validator identity
+  - requested validator mode
+  - attempted validator ids
+  - whether external Matchbox validation actually executed
+  - whether local fallback was used
   - checks run
   - findings
   - explicit deferred areas
@@ -189,7 +216,7 @@ The `validation` stage now emits the first real structured validation artifact f
   - explicit deferred areas
 - counts for errors, warnings, and informational findings
 - validation evidence linking back to the candidate bundle, schematic, build plan, and resource construction artifacts
-- clear warnings that external profile/conformance validation is still deferred
+- clear standards-channel provenance showing whether validation ran locally, through Matchbox, or through local fallback after Matchbox was unavailable
 
 ## Repair-decision-stage output
 

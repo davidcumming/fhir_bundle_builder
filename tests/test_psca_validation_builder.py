@@ -42,6 +42,12 @@ async def test_psca_validation_builder_happy_path_reports_split_channels() -> No
 
     assert report.standards_validation.validator_id == "local_candidate_bundle_scaffold_validator"
     assert report.standards_validation.status == "passed_with_warnings"
+    assert report.standards_validation.requested_validator_mode == "local_scaffold"
+    assert report.standards_validation.attempted_validator_ids == [
+        "local_candidate_bundle_scaffold_validator"
+    ]
+    assert report.standards_validation.external_validation_executed is False
+    assert report.standards_validation.fallback_used is False
     assert report.workflow_validation.status == "passed"
     assert report.overall_status == "passed_with_warnings"
     assert any(

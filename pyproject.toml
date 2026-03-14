@@ -11,6 +11,7 @@ requires-python = ">=3.10"
 dependencies = [
   "agent-framework-core>=1.0.0rc4",
   "agent-framework-devui>=1.0.0b260311",
+  "httpx>=0.28.1",
   "pydantic>=2.13.0b2",
   "typing_extensions>=4.15.0",
 ]

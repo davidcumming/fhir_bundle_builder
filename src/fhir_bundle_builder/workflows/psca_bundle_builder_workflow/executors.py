@@ -7,7 +7,12 @@ from typing import Any
 from agent_framework import WorkflowContext, executor
 
 from fhir_bundle_builder.specifications.psca import PscaAssetQuery, PscaAssetRepository
-from fhir_bundle_builder.validation import LocalCandidateBundleScaffoldStandardsValidator
+from fhir_bundle_builder.validation import (
+    StandardsValidationConfig,
+    StandardsValidator,
+    build_standards_validator,
+    load_standards_validation_config_from_env,
+)
 
 from .models import (
     BuildPlan,
@@ -46,7 +51,6 @@ STAGE_ORDER = [
 ]
 
 _PSCA_ASSET_REPOSITORY = PscaAssetRepository()
-_STANDARDS_VALIDATOR = LocalCandidateBundleScaffoldStandardsValidator()
 
 
 def _store_artifact(ctx: WorkflowContext[Any], key: str, artifact: Any) -> None:
@@ -58,6 +62,22 @@ def _get_artifact(ctx: WorkflowContext[Any], key: str) -> Any:
     if artifact is None:
         raise RuntimeError(f"Missing workflow state for '{key}'.")
     return artifact
+
+
+def _get_standards_validation_config(ctx: WorkflowContext[Any]) -> StandardsValidationConfig:
+    config = ctx.get_state("standards_validation_config")
+    if config is None:
+        config = load_standards_validation_config_from_env()
+        ctx.set_state("standards_validation_config", config)
+    return config
+
+
+def _get_standards_validator(ctx: WorkflowContext[Any]) -> StandardsValidator:
+    validator = ctx.get_state("standards_validator")
+    if validator is None:
+        validator = build_standards_validator(_get_standards_validation_config(ctx))
+        ctx.set_state("standards_validator", validator)
+    return validator
 
 
 @executor(id="request_normalization", input=WorkflowBuildInput, output=NormalizedBuildRequest)
@@ -169,7 +189,7 @@ async def validation(message: CandidateBundleResult, ctx: WorkflowContext[Valida
         message,
         schematic,
         normalized_request,
-        _STANDARDS_VALIDATOR,
+        _get_standards_validator(ctx),
     )
     _store_artifact(ctx, "validation_report", report)
     await ctx.send_message(report)
@@ -206,7 +226,7 @@ async def repair_execution(
         normalized_request,
         schematic,
         resource_construction_result,
-        _STANDARDS_VALIDATOR,
+        _get_standards_validator(ctx),
     )
     _store_artifact(ctx, "repair_execution", execution)
     await ctx.yield_output(

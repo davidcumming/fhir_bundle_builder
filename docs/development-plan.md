@@ -98,11 +98,11 @@ The following status labels should be used in this plan:
 
 ## 8. Current Focus
 
-**Current Focus:** Implement the next bounded end-to-end realism slice after deterministic bundle identity policy, without broadening into persistence or generic lifecycle management.
+**Current Focus:** Implement the next bounded realism/hardening slice after the first optional Matchbox-backed external standards-validation path, without broadening into deployment or generic validator-platform work.
 
 ## 9. Next Planned Slice
 
-**Next Planned Slice:** Implement the next narrow end-to-end realism slice by deepening Organization/provider-role context or expanding repair execution for resource_construction.
+**Next Planned Slice:** Implement the next narrow realism slice by deepening Organization/provider-role context or expanding repair execution for resource_construction on top of the stronger standards-validation foundation.
 
 ## 10. Development Phases
 
@@ -280,7 +280,7 @@ Prove a narrow but real end-to-end PS-CA generation run.
 - verify that the run can be demonstrated clearly in Dev UI
 
 ### Current phase note
-The workflow now has a complete deterministic structural path, validation, repair routing, one bounded retry path, meaningful deterministic content for core clinical resources, and a deterministic local bundle identity/fullUrl policy. The next step is to deepen end-to-end realism without widening into persistence or generic lifecycle management.
+The workflow now has a complete deterministic structural path, validation, repair routing, one bounded retry path, meaningful deterministic content for core clinical resources, a deterministic local bundle identity/fullUrl policy, and an optional Matchbox-backed external standards-validation path with local fallback. The next step is to deepen end-to-end realism without widening into deployment, persistence, or generic lifecycle management.
 
 ### Exit criteria
 - a minimal PS-CA workflow runs end to end
@@ -357,7 +357,7 @@ The following assumptions currently guide the plan:
 - the first real build plan intentionally uses a two-step Composition strategy and a limited hard-dependency set derived from the current schematic
 - the first resource-construction slice uses partial FHIR-shaped scaffold artifacts and deterministic placeholder-derived local references rather than fully populated valid resources
 - the first deterministic bundle identity policy uses local UUID-based candidate identifiers, synthetic timestamps, and `urn:uuid` entry fullUrls rather than persistent publication identity
-- the first validation slice intentionally uses a local scaffold-shape standards validator and defers full external conformance validation to a later Matchbox-backed implementation
+- Matchbox is optional infrastructure and the workflow must remain runnable with the local scaffold-shape standards validator alone
 - the first repair-execution slice is a single-pass retry foundation that supports only bundle_finalization as an internal executable target
 - the first meaningful content slice should use deterministic placeholder content from normalized request labels and schematic section metadata rather than free-text clinical synthesis
 - meaningful Organization identity and richer PractitionerRole context depend on a future provider input expansion that includes organizations and provider-role relationships
@@ -376,6 +376,7 @@ The following risks should be monitored during development:
 - prerelease Agent Framework package behavior may affect Dev UI discovery or schema rendering details between versions
 - the current provider input model may constrain support-resource realism until organization and provider-role context are explicitly modeled
 - deterministic synthetic timestamps and local URN fullUrls may later need refinement when publication or persistence semantics are introduced
+- Matchbox availability or response-shape variance may require a small amount of adapter hardening before broader operational use
 
 ## 14. Definition of Progress
 
@@ -406,4 +407,4 @@ Codex should make targeted edits only. It should not rewrite the full document u
 
 ## 16. Immediate Next Objective
 
-The immediate next objective is to deepen end-to-end realism in a narrow way rather than broaden persistence semantics, provider-data architecture, or retry depth.
+The immediate next objective is to deepen end-to-end realism or repair depth in a narrow way now that the first optional external standards-validation path exists.
