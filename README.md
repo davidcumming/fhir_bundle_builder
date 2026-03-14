@@ -222,6 +222,11 @@ The `validation` stage now emits the first real structured validation artifact f
 - a separate workflow/business-rule validation section with:
   - deterministic bundle/document checks
   - deterministic bundle identity/fullUrl checks
+  - narrower Composition scaffold/content checks for:
+    - summary type coding
+    - core scaffold content (`status`, `title`)
+    - subject reference alignment
+    - author reference alignment
   - section-specific deterministic Composition section-presence checks for medications, allergies, and problems
   - resource-specific placeholder-content checks for `MedicationRequest`, `AllergyIntolerance`, and `Condition`
   - findings tied to bundle structure and PS-CA expectations
@@ -250,6 +255,7 @@ The `repair_decision` stage now emits the first real structured repair-routing a
   - trigger finding codes
   - target build-step ids
   - target placeholder ids
+  - scaffold-plus-finalizers targeting for Composition scaffold/content issues where replaying the scaffold step still requires replaying section-finalize steps
   - section-specific Composition finalize targeting when one or more required Composition sections are missing
   - single-resource section-entry targeting when only one section-entry placeholder-content rule fails
 - a clear distinction between repair recommendation and actual repair execution, which is still deferred

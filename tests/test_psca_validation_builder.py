@@ -141,11 +141,59 @@ async def test_psca_validation_builder_fails_when_composition_or_patient_content
 
     assert report.workflow_validation.status == "failed"
     assert any(
-        finding.code == "bundle.composition_enriched_content_present" and finding.severity == "error"
+        finding.code == "bundle.composition_core_scaffold_content_present" and finding.severity == "error"
         for finding in report.workflow_validation.findings
     )
     assert any(
         finding.code == "bundle.patient_identity_content_present" and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+
+
+async def test_psca_validation_builder_fails_when_composition_subject_reference_is_not_aligned() -> None:
+    normalized_request, schematic, candidate_bundle = _build_validation_inputs()
+    broken_bundle = deepcopy(candidate_bundle)
+    composition = broken_bundle.candidate_bundle.fhir_bundle["entry"][0]["resource"]
+    composition["subject"]["reference"] = "Patient/patient-1"
+
+    report = await build_psca_validation_report(
+        broken_bundle,
+        schematic,
+        normalized_request,
+        LocalCandidateBundleScaffoldStandardsValidator(),
+    )
+
+    assert report.workflow_validation.status == "failed"
+    assert any(
+        finding.code == "bundle.composition_subject_reference_aligned" and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.references_aligned_to_entry_fullurls"
+        for finding in report.workflow_validation.findings
+    )
+
+
+async def test_psca_validation_builder_fails_when_composition_author_reference_is_not_aligned() -> None:
+    normalized_request, schematic, candidate_bundle = _build_validation_inputs()
+    broken_bundle = deepcopy(candidate_bundle)
+    composition = broken_bundle.candidate_bundle.fhir_bundle["entry"][0]["resource"]
+    composition["author"][0]["reference"] = "PractitionerRole/practitionerrole-1"
+
+    report = await build_psca_validation_report(
+        broken_bundle,
+        schematic,
+        normalized_request,
+        LocalCandidateBundleScaffoldStandardsValidator(),
+    )
+
+    assert report.workflow_validation.status == "failed"
+    assert any(
+        finding.code == "bundle.composition_author_reference_aligned" and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.references_aligned_to_entry_fullurls"
         for finding in report.workflow_validation.findings
     )
 
@@ -327,8 +375,8 @@ async def test_psca_validation_builder_fails_when_bundle_identity_fields_are_mis
 async def test_psca_validation_builder_fails_when_references_do_not_align_to_fullurls() -> None:
     normalized_request, schematic, candidate_bundle = _build_validation_inputs()
     broken_bundle = deepcopy(candidate_bundle)
-    composition = broken_bundle.candidate_bundle.fhir_bundle["entry"][0]["resource"]
-    composition["subject"]["reference"] = "Patient/patient-1"
+    practitioner_role = broken_bundle.candidate_bundle.fhir_bundle["entry"][2]["resource"]
+    practitioner_role["organization"]["reference"] = "Organization/organization-1"
 
     report = await build_psca_validation_report(
         broken_bundle,

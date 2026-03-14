@@ -65,13 +65,25 @@ _FINDING_ROUTE_MAP: dict[str, tuple[str, str, bool, str]] = {
         "resource_construction",
         "resource_construction",
         True,
-        "Composition type coding originates in resource construction.",
+        "Composition type coding originates in resource construction and safe replay requires the scaffold step plus section finalization steps.",
     ),
-    "bundle.composition_enriched_content_present": (
+    "bundle.composition_core_scaffold_content_present": (
         "resource_construction",
         "resource_construction",
         True,
-        "Composition deterministic content is populated during resource construction.",
+        "Composition core scaffold content is populated during resource construction.",
+    ),
+    "bundle.composition_subject_reference_aligned": (
+        "resource_construction",
+        "resource_construction",
+        True,
+        "Composition subject reference alignment originates in resource construction and is rewritten during bundle finalization.",
+    ),
+    "bundle.composition_author_reference_aligned": (
+        "resource_construction",
+        "resource_construction",
+        True,
+        "Composition author reference alignment originates in resource construction and is rewritten during bundle finalization.",
     ),
     "bundle.patient_identity_content_present": (
         "resource_construction",
@@ -169,7 +181,7 @@ _RESOURCE_CONSTRUCTION_DIRECTIVE_MAP: dict[str, tuple[list[str], list[str], str]
         ["composition-1"],
         "Rerun the composition scaffold and finalize steps to restore deterministic composition type and section attachment state.",
     ),
-    "bundle.composition_enriched_content_present": (
+    "bundle.composition_core_scaffold_content_present": (
         [
             "build-composition-1-scaffold",
             "finalize-composition-1-medications-section",
@@ -177,7 +189,27 @@ _RESOURCE_CONSTRUCTION_DIRECTIVE_MAP: dict[str, tuple[list[str], list[str], str]
             "finalize-composition-1-problems-section",
         ],
         ["composition-1"],
-        "Rerun the composition scaffold and finalize steps to restore deterministic composition content and final section state.",
+        "Rerun the composition scaffold and finalize steps to restore deterministic Composition scaffold content and final section state.",
+    ),
+    "bundle.composition_subject_reference_aligned": (
+        [
+            "build-composition-1-scaffold",
+            "finalize-composition-1-medications-section",
+            "finalize-composition-1-allergies-section",
+            "finalize-composition-1-problems-section",
+        ],
+        ["composition-1"],
+        "Rerun the composition scaffold and finalize steps to restore deterministic Composition subject reference alignment while preserving required sections.",
+    ),
+    "bundle.composition_author_reference_aligned": (
+        [
+            "build-composition-1-scaffold",
+            "finalize-composition-1-medications-section",
+            "finalize-composition-1-allergies-section",
+            "finalize-composition-1-problems-section",
+        ],
+        ["composition-1"],
+        "Rerun the composition scaffold and finalize steps to restore deterministic Composition author reference alignment while preserving required sections.",
     ),
     "bundle.composition_medications_section_present": (
         ["finalize-composition-1-medications-section"],

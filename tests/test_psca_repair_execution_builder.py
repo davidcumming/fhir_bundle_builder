@@ -168,6 +168,72 @@ async def test_psca_repair_execution_reruns_only_missing_composition_section_ste
     assert execution.post_retry_validation_report.overall_status == "passed_with_warnings"
 
 
+async def test_psca_repair_execution_reruns_composition_scaffold_plus_finalize_subset_for_title_failure() -> None:
+    artifacts = await _build_repair_inputs(mutator=_remove_composition_title)
+
+    execution = await build_psca_repair_execution_result(
+        artifacts["repair_decision"],
+        artifacts["normalized_request"],
+        artifacts["build_plan"],
+        artifacts["schematic"],
+        artifacts["resource_construction"],
+        LocalCandidateBundleScaffoldStandardsValidator(),
+    )
+
+    assert execution.execution_outcome == "executed"
+    assert execution.requested_target == "resource_construction"
+    assert execution.applied_resource_construction_repair_directive is not None
+    assert execution.applied_resource_construction_repair_directive.target_step_ids == [
+        "build-composition-1-scaffold",
+        "finalize-composition-1-medications-section",
+        "finalize-composition-1-allergies-section",
+        "finalize-composition-1-problems-section",
+    ]
+    assert execution.post_retry_resource_construction is not None
+    assert execution.post_retry_resource_construction.execution_scope == "targeted_repair"
+    assert [step.step_id for step in execution.post_retry_resource_construction.step_results] == [
+        "build-composition-1-scaffold",
+        "finalize-composition-1-medications-section",
+        "finalize-composition-1-allergies-section",
+        "finalize-composition-1-problems-section",
+    ]
+    assert execution.post_retry_validation_report is not None
+    assert execution.post_retry_validation_report.overall_status == "passed_with_warnings"
+
+
+async def test_psca_repair_execution_reruns_composition_scaffold_plus_finalize_subset_for_subject_failure() -> None:
+    artifacts = await _build_repair_inputs(mutator=_break_composition_subject_reference)
+
+    execution = await build_psca_repair_execution_result(
+        artifacts["repair_decision"],
+        artifacts["normalized_request"],
+        artifacts["build_plan"],
+        artifacts["schematic"],
+        artifacts["resource_construction"],
+        LocalCandidateBundleScaffoldStandardsValidator(),
+    )
+
+    assert execution.execution_outcome == "executed"
+    assert execution.requested_target == "resource_construction"
+    assert execution.applied_resource_construction_repair_directive is not None
+    assert execution.applied_resource_construction_repair_directive.target_step_ids == [
+        "build-composition-1-scaffold",
+        "finalize-composition-1-medications-section",
+        "finalize-composition-1-allergies-section",
+        "finalize-composition-1-problems-section",
+    ]
+    assert execution.post_retry_resource_construction is not None
+    assert execution.post_retry_resource_construction.execution_scope == "targeted_repair"
+    assert [step.step_id for step in execution.post_retry_resource_construction.step_results] == [
+        "build-composition-1-scaffold",
+        "finalize-composition-1-medications-section",
+        "finalize-composition-1-allergies-section",
+        "finalize-composition-1-problems-section",
+    ]
+    assert execution.post_retry_validation_report is not None
+    assert execution.post_retry_validation_report.overall_status == "passed_with_warnings"
+
+
 async def test_psca_repair_execution_reruns_one_section_entry_step_for_single_resource_failure() -> None:
     artifacts = await _build_repair_inputs(mutator=_remove_medicationrequest_content)
 
@@ -359,4 +425,18 @@ def _remove_medicationrequest_and_condition_content(candidate_bundle):
     condition = broken_bundle.candidate_bundle.fhir_bundle["entry"][7]["resource"]
     medication["medicationCodeableConcept"]["text"] = ""
     condition["code"]["text"] = ""
+    return broken_bundle
+
+
+def _remove_composition_title(candidate_bundle):
+    broken_bundle = deepcopy(candidate_bundle)
+    composition = broken_bundle.candidate_bundle.fhir_bundle["entry"][0]["resource"]
+    composition.pop("title", None)
+    return broken_bundle
+
+
+def _break_composition_subject_reference(candidate_bundle):
+    broken_bundle = deepcopy(candidate_bundle)
+    composition = broken_bundle.candidate_bundle.fhir_bundle["entry"][0]["resource"]
+    composition["subject"]["reference"] = "Patient/patient-1"
     return broken_bundle

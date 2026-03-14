@@ -117,6 +117,91 @@ async def test_psca_repair_decision_routes_support_resource_failures_to_resource
     ]
 
 
+async def test_psca_repair_decision_routes_composition_title_failure_to_scaffold_plus_finalize_subset() -> None:
+    report = await _build_validation_report(mutator=_remove_composition_title)
+
+    decision = build_psca_repair_decision(report)
+
+    assert decision.recommended_target == "resource_construction"
+    assert any(
+        route.finding_code == "bundle.composition_core_scaffold_content_present"
+        and route.route_target == "resource_construction"
+        and route.actionable is True
+        for route in decision.finding_routes
+    )
+    assert decision.recommended_resource_construction_repair_directive is not None
+    assert decision.recommended_resource_construction_repair_directive.target_step_ids == [
+        "build-composition-1-scaffold",
+        "finalize-composition-1-medications-section",
+        "finalize-composition-1-allergies-section",
+        "finalize-composition-1-problems-section",
+    ]
+    assert decision.recommended_resource_construction_repair_directive.target_placeholder_ids == [
+        "composition-1"
+    ]
+
+
+async def test_psca_repair_decision_routes_composition_subject_failure_to_scaffold_plus_finalize_subset() -> None:
+    report = await _build_validation_report(mutator=_break_composition_subject_reference)
+
+    decision = build_psca_repair_decision(report)
+
+    assert decision.recommended_target == "resource_construction"
+    assert any(
+        route.finding_code == "bundle.composition_subject_reference_aligned"
+        and route.route_target == "resource_construction"
+        and route.actionable is True
+        for route in decision.finding_routes
+    )
+    assert decision.recommended_resource_construction_repair_directive is not None
+    assert decision.recommended_resource_construction_repair_directive.target_step_ids == [
+        "build-composition-1-scaffold",
+        "finalize-composition-1-medications-section",
+        "finalize-composition-1-allergies-section",
+        "finalize-composition-1-problems-section",
+    ]
+
+
+async def test_psca_repair_decision_routes_composition_author_failure_to_scaffold_plus_finalize_subset() -> None:
+    report = await _build_validation_report(mutator=_break_composition_author_reference)
+
+    decision = build_psca_repair_decision(report)
+
+    assert decision.recommended_target == "resource_construction"
+    assert any(
+        route.finding_code == "bundle.composition_author_reference_aligned"
+        and route.route_target == "resource_construction"
+        and route.actionable is True
+        for route in decision.finding_routes
+    )
+    assert decision.recommended_resource_construction_repair_directive is not None
+    assert decision.recommended_resource_construction_repair_directive.target_step_ids == [
+        "build-composition-1-scaffold",
+        "finalize-composition-1-medications-section",
+        "finalize-composition-1-allergies-section",
+        "finalize-composition-1-problems-section",
+    ]
+
+
+async def test_psca_repair_decision_dedupes_combined_composition_scaffold_failures_to_one_step_subset() -> None:
+    report = await _build_validation_report(mutator=_remove_composition_title_and_break_author_reference)
+
+    decision = build_psca_repair_decision(report)
+
+    assert decision.recommended_target == "resource_construction"
+    assert decision.recommended_resource_construction_repair_directive is not None
+    assert set(decision.recommended_resource_construction_repair_directive.trigger_finding_codes) == {
+        "bundle.composition_core_scaffold_content_present",
+        "bundle.composition_author_reference_aligned",
+    }
+    assert decision.recommended_resource_construction_repair_directive.target_step_ids == [
+        "build-composition-1-scaffold",
+        "finalize-composition-1-medications-section",
+        "finalize-composition-1-allergies-section",
+        "finalize-composition-1-problems-section",
+    ]
+
+
 async def test_psca_repair_decision_routes_medicationrequest_placeholder_failures_to_one_step_directive() -> None:
     report = await _build_validation_report(mutator=_remove_medicationrequest_content)
 
@@ -297,6 +382,32 @@ def _remove_patient_name(candidate_bundle):
     patient = broken_bundle.candidate_bundle.fhir_bundle["entry"][1]["resource"]
     patient["name"] = []
     return broken_bundle
+
+
+def _remove_composition_title(candidate_bundle):
+    broken_bundle = deepcopy(candidate_bundle)
+    composition = broken_bundle.candidate_bundle.fhir_bundle["entry"][0]["resource"]
+    composition.pop("title", None)
+    return broken_bundle
+
+
+def _break_composition_subject_reference(candidate_bundle):
+    broken_bundle = deepcopy(candidate_bundle)
+    composition = broken_bundle.candidate_bundle.fhir_bundle["entry"][0]["resource"]
+    composition["subject"]["reference"] = "Patient/patient-1"
+    return broken_bundle
+
+
+def _break_composition_author_reference(candidate_bundle):
+    broken_bundle = deepcopy(candidate_bundle)
+    composition = broken_bundle.candidate_bundle.fhir_bundle["entry"][0]["resource"]
+    composition["author"][0]["reference"] = "PractitionerRole/practitionerrole-1"
+    return broken_bundle
+
+
+def _remove_composition_title_and_break_author_reference(candidate_bundle):
+    broken_bundle = _remove_composition_title(candidate_bundle)
+    return _break_composition_author_reference(broken_bundle)
 
 
 def _remove_practitioner_identity(candidate_bundle):

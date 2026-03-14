@@ -84,7 +84,9 @@ def _build_workflow_validation_result(
         "bundle.composition_first_placeholder",
         "bundle.first_entry_is_composition",
         "bundle.composition_type_matches_psca_summary",
-        "bundle.composition_enriched_content_present",
+        "bundle.composition_core_scaffold_content_present",
+        "bundle.composition_subject_reference_aligned",
+        "bundle.composition_author_reference_aligned",
         "bundle.patient_identity_content_present",
         "bundle.practitioner_identity_content_present",
         "bundle.practitionerrole_author_context_present",
@@ -183,16 +185,29 @@ def _build_workflow_validation_result(
                 f"Expected Composition type coding to equal {expected_system}|{expected_code}.",
             )
         )
-    if (
-        not isinstance(composition, dict)
-        or composition.get("status") != "final"
-        or not composition.get("title")
-    ):
+    if not _composition_core_scaffold_content_present(composition):
         findings.append(
             _workflow_error(
-                "bundle.composition_enriched_content_present",
+                "bundle.composition_core_scaffold_content_present",
                 "Bundle.entry[0].resource",
                 "Expected Composition enriched content to include status='final' and a deterministic title.",
+            )
+        )
+    full_urls_by_placeholder_id = _full_urls_by_placeholder_id(bundle)
+    if not _composition_subject_reference_aligned(composition, full_urls_by_placeholder_id):
+        findings.append(
+            _workflow_error(
+                "bundle.composition_subject_reference_aligned",
+                "Bundle.entry[0].resource.subject.reference",
+                "Expected Composition.subject.reference to align to the Patient bundle entry fullUrl.",
+            )
+        )
+    if not _composition_author_reference_aligned(composition, full_urls_by_placeholder_id):
+        findings.append(
+            _workflow_error(
+                "bundle.composition_author_reference_aligned",
+                "Bundle.entry[0].resource.author[0].reference",
+                "Expected Composition.author[0].reference to align to the PractitionerRole bundle entry fullUrl.",
             )
         )
 
@@ -353,6 +368,43 @@ def _first_composition_coding(composition: dict[str, object]) -> dict[str, objec
     return first if isinstance(first, dict) else {}
 
 
+def _composition_core_scaffold_content_present(composition: dict[str, object]) -> bool:
+    return (
+        isinstance(composition, dict)
+        and composition.get("status") == "final"
+        and isinstance(composition.get("title"), str)
+        and bool(composition.get("title"))
+    )
+
+
+def _composition_subject_reference_aligned(
+    composition: dict[str, object],
+    full_urls_by_placeholder_id: dict[str, str],
+) -> bool:
+    expected_reference = full_urls_by_placeholder_id.get("patient-1")
+    if not isinstance(expected_reference, str) or not expected_reference:
+        return True
+    subject = composition.get("subject") if isinstance(composition, dict) else None
+    return (
+        isinstance(subject, dict)
+        and subject.get("reference") == expected_reference
+    )
+
+
+def _composition_author_reference_aligned(
+    composition: dict[str, object],
+    full_urls_by_placeholder_id: dict[str, str],
+) -> bool:
+    expected_reference = full_urls_by_placeholder_id.get("practitionerrole-1")
+    if not isinstance(expected_reference, str) or not expected_reference:
+        return True
+    author = _first_list_item(composition.get("author")) if isinstance(composition, dict) else {}
+    return (
+        isinstance(author, dict)
+        and author.get("reference") == expected_reference
+    )
+
+
 def _composition_section_present(
     sections: object,
     section_scaffold: object,
@@ -412,8 +464,6 @@ def _references_aligned_to_entry_fullurls(
     condition = _find_resource_by_type(bundle, "Condition")
 
     expected_references = [
-        (composition.get("subject"), full_urls_by_placeholder_id.get("patient-1")),
-        (_first_list_item(composition.get("author")), full_urls_by_placeholder_id.get("practitionerrole-1")),
         (practitioner_role.get("practitioner"), full_urls_by_placeholder_id.get("practitioner-1")),
         (practitioner_role.get("organization"), full_urls_by_placeholder_id.get("organization-1")),
         (medication.get("subject"), full_urls_by_placeholder_id.get("patient-1")),
