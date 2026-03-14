@@ -44,7 +44,30 @@ async def test_psca_bundle_builder_workflow_smoke() -> None:
     assert len(final_output.specification_asset_context.normalized_assets.workflow_profile_inventory) == 6
     assert final_output.specification_asset_context.normalized_assets.selected_profiles.bundle.profile_id == "bundle-ca-ps"
     assert final_output.specification_asset_context.normalized_assets.selected_bundle_example.filename == "Bundle1Example.json"
+    assert len(final_output.specification_asset_context.normalized_assets.composition_section_definitions) >= 3
+    assert final_output.bundle_schematic.bundle_scaffold.bundle_type == "document"
+    assert final_output.bundle_schematic.composition_scaffold.expected_type_code == "60591-5"
+    assert [section.section_key for section in final_output.bundle_schematic.section_scaffolds] == [
+        "medications",
+        "allergies",
+        "problems",
+    ]
+    assert {placeholder.placeholder_id for placeholder in final_output.bundle_schematic.resource_placeholders} == {
+        "patient-1",
+        "practitioner-1",
+        "organization-1",
+        "practitionerrole-1",
+        "condition-1",
+        "medicationrequest-1",
+        "allergyintolerance-1",
+        "composition-1",
+    }
+    assert any(
+        relationship.relationship_id == "composition-subject" and relationship.target_id == "patient-1"
+        for relationship in final_output.bundle_schematic.relationships
+    )
     assert final_output.candidate_bundle.entry_count == len(final_output.resource_construction.built_resources)
+    assert final_output.build_plan.plan_basis == "schematic-derived-placeholder-sequence"
     assert final_output.validation_report.outcome == "placeholder_pass_with_warnings"
     assert final_output.repair_decision.decision == "complete_for_slice"
 

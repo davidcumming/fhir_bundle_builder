@@ -11,14 +11,13 @@ from fhir_bundle_builder.specifications.psca import PscaAssetQuery, PscaAssetRep
 from .models import (
     BuildPlanStep,
     BuildPlanStub,
-    BundleSchematicStub,
+    BundleSchematic,
     CandidateBundleEntry,
     CandidateBundleStub,
     NormalizedBuildRequest,
     PlaceholderResourceBuildResult,
     RepairDecisionStub,
     ResourceConstructionStageResult,
-    ResourcePlaceholder,
     SpecificationAssetContext,
     ValidationFindingStub,
     ValidationReportStub,
@@ -26,6 +25,7 @@ from .models import (
     WorkflowDefaults,
     WorkflowSkeletonRunResult,
 )
+from .schematic_builder import build_psca_bundle_schematic
 
 WORKFLOW_NAME = "PS-CA Bundle Builder Skeleton"
 WORKFLOW_VERSION = "0.1.0"
@@ -110,55 +110,45 @@ async def specification_asset_retrieval(
     await ctx.send_message(context)
 
 
-@executor(id="bundle_schematic", input=SpecificationAssetContext, output=BundleSchematicStub)
+@executor(id="bundle_schematic", input=SpecificationAssetContext, output=BundleSchematic)
 async def bundle_schematic(
     message: SpecificationAssetContext,
-    ctx: WorkflowContext[BundleSchematicStub],
+    ctx: WorkflowContext[BundleSchematic],
 ) -> None:
-    example_types = message.normalized_assets.selected_bundle_example.entry_resource_types
-    composition_profile_url = message.normalized_assets.selected_profiles.composition.url
-    placeholder_resources = [
-        ResourcePlaceholder(
-            logical_id=f"{resource_type.lower()}-{index}",
-            resource_type=resource_type,
-            role="example-derived-placeholder",
-            profile_hint=composition_profile_url if resource_type == "Composition" else None,
-        )
-        for index, resource_type in enumerate(example_types[:8], start=1)
-    ]
-    schematic = BundleSchematicStub(
-        stage_id="bundle_schematic",
-        status="placeholder_complete",
-        summary="Created a structured placeholder bundle scaffold from the inspected package metadata.",
-        placeholder_note="This is a schematic stub only; no real PS-CA section logic or profile reasoning is implemented.",
-        source_refs=message.source_refs,
-        bundle_type="document",
-        composition_profile_url=composition_profile_url,
-        placeholder_resources=placeholder_resources,
-        schematic_notes=[
-            "Bundle type is fixed to 'document' for the first workflow slice.",
-            "Placeholder resources are derived from the normalized selected bundle example.",
-        ],
-    )
+    schematic = build_psca_bundle_schematic(message.normalized_assets)
     _store_artifact(ctx, "bundle_schematic", schematic)
     await ctx.send_message(schematic)
 
 
-@executor(id="build_plan", input=BundleSchematicStub, output=BuildPlanStub)
-async def build_plan(message: BundleSchematicStub, ctx: WorkflowContext[BuildPlanStub]) -> None:
+@executor(id="build_plan", input=BundleSchematic, output=BuildPlanStub)
+async def build_plan(message: BundleSchematic, ctx: WorkflowContext[BuildPlanStub]) -> None:
+    build_order = {
+        "Patient": 1,
+        "Practitioner": 2,
+        "Organization": 3,
+        "PractitionerRole": 4,
+        "Condition": 5,
+        "MedicationRequest": 6,
+        "AllergyIntolerance": 7,
+        "Composition": 8,
+    }
+    ordered_placeholders = sorted(
+        message.resource_placeholders,
+        key=lambda placeholder: (build_order.get(placeholder.resource_type, 999), placeholder.placeholder_id),
+    )
     steps: list[BuildPlanStep] = []
     prior_step_id: str | None = None
-    for sequence, placeholder in enumerate(message.placeholder_resources, start=1):
-        step_id = f"build-{placeholder.logical_id}"
-        depends_on = [prior_step_id] if prior_step_id and placeholder.resource_type != "Composition" else []
+    for sequence, placeholder in enumerate(ordered_placeholders, start=1):
+        step_id = f"build-{placeholder.placeholder_id}"
+        depends_on = [prior_step_id] if prior_step_id is not None else []
         steps.append(
             BuildPlanStep(
                 step_id=step_id,
                 sequence=sequence,
                 resource_type=placeholder.resource_type,
                 depends_on=depends_on,
-                build_purpose=f"Emit inspectable placeholder output for {placeholder.resource_type}.",
-                optional=False,
+                build_purpose=f"Emit inspectable placeholder output for {placeholder.role}.",
+                optional=not placeholder.required,
             )
         )
         prior_step_id = step_id
@@ -166,10 +156,10 @@ async def build_plan(message: BundleSchematicStub, ctx: WorkflowContext[BuildPla
     plan = BuildPlanStub(
         stage_id="build_plan",
         status="placeholder_complete",
-        summary="Derived a simple ordered placeholder build plan from the bundle schematic.",
-        placeholder_note="Dependency handling is intentionally simplistic and deterministic for this workflow-shape slice.",
+        summary="Derived a simple ordered placeholder build plan from the real PS-CA schematic artifact.",
+        placeholder_note="Dependency handling is still intentionally simplistic; this stage now consumes the schematic scaffold without attempting real build-order intelligence.",
         source_refs=message.source_refs,
-        plan_basis="example-derived-placeholder-sequence",
+        plan_basis="schematic-derived-placeholder-sequence",
         steps=steps,
     )
     _store_artifact(ctx, "build_plan", plan)

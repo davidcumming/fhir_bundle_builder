@@ -98,11 +98,11 @@ The following status labels should be used in this plan:
 
 ## 8. Current Focus
 
-**Current Focus:** Use the normalized PS-CA asset context to implement the first real schematic-generation slice while keeping the workflow bounded and inspectable.
+**Current Focus:** Use the real PS-CA bundle schematic artifact to implement the first bounded build-planning slice while keeping the workflow deterministic and inspectable.
 
 ## 9. Next Planned Slice
 
-**Next Planned Slice:** Implement the first real PS-CA bundle schematic generation path using the normalized asset context produced by the retrieval boundary.
+**Next Planned Slice:** Implement the first PS-CA build-plan slice using the real bundle schematic artifact, without resource-population logic.
 
 ## 10. Development Phases
 
@@ -177,7 +177,7 @@ This phase should be designed so the ingestion approach can later support arbitr
 ---
 
 ## Phase 4: Bundle Schematic Generation
-**Status:** Planned
+**Status:** Completed
 
 ### Goal
 Enable the workflow to produce a structured PS-CA bundle scaffold.
@@ -345,7 +345,8 @@ The following assumptions currently guide the plan:
 - patient and provider profile support will exist conceptually even if the first workflow uses stub or placeholder retrieval
 - Microsoft Agent Framework Dev UI is the correct proving ground before UI work
 - the specification ingestion pipeline should be designed to support arbitrary FHIR specifications later
-- the initial normalized PS-CA asset scope is intentionally limited to package metadata, selected foundational profiles, and example summaries rather than full IG normalization
+- the initial normalized PS-CA asset scope is intentionally limited to package metadata, selected foundational profiles, Composition section definitions, and example summaries rather than full IG normalization
+- the first real PS-CA schematic intentionally covers only the required sections plus minimal subject/author support placeholders
 - initial development should prioritize workflow shape, artifact contracts, and inspectability over feature completeness
 
 ## 13. Known Early Risks
@@ -389,4 +390,4 @@ Codex should make targeted edits only. It should not rewrite the full document u
 
 ## 16. Immediate Next Objective
 
-The immediate next objective is to consume the normalized PS-CA asset context in the first real schematic-generation slice without broadening scope into full generation or generalized ingestion.
+The immediate next objective is to derive the first structured PS-CA build plan from the schematic artifact without broadening scope into resource construction or full generation.

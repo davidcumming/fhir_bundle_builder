@@ -5,11 +5,12 @@ This repository is currently proving the workflow shape for a PS-CA bundle build
 The implemented slice is intentionally narrow:
 
 - structured top-level workflow input
-- deterministic placeholder executors for the major workflow stages
+- deterministic workflow stages for request normalization, PS-CA asset retrieval, and bundle schematic generation
 - inspectable structured artifacts emitted at each stage
 - no product UI
-- no real PS-CA asset normalization yet
-- no real bundle generation yet
+- no real bundle population yet
+- no real build planning intelligence yet
+- no arbitrary-spec ingestion yet
 
 ## Repository shape
 
@@ -75,9 +76,31 @@ The `specification_asset_retrieval` stage now emits the first normalized PS-CA a
 
 ## Current slice boundaries
 
-This slice is for workflow shape and inspectability only.
+This slice is for workflow shape, PS-CA normalized asset retrieval, and the first real schematic artifact only.
 
 - The workflow reads existing PS-CA package files deterministically from the repo.
-- The spec retrieval stage exposes a first normalized PS-CA asset context, but only at a narrow foundational summary level.
+- The spec retrieval stage exposes a normalized PS-CA asset context with foundational profiles, Composition section definitions, and selected example evidence.
+- The schematic stage emits a real PS-CA bundle scaffold with:
+  - bundle-level scaffold metadata
+  - a Composition scaffold
+  - required section scaffolds for medications, allergies, and problems
+  - explicit resource placeholders
+  - explicit schematic relationships and provenance
+- The build-plan stage still derives only a simple placeholder sequence from the schematic.
 - Resource construction emits placeholder resource build results only.
 - Validation and repair are placeholder stages used to prove the end-to-end workflow path.
+
+## Schematic-stage output
+
+The `bundle_schematic` stage now emits the first real PS-CA schematic artifact for workflow use. In Dev UI you should see:
+
+- a Bundle scaffold fixed to `document`
+- a Composition scaffold fixed to LOINC `60591-5`
+- required section scaffolds for medications, allergies, and problems
+- placeholders for `Composition`, `Patient`, `PractitionerRole`, `Practitioner`, `Organization`, `MedicationRequest`, `AllergyIntolerance`, and `Condition`
+- explicit relationships for:
+  - bundle entries
+  - Composition subject and author
+  - PractitionerRole support links
+  - section-entry wiring
+- provenance showing which normalized assets and example evidence were used

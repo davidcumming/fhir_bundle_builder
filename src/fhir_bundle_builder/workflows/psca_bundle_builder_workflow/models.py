@@ -137,22 +137,83 @@ class SpecificationAssetContext(StageArtifact):
     normalized_assets: PscaNormalizedAssetContext
 
 
-class ResourcePlaceholder(BaseModel):
-    """Placeholder bundle component for the skeleton schematic."""
+class BundleScaffold(BaseModel):
+    """Bundle-level scaffold for the schematic artifact."""
 
-    logical_id: str
+    profile_url: str
+    bundle_type: str
+    required_entry_placeholder_ids: list[str]
+    required_later_fields: list[str] = Field(default_factory=list)
+
+
+class CompositionScaffold(BaseModel):
+    """Composition-level scaffold for the schematic artifact."""
+
+    placeholder_id: str
+    profile_url: str
+    expected_type_system: str
+    expected_type_code: str
+    expected_type_display: str
+    required_later_fields: list[str] = Field(default_factory=list)
+
+
+class SectionScaffold(BaseModel):
+    """One explicit Composition section scaffold."""
+
+    section_key: str
+    slice_name: str
+    title: str
+    loinc_code: str
+    required: bool
+    allowed_resource_types: list[str] = Field(default_factory=list)
+    entry_placeholder_ids: list[str] = Field(default_factory=list)
+
+
+class ResourcePlaceholder(BaseModel):
+    """Placeholder bundle component required by the schematic."""
+
+    placeholder_id: str
     resource_type: str
     role: str
-    profile_hint: str | None = None
+    profile_url: str | None = None
+    required: bool = True
+    section_keys: list[str] = Field(default_factory=list)
+    required_later_fields: list[str] = Field(default_factory=list)
 
 
-class BundleSchematicStub(StageArtifact):
-    """Structured bundle scaffold placeholder."""
+class SchematicRelationship(BaseModel):
+    """Explicit relationship captured in the schematic."""
 
-    bundle_type: str
-    composition_profile_url: str
-    placeholder_resources: list[ResourcePlaceholder]
-    schematic_notes: list[str]
+    relationship_id: str
+    relationship_type: str
+    source_id: str
+    target_id: str
+    reference_path: str | None = None
+    description: str
+
+
+class SchematicEvidence(BaseModel):
+    """Provenance captured for the generated schematic."""
+
+    selected_example_filename: str
+    selected_example_section_titles: list[str] = Field(default_factory=list)
+    selected_example_entry_resource_types: list[str] = Field(default_factory=list)
+    used_profile_ids: list[str] = Field(default_factory=list)
+    used_section_slice_names: list[str] = Field(default_factory=list)
+    source_refs: list[str] = Field(default_factory=list)
+
+
+class BundleSchematic(StageArtifact):
+    """Structured PS-CA bundle scaffold for downstream planning."""
+
+    generation_basis: Literal["deterministic_psca_foundation_rules"]
+    bundle_scaffold: BundleScaffold
+    composition_scaffold: CompositionScaffold
+    section_scaffolds: list[SectionScaffold]
+    resource_placeholders: list[ResourcePlaceholder]
+    relationships: list[SchematicRelationship]
+    evidence: SchematicEvidence
+    omitted_optional_sections: list[str] = Field(default_factory=list)
 
 
 class BuildPlanStep(BaseModel):
@@ -169,7 +230,7 @@ class BuildPlanStep(BaseModel):
 class BuildPlanStub(StageArtifact):
     """Ordered placeholder build plan."""
 
-    plan_basis: Literal["example-derived-placeholder-sequence"]
+    plan_basis: Literal["schematic-derived-placeholder-sequence"]
     steps: list[BuildPlanStep]
 
 
@@ -239,7 +300,7 @@ class WorkflowSkeletonRunResult(BaseModel):
     stage_order: list[str]
     normalized_request: NormalizedBuildRequest
     specification_asset_context: SpecificationAssetContext
-    bundle_schematic: BundleSchematicStub
+    bundle_schematic: BundleSchematic
     build_plan: BuildPlanStub
     resource_construction: ResourceConstructionStageResult
     candidate_bundle: CandidateBundleStub

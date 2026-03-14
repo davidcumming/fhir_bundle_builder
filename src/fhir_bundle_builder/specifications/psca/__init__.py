@@ -3,6 +3,8 @@
 from .models import (
     PscaAssetQuery,
     PscaBundleExampleSummary,
+    PscaBundleExampleSectionSummary,
+    PscaCompositionSectionDefinitionSummary,
     PscaExampleSummary,
     PscaNormalizedAssetContext,
     PscaPackageSummary,
@@ -15,6 +17,8 @@ __all__ = [
     "PscaAssetQuery",
     "PscaAssetRepository",
     "PscaBundleExampleSummary",
+    "PscaBundleExampleSectionSummary",
+    "PscaCompositionSectionDefinitionSummary",
     "PscaExampleSummary",
     "PscaNormalizedAssetContext",
     "PscaPackageSummary",

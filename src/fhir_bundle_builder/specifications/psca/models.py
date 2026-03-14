@@ -15,6 +15,24 @@ PscaWorkflowProfileRole = Literal[
     "practitioner_role",
     "organization",
 ]
+PscaCompositionSectionKey = Literal[
+    "medications",
+    "allergies",
+    "problems",
+    "procedures_history",
+    "immunizations",
+    "medical_devices",
+    "results",
+    "vital_signs",
+    "past_illness_history",
+    "functional_status",
+    "plan_of_care",
+    "social_history",
+    "pregnancy_history",
+    "advance_directives",
+    "family_history",
+    "patient_story",
+]
 
 
 class PscaAssetQuery(BaseModel):
@@ -80,6 +98,29 @@ class PscaBundleExampleSummary(BaseModel):
     bundle_type: str
     entry_resource_types: list[str]
     composition_section_titles: list[str]
+    composition_subject_resource_type: str | None = None
+    composition_author_resource_types: list[str] = Field(default_factory=list)
+    sections: list["PscaBundleExampleSectionSummary"] = Field(default_factory=list)
+
+
+class PscaBundleExampleSectionSummary(BaseModel):
+    """Normalized summary of one Composition section inside a bundle example."""
+
+    title: str
+    loinc_code: str | None = None
+    entry_resource_types: list[str] = Field(default_factory=list)
+
+
+class PscaCompositionSectionDefinitionSummary(BaseModel):
+    """Normalized summary of one PS-CA Composition section definition."""
+
+    section_key: PscaCompositionSectionKey
+    slice_name: str
+    title: str
+    loinc_code: str
+    required: bool
+    allowed_entry_resource_types: list[str] = Field(default_factory=list)
+    source_profile_id: str
 
 
 class PscaNormalizedAssetContext(BaseModel):
@@ -88,6 +129,7 @@ class PscaNormalizedAssetContext(BaseModel):
     package_summary: PscaPackageSummary
     workflow_profile_inventory: list[PscaWorkflowProfileSummary]
     selected_profiles: PscaSelectedProfiles
+    composition_section_definitions: list[PscaCompositionSectionDefinitionSummary]
     example_inventory: list[PscaExampleSummary]
     selected_bundle_example: PscaBundleExampleSummary
     normalization_level: PscaNormalizationLevel = "foundation"
