@@ -98,11 +98,11 @@ The following status labels should be used in this plan:
 
 ## 8. Current Focus
 
-**Current Focus:** Prove the initial PS-CA asset retrieval boundary and define the first normalized asset context stub that the workflow can consume.
+**Current Focus:** Use the normalized PS-CA asset context to implement the first real schematic-generation slice while keeping the workflow bounded and inspectable.
 
 ## 9. Next Planned Slice
 
-**Next Planned Slice:** Implement the initial PS-CA asset retrieval boundary and first normalized asset context stub from the existing package files already present in the repository.
+**Next Planned Slice:** Implement the first real PS-CA bundle schematic generation path using the normalized asset context produced by the retrieval boundary.
 
 ## 10. Development Phases
 
@@ -153,7 +153,7 @@ This phase is about workflow shape and inspectability, not real bundle generatio
 ---
 
 ## Phase 3: Specification Ingestion and Asset Normalization
-**Status:** Planned
+**Status:** Completed
 
 ### Goal
 Create the initial pipeline that converts PS-CA source specification artifacts into normalized assets the workflow can use.
@@ -345,6 +345,7 @@ The following assumptions currently guide the plan:
 - patient and provider profile support will exist conceptually even if the first workflow uses stub or placeholder retrieval
 - Microsoft Agent Framework Dev UI is the correct proving ground before UI work
 - the specification ingestion pipeline should be designed to support arbitrary FHIR specifications later
+- the initial normalized PS-CA asset scope is intentionally limited to package metadata, selected foundational profiles, and example summaries rather than full IG normalization
 - initial development should prioritize workflow shape, artifact contracts, and inspectability over feature completeness
 
 ## 13. Known Early Risks
@@ -388,4 +389,4 @@ Codex should make targeted edits only. It should not rewrite the full document u
 
 ## 16. Immediate Next Objective
 
-The immediate next objective is to prove the first workflow-usable PS-CA asset retrieval path and establish the initial normalized asset contract that later workflow stages can consume.
+The immediate next objective is to consume the normalized PS-CA asset context in the first real schematic-generation slice without broadening scope into full generation or generalized ingestion.

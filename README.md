@@ -63,11 +63,21 @@ Then open [http://127.0.0.1:8080](http://127.0.0.1:8080).
   - `repair_decision`
 - Structured outputs for every stage, plus a final nested run result yielded by `repair_decision`.
 
+## Retrieval-stage output
+
+The `specification_asset_retrieval` stage now emits the first normalized PS-CA asset context for workflow use. In Dev UI you should see:
+
+- normalized package metadata
+- workflow-scoped foundational profile summaries
+- selected foundational profiles for bundle, composition, patient, practitioner, practitioner role, and organization
+- example inventory summary
+- selected bundle example summary
+
 ## Current slice boundaries
 
 This slice is for workflow shape and inspectability only.
 
 - The workflow reads existing PS-CA package files deterministically from the repo.
-- The spec retrieval stage exposes a stub context and explicitly does not normalize assets yet.
+- The spec retrieval stage exposes a first normalized PS-CA asset context, but only at a narrow foundational summary level.
 - Resource construction emits placeholder resource build results only.
 - Validation and repair are placeholder stages used to prove the end-to-end workflow path.

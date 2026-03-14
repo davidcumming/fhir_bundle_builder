@@ -39,8 +39,11 @@ async def test_psca_bundle_builder_workflow_smoke() -> None:
     assert isinstance(final_output, WorkflowSkeletonRunResult)
     assert final_output.workflow_name == "PS-CA Bundle Builder Skeleton"
     assert final_output.normalized_request.request.scenario_label == "pytest-smoke"
-    assert final_output.specification_asset_context.package_name == "ca.infoway.io.psca"
-    assert final_output.specification_asset_context.index_entry_count > 0
+    assert final_output.specification_asset_context.normalized_assets.package_summary.package_id == "ca.infoway.io.psca"
+    assert final_output.specification_asset_context.normalized_assets.package_summary.index_entry_count > 0
+    assert len(final_output.specification_asset_context.normalized_assets.workflow_profile_inventory) == 6
+    assert final_output.specification_asset_context.normalized_assets.selected_profiles.bundle.profile_id == "bundle-ca-ps"
+    assert final_output.specification_asset_context.normalized_assets.selected_bundle_example.filename == "Bundle1Example.json"
     assert final_output.candidate_bundle.entry_count == len(final_output.resource_construction.built_resources)
     assert final_output.validation_report.outcome == "placeholder_pass_with_warnings"
     assert final_output.repair_decision.decision == "complete_for_slice"

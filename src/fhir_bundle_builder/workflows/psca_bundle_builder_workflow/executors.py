@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-import json
-from pathlib import Path
 from typing import Any
 
 from agent_framework import WorkflowContext, executor
+
+from fhir_bundle_builder.specifications.psca import PscaAssetQuery, PscaAssetRepository
 
 from .models import (
     BuildPlanStep,
@@ -14,14 +14,12 @@ from .models import (
     BundleSchematicStub,
     CandidateBundleEntry,
     CandidateBundleStub,
-    ExampleBundleInventory,
     NormalizedBuildRequest,
     PlaceholderResourceBuildResult,
     RepairDecisionStub,
     ResourceConstructionStageResult,
     ResourcePlaceholder,
-    ResourceTypeSummary,
-    SpecificationAssetContextStub,
+    SpecificationAssetContext,
     ValidationFindingStub,
     ValidationReportStub,
     WorkflowBuildInput,
@@ -42,21 +40,7 @@ STAGE_ORDER = [
     "repair_decision",
 ]
 
-_REPO_ROOT = Path(__file__).resolve().parents[4]
-_PACKAGE_ROOT = _REPO_ROOT / "fhir" / "ca.infoway.io.psca-2.1.1-dft"
-_PACKAGE_JSON = _PACKAGE_ROOT / "package.json"
-_INDEX_JSON = _PACKAGE_ROOT / ".index.json"
-_BUNDLE_PROFILE = _PACKAGE_ROOT / "structuredefinition-profile-bundle-ca-ps.json"
-_COMPOSITION_PROFILE = _PACKAGE_ROOT / "structuredefinition-profile-composition-ca-ps.json"
-
-
-def _read_json(path: Path) -> dict[str, Any]:
-    with path.open("r", encoding="utf-8") as handle:
-        return json.load(handle)
-
-
-def _relative_ref(path: Path) -> str:
-    return path.relative_to(_REPO_ROOT).as_posix()
+_PSCA_ASSET_REPOSITORY = PscaAssetRepository()
 
 
 def _store_artifact(ctx: WorkflowContext[Any], key: str, artifact: Any) -> None:
@@ -68,27 +52,6 @@ def _get_artifact(ctx: WorkflowContext[Any], key: str) -> Any:
     if artifact is None:
         raise RuntimeError(f"Missing workflow state for '{key}'.")
     return artifact
-
-
-def _profile_summary(path: Path) -> ResourceTypeSummary:
-    payload = _read_json(path)
-    return ResourceTypeSummary(
-        resource_type=payload["type"],
-        profile_id=payload["id"],
-        profile_url=payload["url"],
-        filename=path.name,
-    )
-
-
-def _load_example_bundle_inventory(example_filename: str) -> ExampleBundleInventory:
-    example_path = _PACKAGE_ROOT / "examples" / example_filename
-    payload = _read_json(example_path)
-    entry_types = [entry.get("resource", {}).get("resourceType", "Unknown") for entry in payload.get("entry", [])]
-    return ExampleBundleInventory(
-        filename=example_filename,
-        entry_count=len(entry_types),
-        entry_resource_types=entry_types,
-    )
 
 
 @executor(id="request_normalization", input=WorkflowBuildInput, output=NormalizedBuildRequest)
@@ -106,7 +69,7 @@ async def request_normalization(message: WorkflowBuildInput, ctx: WorkflowContex
         request=message.request,
         workflow_defaults=WorkflowDefaults(
             bundle_type="document",
-            specification_mode="raw-package-stub",
+            specification_mode="normalized-asset-foundation",
             validation_mode="placeholder",
             resource_construction_mode="placeholder",
         ),
@@ -119,64 +82,47 @@ async def request_normalization(message: WorkflowBuildInput, ctx: WorkflowContex
 @executor(
     id="specification_asset_retrieval",
     input=NormalizedBuildRequest,
-    output=SpecificationAssetContextStub,
+    output=SpecificationAssetContext,
 )
 async def specification_asset_retrieval(
     message: NormalizedBuildRequest,
-    ctx: WorkflowContext[SpecificationAssetContextStub],
+    ctx: WorkflowContext[SpecificationAssetContext],
 ) -> None:
-    package_payload = _read_json(_PACKAGE_JSON)
-    index_payload = _read_json(_INDEX_JSON)
-    bundle_profile = _profile_summary(_BUNDLE_PROFILE)
-    composition_profile = _profile_summary(_COMPOSITION_PROFILE)
-    example_inventory = None
-    # Read the example bundle only when requested in the structured top-level options.
     workflow_input = ctx.get_state("workflow_input")
-    if workflow_input and workflow_input.workflow_options.include_example_bundle_inventory:
-        example_inventory = _load_example_bundle_inventory(workflow_input.workflow_options.example_bundle_filename)
+    normalized_assets = _PSCA_ASSET_REPOSITORY.load_foundation_context(
+        PscaAssetQuery(
+            package_id=message.specification.package_id,
+            version=message.specification.version,
+            include_example_inventory=workflow_input.workflow_options.include_example_bundle_inventory,
+            selected_example_bundle_filename=workflow_input.workflow_options.example_bundle_filename,
+        )
+    )
 
-    context = SpecificationAssetContextStub(
+    context = SpecificationAssetContext(
         stage_id="specification_asset_retrieval",
         status="placeholder_complete",
-        summary="Loaded a minimal deterministic PS-CA package context from the repo.",
-        placeholder_note="This stage reads raw package files directly for inspectability; normalized workflow assets are intentionally deferred to the next slice.",
-        source_refs=[
-            _relative_ref(_PACKAGE_JSON),
-            _relative_ref(_INDEX_JSON),
-            _relative_ref(_BUNDLE_PROFILE),
-            _relative_ref(_COMPOSITION_PROFILE),
-        ]
-        + (
-            [f"fhir/ca.infoway.io.psca-2.1.1-dft/examples/{example_inventory.filename}"]
-            if example_inventory
-            else []
-        ),
-        package_root=_relative_ref(_PACKAGE_ROOT),
-        package_name=package_payload["name"],
-        package_version=package_payload["version"],
-        fhir_version=package_payload["fhirVersions"][0],
-        canonical_url=package_payload["canonical"],
-        index_entry_count=len(index_payload["files"]),
-        bundle_profile=bundle_profile,
-        composition_profile=composition_profile,
-        example_bundle_inventory=example_inventory,
+        summary="Loaded the first normalized PS-CA asset context through the specification retrieval boundary.",
+        placeholder_note="This is the foundation normalization slice only; deeper profile semantics, terminology, and dependency extraction are still deferred.",
+        source_refs=normalized_assets.source_refs,
+        normalized_assets=normalized_assets,
     )
     _store_artifact(ctx, "specification_asset_context", context)
     await ctx.send_message(context)
 
 
-@executor(id="bundle_schematic", input=SpecificationAssetContextStub, output=BundleSchematicStub)
+@executor(id="bundle_schematic", input=SpecificationAssetContext, output=BundleSchematicStub)
 async def bundle_schematic(
-    message: SpecificationAssetContextStub,
+    message: SpecificationAssetContext,
     ctx: WorkflowContext[BundleSchematicStub],
 ) -> None:
-    example_types = message.example_bundle_inventory.entry_resource_types if message.example_bundle_inventory else []
+    example_types = message.normalized_assets.selected_bundle_example.entry_resource_types
+    composition_profile_url = message.normalized_assets.selected_profiles.composition.url
     placeholder_resources = [
         ResourcePlaceholder(
             logical_id=f"{resource_type.lower()}-{index}",
             resource_type=resource_type,
             role="example-derived-placeholder",
-            profile_hint=message.composition_profile.profile_url if resource_type == "Composition" else None,
+            profile_hint=composition_profile_url if resource_type == "Composition" else None,
         )
         for index, resource_type in enumerate(example_types[:8], start=1)
     ]
@@ -187,11 +133,11 @@ async def bundle_schematic(
         placeholder_note="This is a schematic stub only; no real PS-CA section logic or profile reasoning is implemented.",
         source_refs=message.source_refs,
         bundle_type="document",
-        composition_profile_url=message.composition_profile.profile_url,
+        composition_profile_url=composition_profile_url,
         placeholder_resources=placeholder_resources,
         schematic_notes=[
             "Bundle type is fixed to 'document' for the first workflow slice.",
-            "Placeholder resources are derived from the selected example bundle inventory.",
+            "Placeholder resources are derived from the normalized selected bundle example.",
         ],
     )
     _store_artifact(ctx, "bundle_schematic", schematic)

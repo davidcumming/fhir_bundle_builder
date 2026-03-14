@@ -6,6 +6,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from fhir_bundle_builder.specifications.psca import PscaNormalizedAssetContext
+
 
 class SpecificationSelection(BaseModel):
     """Top-level selection of the target implementation guide."""
@@ -113,7 +115,7 @@ class WorkflowDefaults(BaseModel):
     """Defaults chosen during request normalization."""
 
     bundle_type: str
-    specification_mode: Literal["raw-package-stub"]
+    specification_mode: Literal["normalized-asset-foundation"]
     validation_mode: Literal["placeholder"]
     resource_construction_mode: Literal["placeholder"]
 
@@ -129,36 +131,10 @@ class NormalizedBuildRequest(StageArtifact):
     run_label: str
 
 
-class ResourceTypeSummary(BaseModel):
-    """Compact summary of a PS-CA profile used by this slice."""
+class SpecificationAssetContext(StageArtifact):
+    """Workflow wrapper around the first normalized PS-CA asset context."""
 
-    resource_type: str
-    profile_id: str
-    profile_url: str
-    filename: str
-
-
-class ExampleBundleInventory(BaseModel):
-    """Inspectability summary for a sample PS-CA bundle."""
-
-    filename: str
-    entry_count: int
-    entry_resource_types: list[str]
-
-
-class SpecificationAssetContextStub(StageArtifact):
-    """Stub workflow-usable PS-CA package context."""
-
-    package_root: str
-    package_name: str
-    package_version: str
-    fhir_version: str
-    canonical_url: str
-    index_entry_count: int
-    bundle_profile: ResourceTypeSummary
-    composition_profile: ResourceTypeSummary
-    example_bundle_inventory: ExampleBundleInventory | None = None
-    normalization_status: Literal["not_started"] = "not_started"
+    normalized_assets: PscaNormalizedAssetContext
 
 
 class ResourcePlaceholder(BaseModel):
@@ -262,7 +238,7 @@ class WorkflowSkeletonRunResult(BaseModel):
     workflow_version: str
     stage_order: list[str]
     normalized_request: NormalizedBuildRequest
-    specification_asset_context: SpecificationAssetContextStub
+    specification_asset_context: SpecificationAssetContext
     bundle_schematic: BundleSchematicStub
     build_plan: BuildPlanStub
     resource_construction: ResourceConstructionStageResult
