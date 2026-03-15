@@ -23,6 +23,7 @@ The implemented slice is intentionally narrow:
 - thin authored-input-to-workflow orchestration harness for end-to-end testing
 - thin Dev UI-facing authored-input demo workflow
 - bounded authored-record review/edit refinement inside the Dev UI demo flow
+- compact demo-flow summaries for faster Dev UI scanning
 
 ## Current bounded capabilities
 
@@ -31,6 +32,7 @@ The workflow currently supports one narrow but real PS-CA path:
 - bounded natural-language patient authoring into a structured authored patient record, with deterministic mapping into the current `patient_context` input shape
 - bounded natural-language provider authoring into a structured authored provider record, with deterministic mapping into the current `provider_context` input shape
 - bounded structured review/edit refinement of authored patient/provider records before authored-input preparation and workflow run
+- compact typed summaries around authoring, refinement, preparation, and final run interpretation in the Dev UI demo flow
 - a thin authored-input harness that composes one authored patient record plus one authored provider record into workflow-ready input and runs the existing deterministic workflow unchanged
 - provider identity plus selected organization and selected provider-role relationship identity only
 - patient identity and demographics plus deterministic section-entry text alignment only for fields the normalized patient context can honestly supply
@@ -143,6 +145,12 @@ Then open [http://127.0.0.1:8080](http://127.0.0.1:8080).
   - `repair_decision`
   - `repair_execution`
 - Structured outputs for every stage, plus a final nested run result yielded by `repair_execution`.
+- In the authored demo flow, compact typed summaries now supplement the full artifacts so you can scan:
+  - authored patient/provider counts
+  - whether refinement changed anything
+  - whether provider context is rich or thin
+  - mapped versus unmapped authored fact counts
+  - final validation status and candidate bundle size
 
 ## Retrieval-stage output
 

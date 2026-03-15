@@ -8,6 +8,11 @@ from agent_framework import WorkflowContext, executor
 
 from fhir_bundle_builder.authoring import (
     AuthoredBundleBuildInput,
+    AuthoredBundleBuildPreparation,
+    PatientAuthoredRecord,
+    PatientAuthoredRecordRefinementResult,
+    ProviderAuthoredRecord,
+    ProviderAuthoredRecordRefinementResult,
     apply_patient_authored_record_review_edits,
     apply_provider_authored_record_review_edits,
     build_patient_authored_record,
@@ -17,10 +22,15 @@ from fhir_bundle_builder.authoring import (
 from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.workflow import workflow as bundle_builder_workflow
 
 from .models import (
+    AuthoredBundlePreparationOverview,
     AuthoredBundleDemoFinalSummary,
     AuthoredBundleDemoInput,
     AuthoredBundleDemoRunResult,
     AuthoredBundleDemoStageResult,
+    AuthoredPatientRecordOverview,
+    AuthoredProviderRecordOverview,
+    AuthoredRecordRefinementOverview,
+    ProviderPathMode,
 )
 
 WORKFLOW_NAME = "PS-CA Authored Bundle Demo Flow"
@@ -45,6 +55,71 @@ def _get_artifact(ctx: WorkflowContext[Any], key: str) -> Any:
     return artifact
 
 
+def _provider_path_mode_from_record(record: ProviderAuthoredRecord) -> ProviderPathMode:
+    return "rich" if record.organizations and record.provider_role_relationships else "thin"
+
+
+def _provider_path_mode_from_preparation(preparation: AuthoredBundleBuildPreparation) -> ProviderPathMode:
+    return (
+        "rich"
+        if preparation.provider_mapping.mapped_organization_count > 0
+        and preparation.provider_mapping.mapped_provider_role_relationship_count > 0
+        else "thin"
+    )
+
+
+def _build_patient_overview(record: PatientAuthoredRecord) -> AuthoredPatientRecordOverview:
+    return AuthoredPatientRecordOverview(
+        display_name=record.patient.display_name,
+        condition_count=len(record.conditions),
+        medication_count=len(record.medications),
+        allergy_count=len(record.allergies),
+        unresolved_gap_count=len(record.unresolved_authoring_gaps),
+        has_residence_text=record.background_facts.residence_text is not None,
+        has_smoking_status_text=record.background_facts.smoking_status_text is not None,
+    )
+
+
+def _build_provider_overview(record: ProviderAuthoredRecord) -> AuthoredProviderRecordOverview:
+    return AuthoredProviderRecordOverview(
+        display_name=record.provider.display_name,
+        organization_count=len(record.organizations),
+        provider_role_relationship_count=len(record.provider_role_relationships),
+        provider_path_mode=_provider_path_mode_from_record(record),
+        unresolved_gap_count=len(record.unresolved_authoring_gaps),
+    )
+
+
+def _build_refinement_overview(
+    patient_refinement: PatientAuthoredRecordRefinementResult,
+    provider_refinement: ProviderAuthoredRecordRefinementResult,
+) -> AuthoredRecordRefinementOverview:
+    return AuthoredRecordRefinementOverview(
+        patient_edits_applied=patient_refinement.edits_applied,
+        provider_edits_applied=provider_refinement.edits_applied,
+        patient_edited_field_count=len(patient_refinement.edited_field_paths),
+        provider_edited_field_count=len(provider_refinement.edited_field_paths),
+        patient_refined_record_id=patient_refinement.refined_record_id,
+        provider_refined_record_id=provider_refinement.refined_record_id,
+    )
+
+
+def _build_preparation_overview(
+    preparation: AuthoredBundleBuildPreparation,
+) -> AuthoredBundlePreparationOverview:
+    return AuthoredBundlePreparationOverview(
+        mapped_condition_count=preparation.patient_mapping.mapped_condition_count,
+        mapped_medication_count=preparation.patient_mapping.mapped_medication_count,
+        mapped_allergy_count=preparation.patient_mapping.mapped_allergy_count,
+        mapped_organization_count=preparation.provider_mapping.mapped_organization_count,
+        mapped_provider_role_relationship_count=preparation.provider_mapping.mapped_provider_role_relationship_count,
+        patient_unmapped_field_count=len(preparation.patient_mapping.unmapped_fields),
+        provider_unmapped_field_count=len(preparation.provider_mapping.unmapped_fields),
+        provider_path_mode=_provider_path_mode_from_preparation(preparation),
+        has_selected_provider_role_relationship=preparation.provider_mapping.has_selected_provider_role_relationship,
+    )
+
+
 @executor(
     id="patient_authoring",
     input=AuthoredBundleDemoInput,
@@ -55,22 +130,32 @@ async def patient_authoring(
     ctx: WorkflowContext[AuthoredBundleDemoStageResult],
 ) -> None:
     patient_record = build_patient_authored_record(message.patient_authoring)
+    patient_overview = _build_patient_overview(patient_record)
     _store_artifact(ctx, "demo_input", message)
     _store_artifact(ctx, "original_patient_record", patient_record)
     _store_artifact(ctx, "patient_record", patient_record)
+    _store_artifact(ctx, "patient_overview", patient_overview)
     await ctx.send_message(
         AuthoredBundleDemoStageResult(
             stage_id="patient_authoring",
             status="placeholder_complete",
-            summary="Built a bounded authored patient record from natural-language input for the Dev UI demo flow.",
+            summary=(
+                f"Authored patient '{patient_overview.display_name}' with "
+                f"{patient_overview.condition_count} condition(s), "
+                f"{patient_overview.medication_count} medication(s), and "
+                f"{patient_overview.allergy_count} allergy/allergies."
+            ),
             placeholder_note=(
-                "This wrapper flow still uses the existing offline/demo patient authoring foundation and "
-                "does not introduce persistence, live model-backed authoring, or UI-managed patient libraries."
+                "Built from the existing offline/demo patient authoring foundation. "
+                f"Background facts present: residence={patient_overview.has_residence_text}, "
+                f"smoking={patient_overview.has_smoking_status_text}. "
+                f"Unresolved authored-gap count: {patient_overview.unresolved_gap_count}."
             ),
             source_refs=["authoring.patient_builder"],
             demo_input=message,
             original_patient_record=patient_record,
             patient_record=patient_record,
+            patient_overview=patient_overview,
         )
     )
 
@@ -85,16 +170,27 @@ async def provider_authoring(
     ctx: WorkflowContext[AuthoredBundleDemoStageResult],
 ) -> None:
     provider_record = build_provider_authored_record(message.demo_input.provider_authoring)
+    provider_overview = _build_provider_overview(provider_record)
     _store_artifact(ctx, "original_provider_record", provider_record)
     _store_artifact(ctx, "provider_record", provider_record)
+    _store_artifact(ctx, "provider_overview", provider_overview)
     await ctx.send_message(
         AuthoredBundleDemoStageResult(
             stage_id="provider_authoring",
             status="placeholder_complete",
-            summary="Built a bounded authored provider record from natural-language input for the Dev UI demo flow.",
+            summary=(
+                f"Authored provider '{provider_overview.display_name}' on the "
+                f"{provider_overview.provider_path_mode} provider path with "
+                f"{provider_overview.organization_count} organization(s) and "
+                f"{provider_overview.provider_role_relationship_count} relationship(s)."
+            ),
             placeholder_note=(
-                "This wrapper flow still uses the existing offline/demo provider authoring foundation and "
-                "does not invent provider-directory data, persistence, or research-backed enrichment."
+                "Built from the existing offline/demo provider authoring foundation. "
+                + (
+                    "A linked organization and provider-role relationship are present for richer downstream support-resource context."
+                    if provider_overview.provider_path_mode == "rich"
+                    else "No linked organization/provider-role relationship was authored, so downstream preparation will remain on the thin provider path unless refinement adds one."
+                )
             ),
             source_refs=["authoring.provider_builder"],
             demo_input=message.demo_input,
@@ -102,6 +198,8 @@ async def provider_authoring(
             original_provider_record=provider_record,
             patient_record=_get_artifact(ctx, "patient_record"),
             provider_record=provider_record,
+            patient_overview=_get_artifact(ctx, "patient_overview"),
+            provider_overview=provider_overview,
         )
     )
 
@@ -127,17 +225,27 @@ async def authored_record_refinement(
     _store_artifact(ctx, "provider_refinement", provider_refinement)
     _store_artifact(ctx, "patient_record", patient_refinement.refined_record)
     _store_artifact(ctx, "provider_record", provider_refinement.refined_record)
+    patient_overview = _build_patient_overview(patient_refinement.refined_record)
+    provider_overview = _build_provider_overview(provider_refinement.refined_record)
+    refinement_overview = _build_refinement_overview(patient_refinement, provider_refinement)
+    _store_artifact(ctx, "patient_overview", patient_overview)
+    _store_artifact(ctx, "provider_overview", provider_overview)
+    _store_artifact(ctx, "refinement_overview", refinement_overview)
     await ctx.send_message(
         AuthoredBundleDemoStageResult(
             stage_id="authored_record_refinement",
             status="placeholder_complete",
             summary=(
-                "Applied bounded structured authored-record edits before workflow preparation, "
-                "while preserving the original authored records for inspection."
+                "Applied authored-record refinement with "
+                f"{refinement_overview.patient_edited_field_count} edited patient field(s) and "
+                f"{refinement_overview.provider_edited_field_count} edited provider field(s); "
+                f"effective provider path is now {provider_overview.provider_path_mode}."
             ),
             placeholder_note=(
-                "This wrapper flow refines only authored patient/provider records, does not edit mapped contexts, "
-                "and does not widen the downstream deterministic bundle-builder workflow boundary."
+                "Refinement stays on authored records only. "
+                f"Patient edits applied={refinement_overview.patient_edits_applied}; "
+                f"provider edits applied={refinement_overview.provider_edits_applied}. "
+                "Mapped contexts and downstream workflow behavior remain unchanged."
             ),
             source_refs=["authoring.authored_record_refinement"],
             demo_input=message.demo_input,
@@ -145,8 +253,11 @@ async def authored_record_refinement(
             original_provider_record=_get_artifact(ctx, "original_provider_record"),
             patient_record=patient_refinement.refined_record,
             provider_record=provider_refinement.refined_record,
+            patient_overview=patient_overview,
+            provider_overview=provider_overview,
             patient_refinement=patient_refinement,
             provider_refinement=provider_refinement,
+            refinement_overview=refinement_overview,
         )
     )
 
@@ -170,14 +281,25 @@ async def authored_bundle_preparation(
         )
     )
     _store_artifact(ctx, "preparation", preparation)
+    preparation_overview = _build_preparation_overview(preparation)
+    _store_artifact(ctx, "preparation_overview", preparation_overview)
     await ctx.send_message(
         AuthoredBundleDemoStageResult(
             stage_id="authored_bundle_preparation",
             status="placeholder_complete",
-            summary="Prepared one deterministic workflow-ready request from the authored patient and provider records.",
+            summary=(
+                "Prepared one deterministic workflow-ready request with "
+                f"{preparation_overview.mapped_condition_count}/{preparation_overview.mapped_medication_count}/"
+                f"{preparation_overview.mapped_allergy_count} mapped patient item counts and "
+                f"{preparation_overview.mapped_organization_count} organization(s), "
+                f"{preparation_overview.mapped_provider_role_relationship_count} provider relationship(s) "
+                f"on the {preparation_overview.provider_path_mode} provider path."
+            ),
             placeholder_note=(
-                "This wrapper flow composes the existing authored-input orchestration helper into the Dev UI path "
-                "without widening the core bundle-builder workflow input contract."
+                "This wrapper flow still composes the existing authored-input orchestration helper only. "
+                f"Unmapped authored facts: patient={preparation_overview.patient_unmapped_field_count}, "
+                f"provider={preparation_overview.provider_unmapped_field_count}. "
+                f"Selected provider-role relationship present={preparation_overview.has_selected_provider_role_relationship}."
             ),
             source_refs=[
                 "authoring.patient_mapper",
@@ -189,9 +311,13 @@ async def authored_bundle_preparation(
             original_provider_record=_get_artifact(ctx, "original_provider_record"),
             patient_record=_get_artifact(ctx, "patient_record"),
             provider_record=_get_artifact(ctx, "provider_record"),
+            patient_overview=_get_artifact(ctx, "patient_overview"),
+            provider_overview=_get_artifact(ctx, "provider_overview"),
             patient_refinement=_get_artifact(ctx, "patient_refinement"),
             provider_refinement=_get_artifact(ctx, "provider_refinement"),
+            refinement_overview=_get_artifact(ctx, "refinement_overview"),
             preparation=preparation,
+            preparation_overview=preparation_overview,
         )
     )
 
@@ -212,6 +338,10 @@ async def bundle_builder_run(
     provider_record = _get_artifact(ctx, "provider_record")
     provider_refinement = _get_artifact(ctx, "provider_refinement")
     preparation = _get_artifact(ctx, "preparation")
+    patient_overview = _get_artifact(ctx, "patient_overview")
+    provider_overview = _get_artifact(ctx, "provider_overview")
+    refinement_overview = _get_artifact(ctx, "refinement_overview")
+    preparation_overview = _get_artifact(ctx, "preparation_overview")
     run_result = await bundle_builder_workflow.run(
         message=preparation.workflow_input,
         include_status_events=True,
@@ -222,9 +352,14 @@ async def bundle_builder_run(
         scenario_label=preparation.workflow_input.request.scenario_label,
         patient_record_id=patient_record.record_id,
         provider_record_id=provider_record.record_id,
+        provider_path_mode=preparation_overview.provider_path_mode,
         overall_validation_status=workflow_output.validation_report.overall_status,
         workflow_validation_status=workflow_output.validation_report.workflow_validation.status,
         candidate_bundle_entry_count=workflow_output.candidate_bundle.candidate_bundle.entry_count,
+        patient_unmapped_field_count=preparation_overview.patient_unmapped_field_count,
+        provider_unmapped_field_count=preparation_overview.provider_unmapped_field_count,
+        patient_edits_applied=patient_refinement.edits_applied,
+        provider_edits_applied=provider_refinement.edits_applied,
         has_selected_provider_role_relationship=(
             workflow_output.normalized_request.provider_context.selected_provider_role_relationship is not None
         ),
@@ -239,9 +374,13 @@ async def bundle_builder_run(
             original_provider_record=original_provider_record,
             patient_record=patient_record,
             provider_record=provider_record,
+            patient_overview=patient_overview,
+            provider_overview=provider_overview,
             patient_refinement=patient_refinement,
             provider_refinement=provider_refinement,
+            refinement_overview=refinement_overview,
             preparation=preparation,
+            preparation_overview=preparation_overview,
             final_summary=final_summary,
             workflow_output=workflow_output,
         )
