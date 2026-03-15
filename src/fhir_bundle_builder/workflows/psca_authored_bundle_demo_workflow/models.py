@@ -27,6 +27,13 @@ from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.models import (
 )
 
 ProviderPathMode = Literal["rich", "thin"]
+RunReadinessLevel = Literal["ready", "ready_with_limitations"]
+RunInterpretationLevel = Literal[
+    "success_low_concern",
+    "success_with_limitations",
+    "success_external_validation_deferred",
+    "failure_or_incomplete",
+]
 
 
 class AuthoredBundleDemoInput(BaseModel):
@@ -88,6 +95,33 @@ class AuthoredBundlePreparationOverview(BaseModel):
     has_selected_provider_role_relationship: bool
 
 
+class AuthoredBundleRunReadinessSummary(BaseModel):
+    """Compact pre-run readiness summary for the authored demo flow."""
+
+    readiness_level: RunReadinessLevel
+    provider_path_mode: ProviderPathMode
+    patient_unresolved_gap_count: int
+    provider_unresolved_gap_count: int
+    patient_unmapped_field_count: int
+    provider_unmapped_field_count: int
+    has_selected_provider_role_relationship: bool
+    limitation_labels: list[str] = Field(default_factory=list)
+
+
+class AuthoredBundleRunInterpretationSummary(BaseModel):
+    """Compact final interpretation summary for the authored demo flow."""
+
+    interpretation_level: RunInterpretationLevel
+    provider_path_mode: ProviderPathMode
+    workflow_validation_status: ValidationStatus
+    overall_validation_status: ValidationStatus
+    standards_fallback_used: bool
+    deferred_validation_area_count: int
+    repair_decision: str
+    repair_execution_outcome: str
+    limitation_labels: list[str] = Field(default_factory=list)
+
+
 class AuthoredBundleDemoFinalSummary(BaseModel):
     """Compact final summary for quick Dev UI inspection."""
 
@@ -95,9 +129,15 @@ class AuthoredBundleDemoFinalSummary(BaseModel):
     patient_record_id: str
     provider_record_id: str
     provider_path_mode: ProviderPathMode
+    readiness_level: RunReadinessLevel
+    final_interpretation_level: RunInterpretationLevel
     overall_validation_status: ValidationStatus
     workflow_validation_status: ValidationStatus
+    standards_fallback_used: bool
+    deferred_validation_area_count: int
     candidate_bundle_entry_count: int
+    patient_unresolved_gap_count: int
+    provider_unresolved_gap_count: int
     patient_unmapped_field_count: int
     provider_unmapped_field_count: int
     patient_edits_applied: bool
@@ -120,7 +160,9 @@ class AuthoredBundleDemoStageResult(StageArtifact):
     refinement_overview: AuthoredRecordRefinementOverview | None = None
     preparation: AuthoredBundleBuildPreparation | None = None
     preparation_overview: AuthoredBundlePreparationOverview | None = None
+    readiness_summary: AuthoredBundleRunReadinessSummary | None = None
     workflow_output: WorkflowSkeletonRunResult | None = None
+    run_interpretation_summary: AuthoredBundleRunInterpretationSummary | None = None
     final_summary: AuthoredBundleDemoFinalSummary | None = None
 
 
@@ -142,5 +184,7 @@ class AuthoredBundleDemoRunResult(BaseModel):
     refinement_overview: AuthoredRecordRefinementOverview
     preparation: AuthoredBundleBuildPreparation
     preparation_overview: AuthoredBundlePreparationOverview
+    readiness_summary: AuthoredBundleRunReadinessSummary
+    run_interpretation_summary: AuthoredBundleRunInterpretationSummary
     final_summary: AuthoredBundleDemoFinalSummary
     workflow_output: WorkflowSkeletonRunResult

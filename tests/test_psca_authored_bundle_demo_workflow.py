@@ -54,13 +54,40 @@ async def test_psca_authored_bundle_demo_workflow_smoke_rich_path() -> None:
     assert final_output.preparation_overview.provider_path_mode == "rich"
     assert final_output.preparation_overview.patient_unmapped_field_count == 2
     assert final_output.preparation_overview.provider_unmapped_field_count == 2
+    assert final_output.readiness_summary.readiness_level == "ready_with_limitations"
+    assert final_output.readiness_summary.provider_path_mode == "rich"
+    assert final_output.readiness_summary.patient_unresolved_gap_count == 2
+    assert final_output.readiness_summary.provider_unresolved_gap_count == 0
+    assert final_output.readiness_summary.patient_unmapped_field_count == 2
+    assert final_output.readiness_summary.provider_unmapped_field_count == 2
+    assert final_output.readiness_summary.limitation_labels == [
+        "patient_gaps_remain",
+        "patient_unmapped_facts",
+        "provider_unmapped_facts",
+    ]
     assert final_output.final_summary.candidate_bundle_entry_count == 8
     assert final_output.final_summary.provider_path_mode == "rich"
+    assert final_output.final_summary.readiness_level == "ready_with_limitations"
+    assert final_output.final_summary.final_interpretation_level == "success_external_validation_deferred"
+    assert final_output.final_summary.standards_fallback_used is False
+    assert final_output.final_summary.deferred_validation_area_count >= 2
+    assert final_output.final_summary.patient_unresolved_gap_count == 2
+    assert final_output.final_summary.provider_unresolved_gap_count == 0
     assert final_output.final_summary.patient_unmapped_field_count == 2
     assert final_output.final_summary.provider_unmapped_field_count == 2
     assert final_output.final_summary.patient_edits_applied is True
     assert final_output.final_summary.provider_edits_applied is True
     assert final_output.final_summary.has_selected_provider_role_relationship is True
+    assert final_output.run_interpretation_summary.interpretation_level == "success_external_validation_deferred"
+    assert final_output.run_interpretation_summary.provider_path_mode == "rich"
+    assert final_output.run_interpretation_summary.workflow_validation_status == "passed"
+    assert final_output.run_interpretation_summary.overall_validation_status == "passed_with_warnings"
+    assert final_output.run_interpretation_summary.standards_fallback_used is False
+    assert final_output.run_interpretation_summary.deferred_validation_area_count >= 2
+    assert "external_validation_deferred" in final_output.run_interpretation_summary.limitation_labels
+    assert "patient_gaps_remain" in final_output.run_interpretation_summary.limitation_labels
+    assert "patient_unmapped_facts" in final_output.run_interpretation_summary.limitation_labels
+    assert "provider_unmapped_facts" in final_output.run_interpretation_summary.limitation_labels
     assert final_output.workflow_output.normalized_request.patient_context.patient.patient_id == (
         final_output.patient_record.patient.patient_id
     )
@@ -101,13 +128,40 @@ async def test_psca_authored_bundle_demo_workflow_smoke_thin_provider_path() -> 
     assert final_output.preparation_overview.provider_path_mode == "thin"
     assert final_output.preparation_overview.patient_unmapped_field_count == 1
     assert final_output.preparation_overview.provider_unmapped_field_count == 3
+    assert final_output.readiness_summary.readiness_level == "ready_with_limitations"
+    assert final_output.readiness_summary.provider_path_mode == "thin"
+    assert final_output.readiness_summary.patient_unresolved_gap_count == 0
+    assert final_output.readiness_summary.provider_unresolved_gap_count == 2
+    assert final_output.readiness_summary.patient_unmapped_field_count == 1
+    assert final_output.readiness_summary.provider_unmapped_field_count == 3
+    assert final_output.readiness_summary.limitation_labels == [
+        "thin_provider_path",
+        "provider_gaps_remain",
+        "patient_unmapped_facts",
+        "provider_unmapped_facts",
+    ]
     assert final_output.preparation.workflow_input_summary.has_selected_provider_role_relationship is False
     assert final_output.final_summary.provider_path_mode == "thin"
+    assert final_output.final_summary.readiness_level == "ready_with_limitations"
+    assert final_output.final_summary.final_interpretation_level == "success_external_validation_deferred"
+    assert final_output.final_summary.standards_fallback_used is False
+    assert final_output.final_summary.deferred_validation_area_count >= 2
+    assert final_output.final_summary.patient_unresolved_gap_count == 0
+    assert final_output.final_summary.provider_unresolved_gap_count == 2
     assert final_output.final_summary.patient_unmapped_field_count == 1
     assert final_output.final_summary.provider_unmapped_field_count == 3
     assert final_output.final_summary.patient_edits_applied is False
     assert final_output.final_summary.provider_edits_applied is True
     assert final_output.final_summary.has_selected_provider_role_relationship is False
+    assert final_output.run_interpretation_summary.interpretation_level == "success_external_validation_deferred"
+    assert final_output.run_interpretation_summary.provider_path_mode == "thin"
+    assert final_output.run_interpretation_summary.workflow_validation_status == "passed"
+    assert final_output.run_interpretation_summary.overall_validation_status == "passed_with_warnings"
+    assert final_output.run_interpretation_summary.standards_fallback_used is False
+    assert final_output.run_interpretation_summary.deferred_validation_area_count >= 2
+    assert "thin_provider_path" in final_output.run_interpretation_summary.limitation_labels
+    assert "provider_gaps_remain" in final_output.run_interpretation_summary.limitation_labels
+    assert "external_validation_deferred" in final_output.run_interpretation_summary.limitation_labels
     assert final_output.workflow_output.normalized_request.provider_context.selected_provider_role_relationship is None
     assert final_output.workflow_output.normalized_request.provider_context.selected_organization is None
     assert final_output.workflow_output.validation_report.workflow_validation.status == "passed"

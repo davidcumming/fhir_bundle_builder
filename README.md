@@ -32,7 +32,7 @@ The workflow currently supports one narrow but real PS-CA path:
 - bounded natural-language patient authoring into a structured authored patient record, with deterministic mapping into the current `patient_context` input shape
 - bounded natural-language provider authoring into a structured authored provider record, with deterministic mapping into the current `provider_context` input shape
 - bounded structured review/edit refinement of authored patient/provider records before authored-input preparation and workflow run
-- compact typed summaries around authoring, refinement, preparation, and final run interpretation in the Dev UI demo flow
+- compact typed summaries around authoring, refinement, preparation, run readiness, and final run interpretation in the Dev UI demo flow
 - a thin authored-input harness that composes one authored patient record plus one authored provider record into workflow-ready input and runs the existing deterministic workflow unchanged
 - provider identity plus selected organization and selected provider-role relationship identity only
 - patient identity and demographics plus deterministic section-entry text alignment only for fields the normalized patient context can honestly supply
@@ -164,6 +164,8 @@ The corresponding canonical input builders live in:
   - whether refinement changed anything
   - whether provider context is rich or thin
   - mapped versus unmapped authored fact counts
+  - whether the prepared request is ready to run cleanly or ready with limitations
+  - whether the final run completed with low concern, limitations, or deferred external validation
   - final validation status and candidate bundle size
 
 ## Retrieval-stage output
