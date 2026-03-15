@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from fhir_bundle_builder.validation import (
     PatientContextAlignmentEvidence,
+    PlaceholderTraceabilitySummary,
     ProviderContextAlignmentEvidence,
     SectionEntryTextAlignmentExpectation,
     StandardsValidationRequest,
@@ -83,6 +84,10 @@ async def build_psca_validation_report(
             ),
             provider_context_alignment=_provider_context_alignment_evidence(
                 normalized_request,
+            ),
+            placeholder_traceability_summaries=_validation_placeholder_traceability_summaries(
+                candidate_bundle,
+                workflow_result.checks_run,
             ),
             source_refs=candidate_bundle.source_refs,
         ),
@@ -1417,6 +1422,99 @@ def _provider_context_alignment_evidence(
         ),
         expected_role_label=_expected_practitioner_role_text(normalized_request),
     )
+
+
+def _validation_placeholder_traceability_summaries(
+    candidate_bundle: CandidateBundleResult,
+    checks_run: list[str],
+) -> list[PlaceholderTraceabilitySummary]:
+    check_codes = set(checks_run)
+    summaries: list[PlaceholderTraceabilitySummary] = []
+    for summary in candidate_bundle.evidence.placeholder_traceability_summaries:
+        summaries.append(
+            PlaceholderTraceabilitySummary.model_validate(
+                {
+                    **summary.model_dump(),
+                    "workflow_check_codes": [
+                        code
+                        for code in _workflow_check_codes_for_placeholder(
+                            summary.placeholder_id,
+                        )
+                        if code in check_codes
+                    ],
+                }
+            )
+        )
+    return summaries
+
+
+def _workflow_check_codes_for_placeholder(
+    placeholder_id: str,
+) -> list[str]:
+    shared_medication_bundle_checks = ["bundle.medications_bundle_entries_aligned_to_plan"]
+    check_codes_by_placeholder = {
+        "composition-1": [
+            "bundle.composition_type_matches_psca_summary",
+            "bundle.composition_core_scaffold_content_present",
+            "bundle.composition_subject_reference_aligned",
+            "bundle.composition_author_reference_aligned",
+            "bundle.composition_medications_section_present",
+            "bundle.composition_allergies_section_present",
+            "bundle.composition_problems_section_present",
+            "bundle.composition_medications_section_entry_reference_aligned",
+            "bundle.composition_allergies_section_entry_reference_aligned",
+            "bundle.composition_problems_section_entry_reference_aligned",
+        ],
+        "patient-1": [
+            "bundle.patient_identity_content_present",
+            "bundle.patient_identity_aligned_to_context",
+        ],
+        "practitioner-1": [
+            "bundle.practitioner_identity_content_present",
+            "bundle.practitioner_identity_aligned_to_context",
+        ],
+        "organization-1": [
+            "bundle.organization_identity_content_present",
+            "bundle.organization_identity_aligned_to_context",
+        ],
+        "practitionerrole-1": [
+            "bundle.practitionerrole_relationship_identity_present",
+            "bundle.practitionerrole_relationship_identity_aligned_to_context",
+            "bundle.practitionerrole_author_context_present",
+            "bundle.practitionerrole_author_context_aligned_to_context",
+            "bundle.practitionerrole_practitioner_reference_contribution_aligned",
+            "bundle.practitionerrole_organization_reference_contribution_aligned",
+            "bundle.practitionerrole_practitioner_reference_aligned",
+            "bundle.practitionerrole_organization_reference_aligned",
+        ],
+        "medicationrequest-1": [
+            "bundle.medicationrequest_placeholder_content_present",
+            "bundle.medicationrequest_placeholder_text_aligned_to_context",
+            "bundle.medicationrequest_subject_reference_contribution_aligned",
+            "bundle.medicationrequest_subject_reference_aligned",
+            *shared_medication_bundle_checks,
+        ],
+        "medicationrequest-2": [
+            "bundle.medicationrequest_2_placeholder_content_present",
+            "bundle.medicationrequest_2_placeholder_text_aligned_to_context",
+            "bundle.medicationrequest_2_subject_reference_contribution_aligned",
+            "bundle.medicationrequest_2_subject_reference_aligned",
+            *shared_medication_bundle_checks,
+        ],
+        "allergyintolerance-1": [
+            "bundle.allergyintolerance_placeholder_content_present",
+            "bundle.allergyintolerance_placeholder_text_aligned_to_context",
+            "bundle.allergyintolerance_patient_reference_contribution_aligned",
+            "bundle.allergyintolerance_patient_reference_aligned",
+        ],
+        "condition-1": [
+            "bundle.condition_placeholder_content_present",
+            "bundle.condition_placeholder_text_aligned_to_context",
+            "bundle.condition_subject_reference_contribution_aligned",
+            "bundle.condition_subject_reference_aligned",
+        ],
+    }
+    return list(check_codes_by_placeholder.get(placeholder_id, []))
 
 
 def _practitioner_identity_aligned_to_context(

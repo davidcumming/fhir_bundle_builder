@@ -70,6 +70,29 @@ class WorkflowValidationResult(BaseModel):
     deferred_areas: list[str] = Field(default_factory=list)
 
 
+class TraceabilityDrivingInput(BaseModel):
+    """One compact provenance pointer for a placeholder/resource trace summary."""
+
+    source_artifact: str
+    source_detail: str
+
+
+class PlaceholderTraceabilitySummary(BaseModel):
+    """Compact end-to-end trace summary for one current workflow placeholder/resource."""
+
+    placeholder_id: str
+    resource_type: str
+    role: str
+    section_keys: list[str] = Field(default_factory=list)
+    driving_inputs: list[TraceabilityDrivingInput] = Field(default_factory=list)
+    source_step_ids: list[str] = Field(default_factory=list)
+    latest_step_id: str | None = None
+    bundle_entry_sequence: int | None = None
+    bundle_entry_path: str | None = None
+    full_url: str | None = None
+    workflow_check_codes: list[str] = Field(default_factory=list)
+
+
 class SectionEntryTextAlignmentExpectation(BaseModel):
     """Expected patient-context-derived text for one section-entry placeholder."""
 
@@ -118,4 +141,5 @@ class ValidationEvidence(BaseModel):
     validated_bundle_id: str
     patient_context_alignment: PatientContextAlignmentEvidence
     provider_context_alignment: ProviderContextAlignmentEvidence
+    placeholder_traceability_summaries: list[PlaceholderTraceabilitySummary] = Field(default_factory=list)
     source_refs: list[str] = Field(default_factory=list)

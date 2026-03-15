@@ -52,6 +52,10 @@ def test_psca_resource_construction_builder_generates_scaffolds_and_registry() -
 
     steps = {step.step_id: step for step in construction.step_results}
     registry = {entry.placeholder_id: entry for entry in construction.resource_registry}
+    traceability = {
+        summary.placeholder_id: summary
+        for summary in construction.evidence.placeholder_traceability_summaries
+    }
 
     assert steps["build-composition-1-scaffold"].execution_status == "scaffold_created"
     assert steps["finalize-composition-1-medications-section"].execution_status == "scaffold_updated"
@@ -72,6 +76,24 @@ def test_psca_resource_construction_builder_generates_scaffolds_and_registry() -
     assert organization["identifier"][0]["system"] == SELECTED_PROVIDER_ORGANIZATION_IDENTIFIER_SYSTEM
     assert organization["identifier"][0]["value"] == "org-resource-test"
     assert organization["name"] == "Resource Test Organization"
+    assert traceability["practitioner-1"].latest_step_id == "build-practitioner-1"
+    assert traceability["practitioner-1"].source_step_ids == ["build-practitioner-1"]
+    assert any(
+        driving_input.source_artifact == "normalized_request.provider_context.provider"
+        and driving_input.source_detail == "provider.provider_id"
+        for driving_input in traceability["practitioner-1"].driving_inputs
+    )
+    assert any(
+        driving_input.source_artifact == "normalized_request.provider_context.selected_organization"
+        and driving_input.source_detail == "organization_id"
+        for driving_input in traceability["organization-1"].driving_inputs
+    )
+    assert any(
+        driving_input.source_artifact
+        == "normalized_request.provider_context.selected_provider_role_relationship"
+        and driving_input.source_detail == "relationship_id"
+        for driving_input in traceability["practitionerrole-1"].driving_inputs
+    )
 
     medication = registry["medicationrequest-1"].current_scaffold.fhir_scaffold
     allergy = registry["allergyintolerance-1"].current_scaffold.fhir_scaffold
@@ -164,6 +186,12 @@ def test_psca_resource_construction_builder_generates_scaffolds_and_registry() -
         for evidence in steps["build-medicationrequest-1"].deterministic_value_evidence
     )
     assert any(
+        driving_input.source_artifact
+        == "normalized_request.patient_context.planned_medication_entries[0]"
+        and "medication_id=med-1" in driving_input.source_detail
+        for driving_input in traceability["medicationrequest-1"].driving_inputs
+    )
+    assert any(
         "MedicationRequest placeholders consume the authoritative bounded planned-medication mapping"
         in assumption
         for assumption in steps["build-medicationrequest-1"].assumptions
@@ -199,6 +227,18 @@ def test_psca_resource_construction_builder_generates_scaffolds_and_registry() -
         finalized_composition.fhir_scaffold["section"][0]["code"]["coding"][0]["display"]
         == schematic.section_scaffolds[0].title
     )
+    assert traceability["composition-1"].source_step_ids == [
+        "build-composition-1-scaffold",
+        "finalize-composition-1-medications-section",
+        "finalize-composition-1-allergies-section",
+        "finalize-composition-1-problems-section",
+    ]
+    assert traceability["composition-1"].latest_step_id == "finalize-composition-1-problems-section"
+    assert any(
+        driving_input.source_artifact == "bundle_schematic.section_scaffolds[medications]"
+        and driving_input.source_detail == "title"
+        for driving_input in traceability["composition-1"].driving_inputs
+    )
 
 
 def test_psca_resource_construction_builder_keeps_organization_thin_in_legacy_provider_profile_mode() -> None:
@@ -210,6 +250,10 @@ def test_psca_resource_construction_builder_keeps_organization_thin_in_legacy_pr
 
     construction = build_psca_resource_construction_result(plan, schematic, normalized_request)
     registry = {entry.placeholder_id: entry for entry in construction.resource_registry}
+    traceability = {
+        summary.placeholder_id: summary
+        for summary in construction.evidence.placeholder_traceability_summaries
+    }
     organization = registry["organization-1"].current_scaffold.fhir_scaffold
     practitioner_role = registry["practitionerrole-1"].current_scaffold.fhir_scaffold
 
@@ -218,6 +262,12 @@ def test_psca_resource_construction_builder_keeps_organization_thin_in_legacy_pr
     assert "identifier" not in practitioner_role
     assert practitioner_role["code"][0]["text"] == "document-author"
     assert "gender" not in registry["patient-1"].current_scaffold.fhir_scaffold
+    assert traceability["organization-1"].driving_inputs == []
+    assert any(
+        driving_input.source_artifact == "bundle_schematic.section_scaffolds[medications] + normalized_request.request"
+        and "scenario_label" in driving_input.source_detail
+        for driving_input in traceability["medicationrequest-1"].driving_inputs
+    )
     assert "birthDate" not in registry["patient-1"].current_scaffold.fhir_scaffold
     assert (
         registry["medicationrequest-1"].current_scaffold.fhir_scaffold["medicationCodeableConcept"]["text"]

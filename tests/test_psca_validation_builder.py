@@ -131,6 +131,32 @@ async def test_psca_validation_builder_happy_path_reports_split_channels() -> No
         == "provider-role-validation-1"
     )
     assert report.evidence.provider_context_alignment.expected_role_label == "attending-physician"
+    traceability = {
+        summary.placeholder_id: summary
+        for summary in report.evidence.placeholder_traceability_summaries
+    }
+    assert traceability["composition-1"].bundle_entry_sequence == 1
+    assert traceability["composition-1"].bundle_entry_path == "entry[0].resource"
+    assert "bundle.composition_core_scaffold_content_present" in traceability["composition-1"].workflow_check_codes
+    assert traceability["patient-1"].workflow_check_codes == [
+        "bundle.patient_identity_content_present",
+        "bundle.patient_identity_aligned_to_context",
+    ]
+    assert "bundle.practitioner_identity_aligned_to_context" in traceability["practitioner-1"].workflow_check_codes
+    assert "bundle.organization_identity_aligned_to_context" in traceability["organization-1"].workflow_check_codes
+    assert (
+        "bundle.practitionerrole_author_context_aligned_to_context"
+        in traceability["practitionerrole-1"].workflow_check_codes
+    )
+    assert (
+        "bundle.medicationrequest_placeholder_text_aligned_to_context"
+        in traceability["medicationrequest-1"].workflow_check_codes
+    )
+    assert any(
+        driving_input.source_artifact
+        == "normalized_request.patient_context.planned_medication_entries[0]"
+        for driving_input in traceability["medicationrequest-1"].driving_inputs
+    )
     assert any(
         finding.code == "external_profile_validation_deferred"
         for finding in report.standards_validation.findings
@@ -514,6 +540,18 @@ async def test_psca_validation_builder_does_not_require_organization_identity_in
         "fallback_placeholder"
     )
     assert report.evidence.provider_context_alignment.expected_role_label == "document-author"
+    traceability = {
+        summary.placeholder_id: summary
+        for summary in report.evidence.placeholder_traceability_summaries
+    }
+    assert any(
+        driving_input.source_artifact == "bundle_schematic.resource_placeholders[practitionerrole-1]"
+        and driving_input.source_detail == "role"
+        for driving_input in traceability["practitionerrole-1"].driving_inputs
+    )
+    assert "bundle.practitionerrole_author_context_aligned_to_context" in traceability[
+        "practitionerrole-1"
+    ].workflow_check_codes
     assert not any(
         finding.code == "bundle.organization_identity_aligned_to_context"
         for finding in report.workflow_validation.findings

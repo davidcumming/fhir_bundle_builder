@@ -335,6 +335,17 @@ async def test_psca_bundle_builder_workflow_smoke() -> None:
         "allergyintolerance-1",
         "condition-1",
     }
+    construction_traceability = {
+        summary.placeholder_id: summary
+        for summary in final_output.resource_construction.evidence.placeholder_traceability_summaries
+    }
+    assert construction_traceability["composition-1"].latest_step_id == "finalize-composition-1-problems-section"
+    assert construction_traceability["medicationrequest-1"].source_step_ids == ["build-medicationrequest-1"]
+    assert any(
+        driving_input.source_artifact
+        == "normalized_request.patient_context.planned_medication_entries[0]"
+        for driving_input in construction_traceability["medicationrequest-1"].driving_inputs
+    )
     assert final_output.candidate_bundle.assembly_mode == "deterministic_registry_bundle_scaffold"
     assert final_output.candidate_bundle.candidate_bundle.bundle_state == "candidate_scaffold_assembled"
     assert final_output.candidate_bundle.candidate_bundle.entry_count == 8
@@ -428,6 +439,14 @@ async def test_psca_bundle_builder_workflow_smoke() -> None:
     assert final_output.candidate_bundle.evidence.assembled_medication_placeholder_ids == [
         "medicationrequest-1"
     ]
+    candidate_traceability = {
+        summary.placeholder_id: summary
+        for summary in final_output.candidate_bundle.evidence.placeholder_traceability_summaries
+    }
+    assert candidate_traceability["composition-1"].bundle_entry_sequence == 1
+    assert candidate_traceability["patient-1"].bundle_entry_sequence == 2
+    assert candidate_traceability["medicationrequest-1"].bundle_entry_path == "entry[5].resource"
+    assert candidate_traceability["medicationrequest-1"].full_url == full_urls[5]
     assert len(final_output.candidate_bundle.candidate_bundle.fhir_bundle["entry"][0]["resource"]["section"]) == 3
     assert final_output.validation_report.overall_status == "passed_with_warnings"
     assert final_output.validation_report.standards_validation.validator_id == "local_candidate_bundle_scaffold_validator"
@@ -523,6 +542,23 @@ async def test_psca_bundle_builder_workflow_smoke() -> None:
     assert (
         final_output.validation_report.evidence.provider_context_alignment.expected_role_label
         == "attending-physician"
+    )
+    validation_traceability = {
+        summary.placeholder_id: summary
+        for summary in final_output.validation_report.evidence.placeholder_traceability_summaries
+    }
+    assert validation_traceability["composition-1"].bundle_entry_sequence == 1
+    assert (
+        "bundle.practitioner_identity_aligned_to_context"
+        in validation_traceability["practitioner-1"].workflow_check_codes
+    )
+    assert (
+        "bundle.organization_identity_aligned_to_context"
+        in validation_traceability["organization-1"].workflow_check_codes
+    )
+    assert (
+        "bundle.medicationrequest_placeholder_text_aligned_to_context"
+        in validation_traceability["medicationrequest-1"].workflow_check_codes
     )
     assert any(
         finding.code == "external_profile_validation_deferred"
@@ -681,6 +717,9 @@ async def test_psca_bundle_builder_workflow_supports_bounded_two_medication_path
         "medicationrequest-1",
         "medicationrequest-2",
     ]
+    assert {
+        summary.placeholder_id for summary in final_output.candidate_bundle.evidence.placeholder_traceability_summaries
+    } >= {"medicationrequest-1", "medicationrequest-2"}
     assert [
         (
             expectation.placeholder_id,
@@ -715,6 +754,15 @@ async def test_psca_bundle_builder_workflow_supports_bounded_two_medication_path
     )
     assert candidate_entries[6]["resource"]["medicationCodeableConcept"]["text"] == (
         "Metformin 500 MG oral tablet"
+    )
+    validation_traceability = {
+        summary.placeholder_id: summary
+        for summary in final_output.validation_report.evidence.placeholder_traceability_summaries
+    }
+    assert validation_traceability["medicationrequest-2"].bundle_entry_sequence == 7
+    assert (
+        "bundle.medicationrequest_2_placeholder_text_aligned_to_context"
+        in validation_traceability["medicationrequest-2"].workflow_check_codes
     )
     assert candidate_entries[0]["resource"]["section"][0]["entry"] == [
         {"reference": candidate_entries[5]["fullUrl"]},

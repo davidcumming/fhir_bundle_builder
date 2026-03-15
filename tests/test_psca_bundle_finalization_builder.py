@@ -45,6 +45,10 @@ def test_psca_bundle_finalization_builder_assembles_expected_bundle_scaffold() -
     result = build_psca_candidate_bundle_result(construction, schematic, normalized_request)
     bundle_identifier_value = result.candidate_bundle.fhir_bundle["identifier"]["value"]
     full_urls = [entry["fullUrl"] for entry in result.candidate_bundle.fhir_bundle["entry"]]
+    traceability = {
+        summary.placeholder_id: summary
+        for summary in result.evidence.placeholder_traceability_summaries
+    }
 
     assert result.assembly_mode == "deterministic_registry_bundle_scaffold"
     assert result.candidate_bundle.bundle_state == "candidate_scaffold_assembled"
@@ -82,6 +86,17 @@ def test_psca_bundle_finalization_builder_assembles_expected_bundle_scaffold() -
     assert result.entry_assembly[1].required_by_bundle_scaffold is True
     assert result.evidence.planned_medication_placeholder_ids == ["medicationrequest-1"]
     assert result.evidence.assembled_medication_placeholder_ids == ["medicationrequest-1"]
+    assert traceability["composition-1"].bundle_entry_sequence == 1
+    assert traceability["composition-1"].bundle_entry_path == "entry[0].resource"
+    assert traceability["composition-1"].full_url == full_urls[0]
+    assert traceability["medicationrequest-1"].bundle_entry_sequence == 6
+    assert traceability["medicationrequest-1"].bundle_entry_path == "entry[5].resource"
+    assert traceability["medicationrequest-1"].full_url == full_urls[5]
+    assert any(
+        driving_input.source_artifact
+        == "normalized_request.patient_context.planned_medication_entries[0]"
+        for driving_input in traceability["medicationrequest-1"].driving_inputs
+    )
     assert result.candidate_bundle.deferred_paths == []
     assert len(result.candidate_bundle.fhir_bundle["entry"][0]["resource"]["section"]) == 3
     assert result.candidate_bundle.fhir_bundle["entry"][0]["resource"]["subject"]["reference"] == full_urls[1]
@@ -126,6 +141,10 @@ def test_psca_bundle_finalization_builder_supports_second_medication_entry() -> 
 
     result = build_psca_candidate_bundle_result(construction, schematic, normalized_request)
     full_urls = {assembly.placeholder_id: assembly.full_url for assembly in result.entry_assembly}
+    traceability = {
+        summary.placeholder_id: summary
+        for summary in result.evidence.placeholder_traceability_summaries
+    }
 
     assert result.candidate_bundle.entry_count == 9
     assert result.evidence.planned_medication_placeholder_ids == [
@@ -136,6 +155,14 @@ def test_psca_bundle_finalization_builder_supports_second_medication_entry() -> 
         "medicationrequest-1",
         "medicationrequest-2",
     ]
+    assert traceability["medicationrequest-2"].bundle_entry_sequence == 7
+    assert traceability["medicationrequest-2"].bundle_entry_path == "entry[6].resource"
+    assert traceability["medicationrequest-2"].full_url == full_urls["medicationrequest-2"]
+    assert any(
+        driving_input.source_artifact
+        == "normalized_request.patient_context.planned_medication_entries[1]"
+        for driving_input in traceability["medicationrequest-2"].driving_inputs
+    )
     assert [assembly.placeholder_id for assembly in result.entry_assembly] == [
         "composition-1",
         "patient-1",

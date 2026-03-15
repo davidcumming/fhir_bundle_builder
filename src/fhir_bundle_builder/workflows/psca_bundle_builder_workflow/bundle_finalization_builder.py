@@ -8,6 +8,8 @@ from datetime import timedelta
 from datetime import timezone
 import uuid
 
+from fhir_bundle_builder.validation import PlaceholderTraceabilitySummary
+
 from .models import (
     BundleEntryAssemblyResult,
     BundleSchematic,
@@ -199,6 +201,10 @@ def build_psca_candidate_bundle_result(
             ordered_placeholder_ids=ordered_placeholder_ids,
             planned_medication_placeholder_ids=planned_medication_placeholder_ids,
             assembled_medication_placeholder_ids=_assembled_medication_placeholder_ids(entry_assembly),
+            placeholder_traceability_summaries=_candidate_bundle_traceability_summaries(
+                construction.evidence.placeholder_traceability_summaries,
+                entry_assembly,
+            ),
             source_refs=construction.source_refs,
         ),
     )
@@ -303,3 +309,29 @@ def _assembled_medication_placeholder_ids(
         for entry in entry_assembly
         if entry.placeholder_id.startswith("medicationrequest-")
     ]
+
+
+def _candidate_bundle_traceability_summaries(
+    construction_summaries: list[PlaceholderTraceabilitySummary],
+    entry_assembly: list[BundleEntryAssemblyResult],
+) -> list[PlaceholderTraceabilitySummary]:
+    assembly_by_placeholder_id = {
+        entry.placeholder_id: entry
+        for entry in entry_assembly
+    }
+    summaries: list[PlaceholderTraceabilitySummary] = []
+    for summary in construction_summaries:
+        assembly = assembly_by_placeholder_id.get(summary.placeholder_id)
+        if assembly is None:
+            continue
+        summaries.append(
+            PlaceholderTraceabilitySummary.model_validate(
+                {
+                    **summary.model_dump(),
+                    "bundle_entry_sequence": assembly.sequence,
+                    "bundle_entry_path": assembly.entry_path,
+                    "full_url": assembly.full_url,
+                }
+            )
+        )
+    return summaries

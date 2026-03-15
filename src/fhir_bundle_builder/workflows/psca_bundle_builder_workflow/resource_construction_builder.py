@@ -4,6 +4,11 @@ from __future__ import annotations
 
 from copy import deepcopy
 
+from fhir_bundle_builder.validation import (
+    PlaceholderTraceabilitySummary,
+    TraceabilityDrivingInput,
+)
+
 from .models import (
     BuildPlan,
     BuildPlanStep,
@@ -68,6 +73,7 @@ def build_psca_resource_construction_result(
     regenerated_placeholder_ids = _regenerated_placeholder_ids(step_results)
     reused_placeholder_ids = _reused_placeholder_ids(registry_order, regenerated_placeholder_ids)
     step_result_history = _step_result_history(plan, prior_result, step_results)
+    step_results_by_id = {step_result.step_id: step_result for step_result in step_result_history}
     execution_scope = "targeted_repair" if repair_directive is not None else "full_build"
     summary = (
         "Applied a deterministic targeted repair directive to rerun only selected resource-construction steps "
@@ -119,6 +125,12 @@ def build_psca_resource_construction_result(
             source_build_plan_basis=plan.plan_basis,
             source_schematic_stage_id=schematic.stage_id,
             planned_step_ids=[step.step_id for step in plan.steps],
+            placeholder_traceability_summaries=_placeholder_traceability_summaries(
+                schematic,
+                placeholders,
+                registry,
+                step_results_by_id,
+            ),
             source_refs=plan.source_refs,
         ),
     )
@@ -188,6 +200,64 @@ def _step_result_history(
         for step in plan.steps
         if step.step_id in latest_by_step_id
     ]
+
+
+def _placeholder_traceability_summaries(
+    schematic: BundleSchematic,
+    placeholders: dict[str, ResourcePlaceholder],
+    registry: dict[str, ResourceRegistryEntry],
+    step_results_by_id: dict[str, ResourceConstructionStepResult],
+) -> list[PlaceholderTraceabilitySummary]:
+    ordered_placeholder_ids = [
+        relationship.target_id
+        for relationship in schematic.relationships
+        if relationship.relationship_type == "bundle_entry"
+    ]
+    summaries: list[PlaceholderTraceabilitySummary] = []
+    for placeholder_id in ordered_placeholder_ids:
+        placeholder = placeholders.get(placeholder_id)
+        registry_entry = registry.get(placeholder_id)
+        if placeholder is None or registry_entry is None:
+            continue
+        summaries.append(
+            PlaceholderTraceabilitySummary(
+                placeholder_id=placeholder_id,
+                resource_type=placeholder.resource_type,
+                role=placeholder.role,
+                section_keys=list(placeholder.section_keys),
+                driving_inputs=_driving_inputs_for_placeholder(
+                    registry_entry.current_scaffold.source_step_ids,
+                    step_results_by_id,
+                ),
+                source_step_ids=list(registry_entry.current_scaffold.source_step_ids),
+                latest_step_id=registry_entry.latest_step_id,
+            )
+        )
+    return summaries
+
+
+def _driving_inputs_for_placeholder(
+    source_step_ids: list[str],
+    step_results_by_id: dict[str, ResourceConstructionStepResult],
+) -> list[TraceabilityDrivingInput]:
+    driving_inputs: list[TraceabilityDrivingInput] = []
+    seen: set[tuple[str, str]] = set()
+    for step_id in source_step_ids:
+        step_result = step_results_by_id.get(step_id)
+        if step_result is None:
+            continue
+        for evidence in step_result.deterministic_value_evidence:
+            key = (evidence.source_artifact, evidence.source_detail)
+            if key in seen:
+                continue
+            seen.add(key)
+            driving_inputs.append(
+                TraceabilityDrivingInput(
+                    source_artifact=evidence.source_artifact,
+                    source_detail=evidence.source_detail,
+                )
+            )
+    return driving_inputs
 
 
 def _build_step_result(

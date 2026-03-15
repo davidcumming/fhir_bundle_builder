@@ -108,7 +108,7 @@ The `specification_asset_retrieval` stage now emits the first normalized PS-CA a
 
 ## Current slice boundaries
 
-This slice is for workflow shape, PS-CA normalized asset retrieval, the first real schematic artifact, the first real build plan, the first meaningful content-enriched resource-construction path for core clinical resources, the first structured patient/clinical input-normalization path, the first support-resource enrichment for the selected provider-facing author path, the first structured provider/org/role input-normalization path, the first provider-context-aware schematic provenance path, the first candidate-bundle finalization foundation, the first validation foundation, the first optional Matchbox-backed external standards-validation path, the first repair-decision foundation, and the first bounded repair-execution foundation with narrow step-subset repair directives for resource construction plus narrower bundle-finalization-owned reference-alignment findings, including a bounded medications-only multiplicity expansion of up to two entries, medication-specific standards/validation hardening for that bounded path, explicit patient-context-to-bundle alignment hardening for the fields the workflow can honestly populate, and explicit provider-context-to-bundle alignment hardening for the support-resource identity fields the workflow can honestly populate.
+This slice is for workflow shape, PS-CA normalized asset retrieval, the first real schematic artifact, the first real build plan, the first meaningful content-enriched resource-construction path for core clinical resources, the first structured patient/clinical input-normalization path, the first support-resource enrichment for the selected provider-facing author path, the first structured provider/org/role input-normalization path, the first provider-context-aware schematic provenance path, the first candidate-bundle finalization foundation, the first validation foundation, the first optional Matchbox-backed external standards-validation path, the first repair-decision foundation, and the first bounded repair-execution foundation with narrow step-subset repair directives for resource construction plus narrower bundle-finalization-owned reference-alignment findings, including a bounded medications-only multiplicity expansion of up to two entries, medication-specific standards/validation hardening for that bounded path, explicit patient-context-to-bundle alignment hardening for the fields the workflow can honestly populate, explicit provider-context-to-bundle alignment hardening for the support-resource identity fields the workflow can honestly populate, and compact end-to-end placeholder-scoped traceability carried from resource construction through candidate bundle and validation.
 
 - The workflow reads existing PS-CA package files deterministically from the repo.
 - The spec retrieval stage exposes a normalized PS-CA asset context with foundational profiles, Composition section definitions, and selected example evidence.
@@ -200,6 +200,11 @@ The `resource_construction` stage now emits the first real scaffold-oriented con
 - schematic-level patient-context inspectability showing available item counts for medications, allergies, and problems plus the bounded medications-only planned placeholder count, placeholder-specific medication provenance, and any deferred additional medication count
 - normalized provider-context inspectability showing the selected provider, selected organization, and selected provider-role relationship when available
 - a resource registry showing the latest scaffold state per placeholder
+- placeholder-scoped traceability summaries showing:
+  - the placeholder/resource identity
+  - the role and section ownership
+  - the compact deterministic driving inputs
+  - the source step lineage currently attached to that scaffold
 - explicit incremental `Composition` behavior:
   - scaffold creation
   - deterministic medications section attachment
@@ -291,6 +296,9 @@ The `validation` stage now emits the first real structured validation artifact f
 - validation evidence linking back to the candidate bundle, schematic, build plan, and resource construction artifacts
 - validation evidence showing expected patient-context-driven patient identity values and per-placeholder section-entry text expectations, including whether each expectation came from structured patient context or fallback placeholder policy
 - validation evidence showing expected provider-context-driven support-resource identity values, including whether organization and practitioner-role expectations came from structured provider context, fallback placeholder policy, or were not applicable for the run
+- validation evidence carrying the same placeholder-scoped traceability summaries forward with:
+  - bundle-entry sequence/path/fullUrl
+  - the current workflow check codes that apply to each placeholder/resource
 - clear standards-channel provenance showing whether validation ran locally, through Matchbox, or through local fallback after Matchbox was unavailable
 - local standards checks that now also require unique `Bundle.entry.fullUrl` values and unique `Bundle.entry.resource.id` values
 

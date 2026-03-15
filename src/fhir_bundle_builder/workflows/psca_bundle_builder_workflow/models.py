@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 
 from fhir_bundle_builder.specifications.psca import PscaNormalizedAssetContext
 from fhir_bundle_builder.validation.models import (
+    PlaceholderTraceabilitySummary,
     StandardsValidationResult,
     ValidationChannel,
     ValidationEvidence,
@@ -629,6 +630,7 @@ class ResourceConstructionEvidence(BaseModel):
     source_build_plan_basis: str
     source_schematic_stage_id: str
     planned_step_ids: list[str] = Field(default_factory=list)
+    placeholder_traceability_summaries: list[PlaceholderTraceabilitySummary] = Field(default_factory=list)
     source_refs: list[str] = Field(default_factory=list)
 
 
@@ -689,6 +691,7 @@ class CandidateBundleEvidence(BaseModel):
     ordered_placeholder_ids: list[str] = Field(default_factory=list)
     planned_medication_placeholder_ids: list[str] = Field(default_factory=list)
     assembled_medication_placeholder_ids: list[str] = Field(default_factory=list)
+    placeholder_traceability_summaries: list[PlaceholderTraceabilitySummary] = Field(default_factory=list)
     source_refs: list[str] = Field(default_factory=list)
 
 
