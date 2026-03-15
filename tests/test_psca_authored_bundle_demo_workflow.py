@@ -1,52 +1,18 @@
-"""Smoke tests for the thin Dev UI-facing authored-input demo workflow."""
+"""Smoke tests for the canonical authored-input demo workflow scenarios."""
 
 from __future__ import annotations
 
-from fhir_bundle_builder.authoring import (
-    PatientAuthoringInput,
-    PatientAuthoredRecordReviewEditInput,
-    ProviderAuthoringInput,
-    ProviderAuthoredRecordReviewEditInput,
+from fhir_bundle_builder.workflows.psca_authored_bundle_demo_workflow import (
+    build_rich_reviewed_demo_input,
+    build_thin_provider_demo_input,
 )
-from fhir_bundle_builder.workflows.psca_authored_bundle_demo_workflow.models import (
-    AuthoredBundleDemoInput,
-    AuthoredBundleDemoRunResult,
-)
+from fhir_bundle_builder.workflows.psca_authored_bundle_demo_workflow.models import AuthoredBundleDemoInput, AuthoredBundleDemoRunResult
 from fhir_bundle_builder.workflows.psca_authored_bundle_demo_workflow.workflow import workflow
-from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.models import BundleRequestInput
 
 
 async def test_psca_authored_bundle_demo_workflow_smoke_rich_path() -> None:
     result = await workflow.run(
-        message=AuthoredBundleDemoInput(
-            patient_authoring=PatientAuthoringInput(
-                authoring_text=(
-                    "The patient's name is Nora Field. She is a female age 55 who lives in Red Deer, Alberta. "
-                    "She has diabetes, takes metformin, and has a peanut allergy."
-                ),
-                complexity_level="medium",
-                scenario_label="pytest-demo-patient-rich",
-            ),
-            provider_authoring=ProviderAuthoringInput(
-                authoring_text=(
-                    "The provider's name is Maya Chen. "
-                    "She is a female oncologist at Fraser Cancer Clinic."
-                ),
-                scenario_label="pytest-demo-provider-rich",
-            ),
-            patient_review_edits=PatientAuthoredRecordReviewEditInput(
-                display_name="Nora Field Reviewed",
-                medication_display_texts=["Metformin 850 MG oral tablet"],
-            ),
-            provider_review_edits=ProviderAuthoredRecordReviewEditInput(
-                relationship_role_label="medical oncologist",
-                selected_relationship_active=True,
-            ),
-            request=BundleRequestInput(
-                request_text="Create a deterministic authored-input demo bundle run.",
-                scenario_label="pytest-authored-demo-rich",
-            ),
-        ),
+        message=build_rich_reviewed_demo_input(),
         include_status_events=True,
     )
     final_output = result.get_outputs()[0]
@@ -79,7 +45,7 @@ async def test_psca_authored_bundle_demo_workflow_smoke_rich_path() -> None:
     assert final_output.refinement_overview.patient_edited_field_count == 2
     assert final_output.refinement_overview.provider_edited_field_count == 1
     assert final_output.provider_record.provider_role_relationships[0].role_label == "medical oncologist"
-    assert final_output.preparation.workflow_input_summary.scenario_label == "pytest-authored-demo-rich"
+    assert final_output.preparation.workflow_input_summary.scenario_label == "rich-reviewed-demo"
     assert final_output.preparation.workflow_input_summary.mapped_condition_count == 1
     assert final_output.preparation.workflow_input_summary.mapped_medication_count == 1
     assert final_output.preparation.workflow_input_summary.mapped_allergy_count == 1
@@ -106,26 +72,7 @@ async def test_psca_authored_bundle_demo_workflow_smoke_rich_path() -> None:
 
 async def test_psca_authored_bundle_demo_workflow_smoke_thin_provider_path() -> None:
     result = await workflow.run(
-        message=AuthoredBundleDemoInput(
-            patient_authoring=PatientAuthoringInput(
-                authoring_text=(
-                    "The patient's name is Ellis Stone. He is a male age 48 who has hypertension and takes lisinopril."
-                ),
-                complexity_level="low",
-                scenario_label="pytest-demo-patient-thin",
-            ),
-            provider_authoring=ProviderAuthoringInput(
-                authoring_text="The provider is a female oncologist in BC.",
-                scenario_label="pytest-demo-provider-thin",
-            ),
-            provider_review_edits=ProviderAuthoredRecordReviewEditInput(
-                display_name="Dr. Rowan Park",
-            ),
-            request=BundleRequestInput(
-                request_text="Create a deterministic authored-input demo bundle run with thin provider context.",
-                scenario_label="pytest-authored-demo-thin-provider",
-            ),
-        ),
+        message=build_thin_provider_demo_input(),
         include_status_events=True,
     )
     final_output = result.get_outputs()[0]

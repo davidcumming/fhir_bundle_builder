@@ -52,6 +52,7 @@ The workflow does not currently claim:
 ## Repository shape
 
 - `docs/` contains architecture, workflow, and planning guidance.
+- `docs/demo-scenarios.md` contains the canonical authored-input demo scenarios for the Dev UI wrapper flow.
 - `fhir/ca.infoway.io.psca-2.1.1-dft/` contains the PS-CA source package already present in the repo.
 - `src/fhir_bundle_builder/authoring/` contains the bounded upstream patient/provider authoring foundations plus the thin authored-input orchestration harness.
 - `src/fhir_bundle_builder/workflows/psca_bundle_builder_workflow/` contains the workflow skeleton.
@@ -105,6 +106,19 @@ devui ./entities --reload --port 8080 --no-open
 ```
 
 Then open [http://127.0.0.1:8080](http://127.0.0.1:8080).
+
+## Recommended demo scenarios
+
+For repeatable authored-input demos, use the two canonical scenarios documented in [docs/demo-scenarios.md](/Users/davidcumming/coding_projects/fhir_bundle_builder/docs/demo-scenarios.md):
+
+- `rich_reviewed_demo`
+  - shows the full authored-input path with bounded refinement and rich provider context
+- `thin_provider_demo`
+  - shows the honest thin-provider path with visible provider gaps and unmapped facts
+
+The corresponding canonical input builders live in:
+
+- `src/fhir_bundle_builder/workflows/psca_authored_bundle_demo_workflow/demo_scenarios.py`
 
 ## What to expect in Dev UI
 
