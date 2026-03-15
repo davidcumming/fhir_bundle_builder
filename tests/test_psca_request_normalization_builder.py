@@ -6,8 +6,11 @@ import pytest
 
 from fhir_bundle_builder.authoring import (
     PatientAuthoringInput,
+    ProviderAuthoringInput,
     build_patient_authored_record,
+    build_provider_authored_record,
     map_authored_patient_to_patient_context,
+    map_authored_provider_to_provider_context,
 )
 from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.models import (
     BundleRequestInput,
@@ -328,6 +331,77 @@ def test_request_normalization_accepts_mapped_authored_patient_context() -> None
     assert normalized.patient_context.deferred_additional_medication_count == 0
     assert normalized.patient_context.selected_allergy_for_single_entry is None
     assert normalized.patient_context.selected_condition_for_single_entry is None
+
+
+def test_request_normalization_accepts_mapped_authored_provider_context_with_explicit_relationship() -> None:
+    authored = build_provider_authored_record(
+        ProviderAuthoringInput(
+            authoring_text=(
+                "The provider's name is Maya Chen. "
+                "She is a female oncologist at Fraser Cancer Clinic."
+            ),
+            scenario_label="pytest-provider-normalization-rich",
+        )
+    )
+    mapped = map_authored_provider_to_provider_context(authored)
+
+    normalized = build_psca_normalized_request(
+        WorkflowBuildInput(
+            specification=SpecificationSelection(),
+            patient_profile=ProfileReferenceInput(
+                profile_id="patient-normalization-test",
+                display_name="Normalization Test Patient",
+            ),
+            provider_profile=ProfileReferenceInput(
+                profile_id="provider-profile-authored-rich",
+                display_name="Authored Rich Provider",
+            ),
+            provider_context=mapped.provider_context,
+            request=BundleRequestInput(
+                request_text="Create a deterministic normalized request for authored provider testing.",
+                scenario_label="pytest-provider-normalization-rich",
+            ),
+        )
+    )
+
+    assert normalized.provider_context.selected_provider_role_relationship is not None
+    assert normalized.provider_context.selected_provider_role_relationship.role_label == "oncologist"
+    assert normalized.provider_context.selected_organization is not None
+    assert normalized.provider_context.selected_organization.display_name == "Fraser Cancer Clinic"
+    assert normalized.provider_context.normalization_mode == "provider_context_explicit_selection"
+
+
+def test_request_normalization_accepts_mapped_authored_provider_context_without_relationship() -> None:
+    authored = build_provider_authored_record(
+        ProviderAuthoringInput(
+            authoring_text="The provider is a female oncologist in BC.",
+            scenario_label="pytest-provider-normalization-thin",
+        )
+    )
+    mapped = map_authored_provider_to_provider_context(authored)
+
+    normalized = build_psca_normalized_request(
+        WorkflowBuildInput(
+            specification=SpecificationSelection(),
+            patient_profile=ProfileReferenceInput(
+                profile_id="patient-normalization-test",
+                display_name="Normalization Test Patient",
+            ),
+            provider_profile=ProfileReferenceInput(
+                profile_id="provider-profile-authored-thin",
+                display_name="Authored Thin Provider",
+            ),
+            provider_context=mapped.provider_context,
+            request=BundleRequestInput(
+                request_text="Create a deterministic normalized request for authored provider testing.",
+                scenario_label="pytest-provider-normalization-thin",
+            ),
+        )
+    )
+
+    assert normalized.provider_context.provider.display_name == "Authored Oncologist"
+    assert normalized.provider_context.selected_provider_role_relationship is None
+    assert normalized.provider_context.selected_organization is None
 
 
 def _workflow_input_with_provider_context(

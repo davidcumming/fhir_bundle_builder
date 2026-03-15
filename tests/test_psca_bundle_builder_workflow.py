@@ -4,8 +4,11 @@ from __future__ import annotations
 
 from fhir_bundle_builder.authoring import (
     PatientAuthoringInput,
+    ProviderAuthoringInput,
     build_patient_authored_record,
+    build_provider_authored_record,
     map_authored_patient_to_patient_context,
+    map_authored_provider_to_provider_context,
 )
 from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.models import (
     BundleRequestInput,
@@ -987,5 +990,63 @@ async def test_psca_bundle_builder_workflow_accepts_authored_patient_context_map
     )
     assert final_output.resource_construction.step_results[7].resource_scaffold.fhir_scaffold["code"]["text"] == (
         "Type 2 diabetes mellitus"
+    )
+    assert final_output.validation_report.workflow_validation.status == "passed"
+
+
+async def test_psca_bundle_builder_workflow_accepts_authored_provider_context_mapping() -> None:
+    authored = build_provider_authored_record(
+        ProviderAuthoringInput(
+            authoring_text=(
+                "The provider's name is Maya Chen. "
+                "She is a female oncologist at Fraser Cancer Clinic."
+            ),
+            scenario_label="pytest-authored-provider-workflow",
+        )
+    )
+    mapped = map_authored_provider_to_provider_context(authored)
+
+    result = await workflow.run(
+        message=WorkflowBuildInput(
+            specification=SpecificationSelection(),
+            patient_profile=ProfileReferenceInput(
+                profile_id="patient-profile-authored-provider-workflow",
+                display_name="Authored Provider Workflow Patient",
+            ),
+            provider_profile=ProfileReferenceInput(
+                profile_id="provider-profile-authored-provider-workflow",
+                display_name="Authored Provider Workflow Provider",
+            ),
+            provider_context=mapped.provider_context,
+            request=BundleRequestInput(
+                request_text="Create a deterministic bundle from authored provider context.",
+                scenario_label="pytest-authored-provider-workflow",
+            ),
+        ),
+        include_status_events=True,
+    )
+    final_output = result.get_outputs()[0]
+
+    assert final_output.normalized_request.provider_context.provider.provider_id == authored.provider.provider_id
+    assert final_output.normalized_request.provider_context.provider.display_name == "Maya Chen"
+    assert final_output.normalized_request.provider_context.selected_provider_role_relationship is not None
+    assert (
+        final_output.normalized_request.provider_context.selected_provider_role_relationship.role_label
+        == "oncologist"
+    )
+    assert final_output.normalized_request.provider_context.selected_organization is not None
+    assert final_output.normalized_request.provider_context.selected_organization.display_name == (
+        "Fraser Cancer Clinic"
+    )
+    assert final_output.resource_construction.step_results[1].resource_scaffold.fhir_scaffold["name"][0]["text"] == (
+        "Maya Chen"
+    )
+    assert (
+        final_output.resource_construction.step_results[2].resource_scaffold.fhir_scaffold["name"]
+        == "Fraser Cancer Clinic"
+    )
+    assert (
+        final_output.resource_construction.step_results[3].resource_scaffold.fhir_scaffold["code"][0]["text"]
+        == "oncologist"
     )
     assert final_output.validation_report.workflow_validation.status == "passed"
