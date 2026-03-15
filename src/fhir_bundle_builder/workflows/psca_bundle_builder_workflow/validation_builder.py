@@ -88,6 +88,7 @@ def _build_workflow_validation_result(
     bundle = candidate_bundle.candidate_bundle.fhir_bundle
     entry_assembly = candidate_bundle.entry_assembly
     findings: list[ValidationFinding] = []
+    medication_placeholder_ids = _medication_placeholder_ids_from_schematic(schematic)
     checks_run = [
         "bundle.type_is_document",
         "bundle.required_entries_present",
@@ -106,6 +107,11 @@ def _build_workflow_validation_result(
         "bundle.practitionerrole_relationship_identity_present",
         "bundle.practitionerrole_author_context_present",
         "bundle.medicationrequest_placeholder_content_present",
+        *(
+            ["bundle.medicationrequest_2_placeholder_content_present"]
+            if len(medication_placeholder_ids) > 1
+            else []
+        ),
         "bundle.allergyintolerance_placeholder_content_present",
         "bundle.condition_placeholder_content_present",
         "bundle.composition_medications_section_present",
@@ -114,11 +120,21 @@ def _build_workflow_validation_result(
         "bundle.practitionerrole_practitioner_reference_contribution_aligned",
         "bundle.practitionerrole_organization_reference_contribution_aligned",
         "bundle.medicationrequest_subject_reference_contribution_aligned",
+        *(
+            ["bundle.medicationrequest_2_subject_reference_contribution_aligned"]
+            if len(medication_placeholder_ids) > 1
+            else []
+        ),
         "bundle.allergyintolerance_patient_reference_contribution_aligned",
         "bundle.condition_subject_reference_contribution_aligned",
         "bundle.practitionerrole_practitioner_reference_aligned",
         "bundle.practitionerrole_organization_reference_aligned",
         "bundle.medicationrequest_subject_reference_aligned",
+        *(
+            ["bundle.medicationrequest_2_subject_reference_aligned"]
+            if len(medication_placeholder_ids) > 1
+            else []
+        ),
         "bundle.allergyintolerance_patient_reference_aligned",
         "bundle.condition_subject_reference_aligned",
         "bundle.composition_medications_section_entry_reference_aligned",
@@ -372,12 +388,30 @@ def _build_workflow_validation_result(
             )
         )
 
-    if not _medicationrequest_placeholder_content_present(bundle, normalized_request, schematic):
+    if not _medicationrequest_placeholder_content_present(
+        bundle,
+        normalized_request,
+        schematic,
+        "medicationrequest-1",
+    ):
         findings.append(
             _workflow_error(
                 "bundle.medicationrequest_placeholder_content_present",
-                "Bundle.entry[5].resource",
+                "Bundle.entry.resource[id='medicationrequest-1']",
                 "Expected MedicationRequest content to include status='draft', intent='proposal', and the deterministic medication text from normalized patient context or the section-title fallback.",
+            )
+        )
+    if len(medication_placeholder_ids) > 1 and not _medicationrequest_placeholder_content_present(
+        bundle,
+        normalized_request,
+        schematic,
+        "medicationrequest-2",
+    ):
+        findings.append(
+            _workflow_error(
+                "bundle.medicationrequest_2_placeholder_content_present",
+                "Bundle.entry.resource[id='medicationrequest-2']",
+                "Expected the second MedicationRequest content to include status='draft', intent='proposal', and the deterministic second medication text from normalized patient context.",
             )
         )
 
@@ -414,7 +448,7 @@ def _build_workflow_validation_result(
                 "Bundle.entry[0].resource.section",
                 (
                     f"Expected Composition to include the deterministic '{section_scaffold.section_key}' "
-                    "section block with matching title, LOINC code, and first entry reference."
+                    "section block with matching title, LOINC code, and the planned section-entry count."
                 ),
             )
         )
@@ -483,10 +517,37 @@ def _build_workflow_validation_result(
         findings.append(
             _workflow_error(
                 "bundle.medicationrequest_subject_reference_aligned",
-                "Bundle.entry[5].resource.subject.reference",
+                "Bundle.entry.resource[id='medicationrequest-1'].subject.reference",
                 "Expected MedicationRequest.subject.reference to align to the Patient bundle entry fullUrl.",
             )
         )
+    if len(medication_placeholder_ids) > 1:
+        medicationrequest_2_subject_source_ok = _reference_contribution_aligned(
+            resource_construction,
+            "medicationrequest-2",
+            "subject.reference",
+            "patient-1",
+        )
+        if not medicationrequest_2_subject_source_ok:
+            findings.append(
+                _workflow_error(
+                    "bundle.medicationrequest_2_subject_reference_contribution_aligned",
+                    "resource_construction.medicationrequest-2.subject.reference",
+                    "Expected the second MedicationRequest.subject.reference to remain aligned to the deterministic local Patient placeholder reference before bundle fullUrl rewriting.",
+                )
+            )
+        elif not _medicationrequest_subject_reference_aligned(
+            bundle,
+            full_urls_by_placeholder_id,
+            "medicationrequest-2",
+        ):
+            findings.append(
+                _workflow_error(
+                    "bundle.medicationrequest_2_subject_reference_aligned",
+                    "Bundle.entry.resource[id='medicationrequest-2'].subject.reference",
+                    "Expected the second MedicationRequest.subject.reference to align to the Patient bundle entry fullUrl.",
+                )
+            )
 
     allergyintolerance_patient_source_ok = _reference_contribution_aligned(
         resource_construction,
@@ -549,10 +610,10 @@ def _build_workflow_validation_result(
         findings.append(
             _workflow_error(
                 section_entry_alignment_codes[section_scaffold.section_key],
-                "Bundle.entry[0].resource.section.entry[0].reference",
+                f"Bundle.entry[0].resource.section[{section_scaffold.section_key}].entry.reference",
                 (
                     f"Expected the Composition '{section_scaffold.section_key}' section entry reference "
-                    "to align exactly to the deterministic bundle entry fullUrl."
+                    "set to align exactly to the deterministic bundle entry fullUrls in scaffold order."
                 ),
             )
         )
@@ -570,6 +631,19 @@ def _build_workflow_validation_result(
 
 def _find_composition_resource(bundle: dict[str, object]) -> dict[str, object]:
     return _find_resource_by_type(bundle, "Composition")
+
+
+def _find_resource_by_placeholder_id(bundle: dict[str, object], placeholder_id: str) -> dict[str, object]:
+    entries = bundle.get("entry", [])
+    if not isinstance(entries, list):
+        return {}
+    for entry in entries:
+        if not isinstance(entry, dict):
+            continue
+        resource = entry.get("resource")
+        if isinstance(resource, dict) and resource.get("id") == placeholder_id:
+            return resource
+    return {}
 
 
 def _find_resource_by_type(bundle: dict[str, object], resource_type: str) -> dict[str, object]:
@@ -665,20 +739,16 @@ def _matching_composition_section_block(
         first_coding = coding[0] if isinstance(coding, list) and coding else {}
         loinc_code = first_coding.get("code") if isinstance(first_coding, dict) else None
         entry = section.get("entry")
-        first_entry = entry[0] if isinstance(entry, list) and entry else {}
-        entry_reference = first_entry.get("reference") if isinstance(first_entry, dict) else None
-        expected_reference = None
-        if expected_entry_placeholder_ids:
-            expected_reference = f"urn:uuid:"  # prefix match only after finalization
+        entry_references = (
+            [item.get("reference") for item in entry if isinstance(item, dict)]
+            if isinstance(entry, list)
+            else []
+        )
         if (
             title == expected_title
             and loinc_code == expected_code
-            and isinstance(entry_reference, str)
-            and bool(entry_reference)
-            and (
-                expected_reference is None
-                or entry_reference.startswith(expected_reference)
-            )
+            and len(entry_references) == len(expected_entry_placeholder_ids)
+            and all(isinstance(reference, str) and bool(reference) for reference in entry_references)
         ):
             return section
     return None
@@ -818,8 +888,9 @@ def _practitionerrole_organization_reference_aligned(
 def _medicationrequest_subject_reference_aligned(
     bundle: dict[str, object],
     full_urls_by_placeholder_id: dict[str, str],
+    placeholder_id: str = "medicationrequest-1",
 ) -> bool:
-    medication = _find_resource_by_type(bundle, "MedicationRequest")
+    medication = _find_resource_by_placeholder_id(bundle, placeholder_id)
     return _reference_target_aligned(
         medication.get("subject"),
         full_urls_by_placeholder_id,
@@ -859,17 +930,30 @@ def _composition_section_entry_reference_aligned(
     matching_section = _matching_composition_section_block(sections, section_scaffold)
     if matching_section is None:
         return True
-    expected_reference = _expected_full_url(
-        full_urls_by_placeholder_id,
-        section_scaffold.entry_placeholder_ids[0],
-    )
-    if expected_reference is None:
+    expected_references = [
+        _expected_full_url(full_urls_by_placeholder_id, placeholder_id)
+        for placeholder_id in section_scaffold.entry_placeholder_ids
+    ]
+    if any(expected_reference is None for expected_reference in expected_references):
         return True
-    entry_reference = _first_list_item(matching_section.get("entry"))
-    actual_reference = entry_reference.get("reference") if isinstance(entry_reference, dict) else None
-    if not isinstance(actual_reference, str) or not actual_reference or not actual_reference.startswith("urn:uuid:"):
+    entry_values = matching_section.get("entry")
+    if not isinstance(entry_values, list) or len(entry_values) != len(expected_references):
         return True
-    return actual_reference == expected_reference
+    actual_references = [
+        entry_value.get("reference")
+        for entry_value in entry_values
+        if isinstance(entry_value, dict)
+    ]
+    if len(actual_references) != len(expected_references):
+        return True
+    if any(
+        not isinstance(actual_reference, str)
+        or not actual_reference
+        or not actual_reference.startswith("urn:uuid:")
+        for actual_reference in actual_references
+    ):
+        return True
+    return actual_references == expected_references
 
 
 def _full_urls_by_placeholder_id(bundle: dict[str, object]) -> dict[str, str]:
@@ -911,14 +995,15 @@ def _medicationrequest_placeholder_content_present(
     bundle: dict[str, object],
     normalized_request: NormalizedBuildRequest,
     schematic: BundleSchematic,
+    placeholder_id: str = "medicationrequest-1",
 ) -> bool:
-    medication = _find_resource_by_type(bundle, "MedicationRequest")
+    medication = _find_resource_by_placeholder_id(bundle, placeholder_id)
     return (
         medication.get("status") == "draft"
         and medication.get("intent") == "proposal"
         and isinstance(medication.get("medicationCodeableConcept"), dict)
         and medication["medicationCodeableConcept"].get("text")
-        == _expected_medication_text(normalized_request, schematic)
+        == _expected_medication_text(normalized_request, schematic, placeholder_id)
     )
 
 
@@ -991,8 +1076,9 @@ def _dedupe(values: list[str]) -> list[str]:
 def _expected_medication_text(
     normalized_request: NormalizedBuildRequest,
     schematic: BundleSchematic,
+    placeholder_id: str = "medicationrequest-1",
 ) -> str:
-    selected = normalized_request.patient_context.selected_medication_for_single_entry
+    selected = _selected_medication_for_placeholder(normalized_request, placeholder_id)
     if selected is not None:
         return selected.display_text
     return _fallback_section_placeholder_text("medications", schematic, normalized_request)
@@ -1027,3 +1113,25 @@ def _fallback_section_placeholder_text(
         if section.section_key == section_key:
             return f"{section.title} placeholder for {normalized_request.request.scenario_label}"
     raise ValueError(f"Expected section scaffold '{section_key}' to be present.")
+
+
+def _selected_medication_for_placeholder(
+    normalized_request: NormalizedBuildRequest,
+    placeholder_id: str,
+):
+    if placeholder_id == "medicationrequest-1":
+        if normalized_request.patient_context.medications:
+            return normalized_request.patient_context.medications[0]
+        return normalized_request.patient_context.selected_medication_for_single_entry
+    if placeholder_id == "medicationrequest-2":
+        if len(normalized_request.patient_context.medications) >= 2:
+            return normalized_request.patient_context.medications[1]
+        return None
+    raise ValueError(f"Unsupported MedicationRequest placeholder id '{placeholder_id}'.")
+
+
+def _medication_placeholder_ids_from_schematic(schematic: BundleSchematic) -> list[str]:
+    for section in schematic.section_scaffolds:
+        if section.section_key == "medications":
+            return list(section.entry_placeholder_ids)
+    raise ValueError("Expected medications section scaffold to be present.")

@@ -27,7 +27,12 @@ def build_psca_build_plan(schematic: BundleSchematic) -> BuildPlan:
     organization = _require_placeholder(placeholders, "organization-1")
     practitioner_role = _require_placeholder(placeholders, "practitionerrole-1")
     composition = _require_placeholder(placeholders, "composition-1")
-    medication = _require_placeholder(placeholders, "medicationrequest-1")
+    medications_section = section_scaffolds["medications"]
+    medication_placeholder_ids = list(medications_section.entry_placeholder_ids)
+    medication_placeholders = [
+        _require_placeholder(placeholders, placeholder_id)
+        for placeholder_id in medication_placeholder_ids
+    ]
     allergy = _require_placeholder(placeholders, "allergyintolerance-1")
     condition = _require_placeholder(placeholders, "condition-1")
 
@@ -36,8 +41,61 @@ def build_psca_build_plan(schematic: BundleSchematic) -> BuildPlan:
     _require_relationship(relationships, "practitionerrole-practitioner", "practitioner-1")
     _require_relationship(relationships, "practitionerrole-organization", "organization-1")
     _require_relationship(relationships, "section-entry-medications", "medicationrequest-1")
+    if len(medication_placeholder_ids) > 1:
+        _require_relationship(relationships, "section-entry-medications-2", "medicationrequest-2")
     _require_relationship(relationships, "section-entry-allergies", "allergyintolerance-1")
     _require_relationship(relationships, "section-entry-problems", "condition-1")
+
+    medication_build_steps = [
+        BuildPlanStep(
+            step_id=f"build-{placeholder.placeholder_id}",
+            sequence=6 + index,
+            step_kind="section_entry_resource",
+            target_placeholder_id=placeholder.placeholder_id,
+            resource_type=placeholder.resource_type,
+            profile_url=placeholder.profile_url,
+            owning_section_key="medications",
+            build_purpose=(
+                "Create the medications section entry resource for later Composition section attachment."
+            ),
+            dependencies=[
+                _dependency(
+                    "build-patient-1",
+                    "requires_reference_handle",
+                    "MedicationRequest uses Patient as the minimal hard prerequisite in this slice.",
+                ),
+            ],
+            expected_inputs=[
+                _input("normalized_request", "NormalizedBuildRequest", True, "Scenario and request context used for deterministic placeholder content."),
+                _input("section_scaffold:medications", "SectionScaffold", True, "Medications section scaffold."),
+                _input(
+                    f"medication_placeholder_{index + 1}" if len(medication_placeholders) > 1 else "medication_placeholder",
+                    "ResourcePlaceholder",
+                    True,
+                    "MedicationRequest placeholder from the schematic.",
+                ),
+                _input("reference_handle:patient-1", "reference_handle", True, "Patient reference for the section entry resource."),
+            ],
+            expected_outputs=[
+                _output(
+                    f"resource_artifact:{placeholder.placeholder_id}",
+                    "resource_artifact",
+                    "Placeholder MedicationRequest resource artifact.",
+                ),
+                _output(
+                    f"reference_handle:{placeholder.placeholder_id}",
+                    "reference_handle",
+                    "Reusable MedicationRequest reference handle.",
+                ),
+            ],
+        )
+        for index, placeholder in enumerate(medication_placeholders)
+    ]
+    allergy_sequence = 6 + len(medication_build_steps)
+    condition_sequence = allergy_sequence + 1
+    medications_finalize_sequence = condition_sequence + 1
+    allergies_finalize_sequence = medications_finalize_sequence + 1
+    problems_finalize_sequence = allergies_finalize_sequence + 1
 
     steps = [
         BuildPlanStep(
@@ -160,36 +218,10 @@ def build_psca_build_plan(schematic: BundleSchematic) -> BuildPlan:
                 _output("composition_scaffold_ready:composition-1", "composition_scaffold_state", "Signal that the Composition scaffold exists."),
             ],
         ),
-        BuildPlanStep(
-            step_id="build-medicationrequest-1",
-            sequence=6,
-            step_kind="section_entry_resource",
-            target_placeholder_id=medication.placeholder_id,
-            resource_type=medication.resource_type,
-            profile_url=medication.profile_url,
-            owning_section_key="medications",
-            build_purpose="Create the medications section entry resource for later Composition section attachment.",
-            dependencies=[
-                _dependency(
-                    "build-patient-1",
-                    "requires_reference_handle",
-                    "MedicationRequest uses Patient as the minimal hard prerequisite in this slice.",
-                ),
-            ],
-            expected_inputs=[
-                _input("normalized_request", "NormalizedBuildRequest", True, "Scenario and request context used for deterministic placeholder content."),
-                _input("section_scaffold:medications", "SectionScaffold", True, "Medications section scaffold."),
-                _input("medication_placeholder", "ResourcePlaceholder", True, "MedicationRequest placeholder from the schematic."),
-                _input("reference_handle:patient-1", "reference_handle", True, "Patient reference for the section entry resource."),
-            ],
-            expected_outputs=[
-                _output("resource_artifact:medicationrequest-1", "resource_artifact", "Placeholder MedicationRequest resource artifact."),
-                _output("reference_handle:medicationrequest-1", "reference_handle", "Reusable MedicationRequest reference handle."),
-            ],
-        ),
+        *medication_build_steps,
         BuildPlanStep(
             step_id="build-allergyintolerance-1",
-            sequence=7,
+            sequence=allergy_sequence,
             step_kind="section_entry_resource",
             target_placeholder_id=allergy.placeholder_id,
             resource_type=allergy.resource_type,
@@ -216,7 +248,7 @@ def build_psca_build_plan(schematic: BundleSchematic) -> BuildPlan:
         ),
         BuildPlanStep(
             step_id="build-condition-1",
-            sequence=8,
+            sequence=condition_sequence,
             step_kind="section_entry_resource",
             target_placeholder_id=condition.placeholder_id,
             resource_type=condition.resource_type,
@@ -243,7 +275,7 @@ def build_psca_build_plan(schematic: BundleSchematic) -> BuildPlan:
         ),
         BuildPlanStep(
             step_id="finalize-composition-1-medications-section",
-            sequence=9,
+            sequence=medications_finalize_sequence,
             step_kind="composition_finalize",
             target_placeholder_id=composition.placeholder_id,
             resource_type=composition.resource_type,
@@ -256,16 +288,27 @@ def build_psca_build_plan(schematic: BundleSchematic) -> BuildPlan:
                     "requires_scaffold_ready",
                     "The Composition scaffold must exist before the medications section can be attached.",
                 ),
-                _dependency(
-                    "build-medicationrequest-1",
-                    "requires_section_entries_attached",
-                    "The medications section entry must exist before the medications section can be attached.",
-                ),
+                *[
+                    _dependency(
+                        f"build-{placeholder_id}",
+                        "requires_section_entries_attached",
+                        "The medications section entry must exist before the medications section can be attached.",
+                    )
+                    for placeholder_id in medication_placeholder_ids
+                ],
             ],
             expected_inputs=[
                 _input("composition_scaffold_ready:composition-1", "composition_scaffold_state", True, "Signal that the Composition scaffold step completed."),
                 _input("section_scaffold:medications", "SectionScaffold", True, "Medications section metadata."),
-                _input("reference_handle:medicationrequest-1", "reference_handle", True, "Section entry reference for medications."),
+                *[
+                    _input(
+                        f"reference_handle:{placeholder_id}",
+                        "reference_handle",
+                        True,
+                        "Section entry reference for medications.",
+                    )
+                    for placeholder_id in medication_placeholder_ids
+                ],
             ],
             expected_outputs=[
                 _output(
@@ -282,7 +325,7 @@ def build_psca_build_plan(schematic: BundleSchematic) -> BuildPlan:
         ),
         BuildPlanStep(
             step_id="finalize-composition-1-allergies-section",
-            sequence=10,
+            sequence=allergies_finalize_sequence,
             step_kind="composition_finalize",
             target_placeholder_id=composition.placeholder_id,
             resource_type=composition.resource_type,
@@ -326,7 +369,7 @@ def build_psca_build_plan(schematic: BundleSchematic) -> BuildPlan:
         ),
         BuildPlanStep(
             step_id="finalize-composition-1-problems-section",
-            sequence=11,
+            sequence=problems_finalize_sequence,
             step_kind="composition_finalize",
             target_placeholder_id=composition.placeholder_id,
             resource_type=composition.resource_type,
@@ -394,7 +437,7 @@ def build_psca_build_plan(schematic: BundleSchematic) -> BuildPlan:
                 "organization-1",
                 "practitionerrole-1",
                 "composition-1",
-                "medicationrequest-1",
+                *medication_placeholder_ids,
                 "allergyintolerance-1",
                 "condition-1",
             ],
@@ -405,6 +448,7 @@ def build_psca_build_plan(schematic: BundleSchematic) -> BuildPlan:
                 "practitionerrole-practitioner",
                 "practitionerrole-organization",
                 "section-entry-medications",
+                *(["section-entry-medications-2"] if len(medication_placeholder_ids) > 1 else []),
                 "section-entry-allergies",
                 "section-entry-problems",
             ],

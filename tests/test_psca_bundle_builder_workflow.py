@@ -164,12 +164,15 @@ async def test_psca_bundle_builder_workflow_smoke() -> None:
         clinical_section_contexts["medications"].selected_single_entry_display_text
         == "Atorvastatin 20 MG oral tablet"
     )
+    assert clinical_section_contexts["medications"].planned_entry_display_texts == [
+        "Atorvastatin 20 MG oral tablet"
+    ]
     assert clinical_section_contexts["medications"].planned_placeholder_count == 1
     assert clinical_section_contexts["medications"].planning_disposition == "fixed_single_entry_selected_item"
     assert clinical_section_contexts["allergies"].planned_placeholder_count == 1
     assert clinical_section_contexts["problems"].planned_placeholder_count == 1
     assert "explicit structured patient/clinical context" in final_output.bundle_schematic.summary
-    assert "one placeholder per required medications/allergies/problems section" in final_output.bundle_schematic.placeholder_note
+    assert "supports at most two medication placeholders" in final_output.bundle_schematic.placeholder_note
     assert "explicitly selected provider-role relationship context" in final_output.bundle_schematic.summary
     assert "explicitly selected provider-role relationship" in final_output.bundle_schematic.placeholder_note
     assert [section.section_key for section in final_output.bundle_schematic.section_scaffolds] == [
@@ -462,3 +465,80 @@ async def test_psca_bundle_builder_workflow_smoke() -> None:
         if event.type == "executor_completed" and getattr(event, "executor_id", None) is not None
     ]
     assert completed_executors == final_output.stage_order
+
+
+async def test_psca_bundle_builder_workflow_supports_bounded_two_medication_path() -> None:
+    message = WorkflowBuildInput(
+        specification=SpecificationSelection(),
+        patient_profile=ProfileReferenceInput(
+            profile_id="patient-smoke-two-meds",
+            display_name="Smoke Two Meds Patient",
+        ),
+        patient_context=PatientContextInput(
+            patient=PatientIdentityInput(
+                patient_id="patient-smoke-two-meds",
+                display_name="Smoke Two Meds Patient",
+                source_type="patient_management",
+            ),
+            medications=[
+                PatientMedicationInput(
+                    medication_id="med-smoke-1",
+                    display_text="Atorvastatin 20 MG oral tablet",
+                ),
+                PatientMedicationInput(
+                    medication_id="med-smoke-2",
+                    display_text="Metformin 500 MG oral tablet",
+                ),
+            ],
+            allergies=[],
+            conditions=[],
+        ),
+        provider_profile=ProfileReferenceInput(
+            profile_id="provider-smoke-two-meds",
+            display_name="Smoke Two Meds Provider",
+        ),
+        request=BundleRequestInput(
+            request_text="Create a deterministic bounded two-medication workflow run for testing.",
+            scenario_label="pytest-smoke-two-meds",
+        ),
+    )
+
+    result = await workflow.run(message=message, include_status_events=True)
+    final_output = result.get_outputs()[0]
+    clinical_section_contexts = {
+        context.section_key: context
+        for context in final_output.bundle_schematic.evidence.clinical_section_contexts
+    }
+    medication_steps = [
+        step.step_id
+        for step in final_output.build_plan.steps
+        if step.step_id.startswith("build-medicationrequest-")
+    ]
+    candidate_entries = final_output.candidate_bundle.candidate_bundle.fhir_bundle["entry"]
+
+    assert clinical_section_contexts["medications"].available_item_count == 2
+    assert clinical_section_contexts["medications"].planned_placeholder_count == 2
+    assert clinical_section_contexts["medications"].planned_entry_display_texts == [
+        "Atorvastatin 20 MG oral tablet",
+        "Metformin 500 MG oral tablet",
+    ]
+    assert clinical_section_contexts["medications"].planning_disposition == "bounded_two_entry_selected_first_two"
+    assert medication_steps == ["build-medicationrequest-1", "build-medicationrequest-2"]
+    assert "medicationrequest-2" in {
+        placeholder.placeholder_id for placeholder in final_output.bundle_schematic.resource_placeholders
+    }
+    assert final_output.candidate_bundle.candidate_bundle.entry_count == 9
+    assert [entry.placeholder_id for entry in final_output.candidate_bundle.entry_assembly][5:7] == [
+        "medicationrequest-1",
+        "medicationrequest-2",
+    ]
+    assert candidate_entries[5]["resource"]["medicationCodeableConcept"]["text"] == (
+        "Atorvastatin 20 MG oral tablet"
+    )
+    assert candidate_entries[6]["resource"]["medicationCodeableConcept"]["text"] == (
+        "Metformin 500 MG oral tablet"
+    )
+    assert candidate_entries[0]["resource"]["section"][0]["entry"] == [
+        {"reference": candidate_entries[5]["fullUrl"]},
+        {"reference": candidate_entries[6]["fullUrl"]},
+    ]

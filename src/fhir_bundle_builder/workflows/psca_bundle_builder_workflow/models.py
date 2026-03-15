@@ -405,12 +405,14 @@ class SchematicClinicalSectionContextEvidence(BaseModel):
     section_key: str
     available_item_count: int
     selected_single_entry_display_text: str | None = None
+    planned_entry_display_texts: list[str] = Field(default_factory=list)
     planned_placeholder_count: int
     planning_disposition: Literal[
         "legacy_profile_fallback",
         "fixed_single_entry_no_structured_items",
         "fixed_single_entry_selected_item",
         "fixed_single_entry_multiple_items_deferred",
+        "bounded_two_entry_selected_first_two",
     ]
 
 

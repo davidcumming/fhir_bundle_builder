@@ -967,12 +967,71 @@ async def test_psca_validation_builder_fails_when_condition_subject_source_contr
     )
 
 
+async def test_psca_validation_builder_fails_when_second_medicationrequest_placeholder_content_is_missing() -> None:
+    normalized_request, schematic, _, candidate_bundle = _build_validation_artifacts(
+        medication_texts=[
+            "Atorvastatin 20 MG oral tablet",
+            "Metformin 500 MG oral tablet",
+        ]
+    )
+    broken_bundle = deepcopy(candidate_bundle)
+    broken_bundle.candidate_bundle.fhir_bundle["entry"][6]["resource"]["medicationCodeableConcept"]["text"] = ""
+
+    report = await build_psca_validation_report(
+        broken_bundle,
+        schematic,
+        normalized_request,
+        LocalCandidateBundleScaffoldStandardsValidator(),
+    )
+
+    assert any(
+        finding.code == "bundle.medicationrequest_2_placeholder_content_present"
+        and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+
+
+async def test_psca_validation_builder_fails_when_second_medicationrequest_subject_source_contribution_is_not_aligned() -> None:
+    normalized_request, schematic, construction, candidate_bundle = _build_validation_artifacts(
+        medication_texts=[
+            "Atorvastatin 20 MG oral tablet",
+            "Metformin 500 MG oral tablet",
+        ]
+    )
+    broken_construction = _mutate_resource_construction_reference(
+        construction,
+        "medicationrequest-2",
+        "subject.reference",
+        "Patient/wrong-patient",
+    )
+
+    report = await build_psca_validation_report(
+        candidate_bundle,
+        schematic,
+        normalized_request,
+        LocalCandidateBundleScaffoldStandardsValidator(),
+        broken_construction,
+    )
+
+    assert any(
+        finding.code == "bundle.medicationrequest_2_subject_reference_contribution_aligned"
+        and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.medicationrequest_2_subject_reference_aligned"
+        for finding in report.workflow_validation.findings
+    )
+
+
 def _build_validation_inputs(
     *,
     legacy_provider_context: bool = False,
+    medication_texts: list[str] | None = None,
 ) -> tuple[NormalizedBuildRequest, object, object]:
     repository = PscaAssetRepository()
     normalized_assets = repository.load_foundation_context(PscaAssetQuery())
+    medication_texts = medication_texts or ["Atorvastatin 20 MG oral tablet"]
     normalized_request = build_psca_normalized_request(
         WorkflowBuildInput(
             specification=SpecificationSelection(),
@@ -990,9 +1049,10 @@ def _build_validation_inputs(
                 ),
                 medications=[
                     PatientMedicationInput(
-                        medication_id="med-validation-1",
-                        display_text="Atorvastatin 20 MG oral tablet",
+                        medication_id=f"med-validation-{index}",
+                        display_text=display_text,
                     )
+                    for index, display_text in enumerate(medication_texts, start=1)
                 ],
                 allergies=[
                     PatientAllergyInput(
@@ -1051,9 +1111,11 @@ def _build_validation_inputs(
 def _build_validation_artifacts(
     *,
     legacy_provider_context: bool = False,
+    medication_texts: list[str] | None = None,
 ) -> tuple[NormalizedBuildRequest, object, object, object]:
     repository = PscaAssetRepository()
     normalized_assets = repository.load_foundation_context(PscaAssetQuery())
+    medication_texts = medication_texts or ["Atorvastatin 20 MG oral tablet"]
     normalized_request = build_psca_normalized_request(
         WorkflowBuildInput(
             specification=SpecificationSelection(),
@@ -1071,9 +1133,10 @@ def _build_validation_artifacts(
                 ),
                 medications=[
                     PatientMedicationInput(
-                        medication_id="med-validation-1",
-                        display_text="Atorvastatin 20 MG oral tablet",
+                        medication_id=f"med-validation-{index}",
+                        display_text=display_text,
                     )
+                    for index, display_text in enumerate(medication_texts, start=1)
                 ],
                 allergies=[
                     PatientAllergyInput(

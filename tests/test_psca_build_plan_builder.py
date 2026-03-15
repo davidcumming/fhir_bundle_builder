@@ -175,3 +175,82 @@ def test_psca_build_plan_builder_generates_expected_order_and_dependencies() -> 
         "section-entry-allergies",
         "section-entry-problems",
     ]
+
+
+def test_psca_build_plan_builder_adds_second_medication_step_when_two_medications_are_available() -> None:
+    repository = PscaAssetRepository()
+    normalized_assets = repository.load_foundation_context(PscaAssetQuery())
+    normalized_request = build_psca_normalized_request(
+        WorkflowBuildInput(
+            specification=SpecificationSelection(),
+            patient_profile=ProfileReferenceInput(
+                profile_id="patient-plan-two-meds",
+                display_name="Plan Two Meds Patient",
+            ),
+            patient_context=PatientContextInput(
+                patient=PatientIdentityInput(
+                    patient_id="patient-plan-two-meds",
+                    display_name="Plan Two Meds Patient",
+                    source_type="patient_management",
+                ),
+                medications=[
+                    PatientMedicationInput(
+                        medication_id="med-plan-1",
+                        display_text="Atorvastatin 20 MG oral tablet",
+                    ),
+                    PatientMedicationInput(
+                        medication_id="med-plan-2",
+                        display_text="Metformin 500 MG oral tablet",
+                    ),
+                ],
+                allergies=[],
+                conditions=[],
+            ),
+            provider_profile=ProfileReferenceInput(
+                profile_id="provider-plan-two-meds",
+                display_name="Plan Two Meds Provider",
+            ),
+            request=BundleRequestInput(
+                request_text="Create a deterministic two-medication build plan for testing.",
+                scenario_label="pytest-build-plan-two-meds",
+            ),
+        )
+    )
+    schematic = build_psca_bundle_schematic(normalized_assets, normalized_request)
+
+    plan = build_psca_build_plan(schematic)
+    steps = {step.step_id: step for step in plan.steps}
+
+    assert [step.step_id for step in plan.steps] == [
+        "build-patient-1",
+        "build-practitioner-1",
+        "build-organization-1",
+        "build-practitionerrole-1",
+        "build-composition-1-scaffold",
+        "build-medicationrequest-1",
+        "build-medicationrequest-2",
+        "build-allergyintolerance-1",
+        "build-condition-1",
+        "finalize-composition-1-medications-section",
+        "finalize-composition-1-allergies-section",
+        "finalize-composition-1-problems-section",
+    ]
+    assert [
+        section.entry_placeholder_ids for section in schematic.section_scaffolds
+    ] == [["medicationrequest-1", "medicationrequest-2"], ["allergyintolerance-1"], ["condition-1"]]
+    assert [
+        dependency.prerequisite_step_id
+        for dependency in steps["finalize-composition-1-medications-section"].dependencies
+    ] == [
+        "build-composition-1-scaffold",
+        "build-medicationrequest-1",
+        "build-medicationrequest-2",
+    ]
+    assert [input_spec.input_key for input_spec in steps["finalize-composition-1-medications-section"].expected_inputs] == [
+        "composition_scaffold_ready:composition-1",
+        "section_scaffold:medications",
+        "reference_handle:medicationrequest-1",
+        "reference_handle:medicationrequest-2",
+    ]
+    assert "medicationrequest-2" in plan.evidence.planned_placeholder_ids
+    assert "section-entry-medications-2" in plan.evidence.relationship_ids_used

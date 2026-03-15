@@ -23,6 +23,9 @@ from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.schematic_builde
 from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.models import (
     BundleRequestInput,
     NormalizedBuildRequest,
+    PatientContextInput,
+    PatientIdentityInput,
+    PatientMedicationInput,
     ProfileReferenceInput,
     ProviderContextInput,
     ProviderIdentityInput,
@@ -111,15 +114,69 @@ def test_psca_bundle_finalization_builder_fails_when_composition_not_finalized()
         build_psca_candidate_bundle_result(broken_construction, schematic, normalized_request)
 
 
-def _build_construction_inputs() -> tuple[NormalizedBuildRequest, object, object]:
+def test_psca_bundle_finalization_builder_supports_second_medication_entry() -> None:
+    normalized_request, schematic, construction = _build_construction_inputs(
+        medication_texts=[
+            "Atorvastatin 20 MG oral tablet",
+            "Metformin 500 MG oral tablet",
+        ]
+    )
+
+    result = build_psca_candidate_bundle_result(construction, schematic, normalized_request)
+    full_urls = {assembly.placeholder_id: assembly.full_url for assembly in result.entry_assembly}
+
+    assert result.candidate_bundle.entry_count == 9
+    assert [assembly.placeholder_id for assembly in result.entry_assembly] == [
+        "composition-1",
+        "patient-1",
+        "practitionerrole-1",
+        "practitioner-1",
+        "organization-1",
+        "medicationrequest-1",
+        "medicationrequest-2",
+        "allergyintolerance-1",
+        "condition-1",
+    ]
+    assert result.candidate_bundle.fhir_bundle["entry"][0]["resource"]["section"][0]["entry"] == [
+        {"reference": full_urls["medicationrequest-1"]},
+        {"reference": full_urls["medicationrequest-2"]},
+    ]
+    assert result.candidate_bundle.fhir_bundle["entry"][5]["resource"]["medicationCodeableConcept"]["text"] == (
+        "Atorvastatin 20 MG oral tablet"
+    )
+    assert result.candidate_bundle.fhir_bundle["entry"][6]["resource"]["medicationCodeableConcept"]["text"] == (
+        "Metformin 500 MG oral tablet"
+    )
+
+
+def _build_construction_inputs(
+    medication_texts: list[str] | None = None,
+) -> tuple[NormalizedBuildRequest, object, object]:
     repository = PscaAssetRepository()
     normalized_assets = repository.load_foundation_context(PscaAssetQuery())
+    medication_texts = medication_texts or ["Atorvastatin 20 MG oral tablet"]
     normalized_request = build_psca_normalized_request(
         WorkflowBuildInput(
             specification=SpecificationSelection(),
             patient_profile=ProfileReferenceInput(
                 profile_id="patient-finalization-test",
                 display_name="Finalization Test Patient",
+            ),
+            patient_context=PatientContextInput(
+                patient=PatientIdentityInput(
+                    patient_id="patient-finalization-test",
+                    display_name="Finalization Test Patient",
+                    source_type="patient_management",
+                ),
+                medications=[
+                    PatientMedicationInput(
+                        medication_id=f"med-finalization-{index}",
+                        display_text=display_text,
+                    )
+                    for index, display_text in enumerate(medication_texts, start=1)
+                ],
+                allergies=[],
+                conditions=[],
             ),
             provider_profile=ProfileReferenceInput(
                 profile_id="provider-finalization-test",

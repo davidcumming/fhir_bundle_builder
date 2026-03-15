@@ -221,6 +221,48 @@ def test_psca_resource_construction_builder_keeps_organization_thin_in_legacy_pr
     assert construction.step_results[2].resource_scaffold.deferred_paths == ["identifier", "name"]
 
 
+def test_psca_resource_construction_builder_supports_second_medication_entry() -> None:
+    repository = PscaAssetRepository()
+    normalized_assets = repository.load_foundation_context(PscaAssetQuery())
+    normalized_request = _build_normalized_request(
+        "pytest-resource-two-meds",
+        medication_texts=[
+            "Atorvastatin 20 MG oral tablet",
+            "Metformin 500 MG oral tablet",
+        ],
+    )
+    schematic = build_psca_bundle_schematic(normalized_assets, normalized_request)
+    plan = build_psca_build_plan(schematic)
+
+    construction = build_psca_resource_construction_result(plan, schematic, normalized_request)
+    steps = {step.step_id: step for step in construction.step_results}
+    registry = {entry.placeholder_id: entry for entry in construction.resource_registry}
+    finalized_composition = registry["composition-1"].current_scaffold.fhir_scaffold
+
+    assert len(construction.step_results) == 12
+    assert len(construction.resource_registry) == 9
+    assert "build-medicationrequest-2" in steps
+    assert registry["medicationrequest-1"].current_scaffold.fhir_scaffold["medicationCodeableConcept"]["text"] == (
+        "Atorvastatin 20 MG oral tablet"
+    )
+    assert registry["medicationrequest-2"].current_scaffold.fhir_scaffold["medicationCodeableConcept"]["text"] == (
+        "Metformin 500 MG oral tablet"
+    )
+    assert finalized_composition["section"][0]["entry"] == [
+        {"reference": "MedicationRequest/medicationrequest-1"},
+        {"reference": "MedicationRequest/medicationrequest-2"},
+    ]
+    assert any(
+        evidence.target_path == "medicationCodeableConcept.text" and evidence.source_detail == "display_text"
+        for evidence in steps["build-medicationrequest-2"].deterministic_value_evidence
+    )
+    assert any(
+        contribution.reference_path == "section[0].entry[1].reference"
+        and contribution.target_placeholder_id == "medicationrequest-2"
+        for contribution in steps["finalize-composition-1-medications-section"].reference_contributions
+    )
+
+
 def test_psca_resource_construction_builder_supports_targeted_patient_repair() -> None:
     repository = PscaAssetRepository()
     normalized_assets = repository.load_foundation_context(PscaAssetQuery())
@@ -324,7 +366,11 @@ def test_psca_resource_construction_builder_supports_targeted_composition_sectio
     ]
 
 
-def _build_normalized_request(scenario_label: str) -> NormalizedBuildRequest:
+def _build_normalized_request(
+    scenario_label: str,
+    medication_texts: list[str] | None = None,
+) -> NormalizedBuildRequest:
+    medication_texts = medication_texts or ["Atorvastatin 20 MG oral tablet"]
     return build_psca_normalized_request(
         WorkflowBuildInput(
             specification=SpecificationSelection(),
@@ -342,9 +388,10 @@ def _build_normalized_request(scenario_label: str) -> NormalizedBuildRequest:
                 ),
                 medications=[
                     PatientMedicationInput(
-                        medication_id="med-1",
-                        display_text="Atorvastatin 20 MG oral tablet",
+                        medication_id=f"med-{index}",
+                        display_text=display_text,
                     )
+                    for index, display_text in enumerate(medication_texts, start=1)
                 ],
                 allergies=[
                     PatientAllergyInput(

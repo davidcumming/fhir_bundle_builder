@@ -108,7 +108,7 @@ The `specification_asset_retrieval` stage now emits the first normalized PS-CA a
 
 ## Current slice boundaries
 
-This slice is for workflow shape, PS-CA normalized asset retrieval, the first real schematic artifact, the first real build plan, the first meaningful content-enriched resource-construction path for core clinical resources, the first structured patient/clinical input-normalization path, the first support-resource enrichment for the selected provider-facing author path, the first structured provider/org/role input-normalization path, the first provider-context-aware schematic provenance path, the first candidate-bundle finalization foundation, the first validation foundation, the first optional Matchbox-backed external standards-validation path, the first repair-decision foundation, and the first bounded repair-execution foundation with narrow step-subset repair directives for resource construction plus narrower bundle-finalization-owned reference-alignment findings.
+This slice is for workflow shape, PS-CA normalized asset retrieval, the first real schematic artifact, the first real build plan, the first meaningful content-enriched resource-construction path for core clinical resources, the first structured patient/clinical input-normalization path, the first support-resource enrichment for the selected provider-facing author path, the first structured provider/org/role input-normalization path, the first provider-context-aware schematic provenance path, the first candidate-bundle finalization foundation, the first validation foundation, the first optional Matchbox-backed external standards-validation path, the first repair-decision foundation, and the first bounded repair-execution foundation with narrow step-subset repair directives for resource construction plus narrower bundle-finalization-owned reference-alignment findings, including a bounded medications-only multiplicity expansion of up to two entries.
 
 - The workflow reads existing PS-CA package files deterministically from the repo.
 - The spec retrieval stage exposes a normalized PS-CA asset context with foundational profiles, Composition section definitions, and selected example evidence.
@@ -152,7 +152,8 @@ The `bundle_schematic` stage now emits the first real PS-CA schematic artifact f
 - summary and placeholder-note text showing whether the run used:
   - legacy patient-profile fallback
   - explicit patient/clinical context with fixed single-entry consumption
-  - explicit patient/clinical context with additional structured items still deferred under fixed one-entry-per-section planning
+  - explicit patient/clinical context with bounded two-medication planning using the first two structured items
+  - explicit patient/clinical context with additional medication items still deferred beyond the first two planned entries
   - legacy provider-profile fallback
   - deterministic single-relationship provider-context selection
   - explicit provider-role relationship selection
@@ -168,7 +169,8 @@ The `build_plan` stage now emits the first real PS-CA planning artifact for work
   - organization
   - practitioner role
   - composition scaffold
-  - medication, allergy, and problem section entries
+  - one or two medication section entries
+  - allergy and problem section entries
   - section-specific composition finalization for medications, allergies, and problems
 - explicit prerequisite relationships rather than a simple linear chain
 - expected step inputs and expected outputs that the later resource-construction slice can consume
@@ -192,9 +194,9 @@ The `resource_construction` stage now emits the first real scaffold-oriented con
   - an Organization identifier system/value and name when selected provider-organization context is available
   - a PractitionerRole relationship identifier system/value plus a narrow author label from the selected provider-role relationship when available
   - a Composition status and title
-  - section-entry status and text content for medications, allergies, and problems, using structured patient clinical profile text when exactly one matching item is available
+  - section-entry status and text content for medications, allergies, and problems, using structured patient clinical profile text for up to the first two planned medications and for single matching allergy/problem items
 - normalized patient-context inspectability showing the selected patient identity and any single-entry clinical profile items currently consumable by the fixed one-entry-per-section workflow
-- schematic-level patient-context inspectability showing available item counts for medications, allergies, and problems even when the current planner still keeps one placeholder per required section
+- schematic-level patient-context inspectability showing available item counts for medications, allergies, and problems plus the bounded medications-only planned placeholder count
 - normalized provider-context inspectability showing the selected provider, selected organization, and selected provider-role relationship when available
 - a resource registry showing the latest scaffold state per placeholder
 - explicit incremental `Composition` behavior:
@@ -252,6 +254,7 @@ The `validation` stage now emits the first real structured validation artifact f
     - `PractitionerRole` author-context label
   - section-specific deterministic Composition section-presence checks for medications, allergies, and problems
   - resource-specific placeholder-content checks for `MedicationRequest`, `AllergyIntolerance`, and `Condition`
+  - second-medication-specific placeholder-content and reference checks when the bounded two-medication path is planned
   - resource-specific non-Composition source-reference contribution checks for:
     - `PractitionerRole.practitioner`
     - `PractitionerRole.organization`

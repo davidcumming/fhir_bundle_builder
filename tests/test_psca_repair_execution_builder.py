@@ -15,6 +15,9 @@ from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.bundle_finalizat
 from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.models import (
     BundleRequestInput,
     NormalizedBuildRequest,
+    PatientContextInput,
+    PatientIdentityInput,
+    PatientMedicationInput,
     ProfileReferenceInput,
     ProviderContextInput,
     ProviderIdentityInput,
@@ -266,6 +269,41 @@ async def test_psca_repair_execution_reruns_one_section_entry_step_for_single_re
     ]
     assert execution.post_retry_resource_construction.regenerated_placeholder_ids == [
         "medicationrequest-1",
+    ]
+    assert execution.post_retry_validation_report is not None
+    assert execution.post_retry_validation_report.overall_status == "passed_with_warnings"
+
+
+async def test_psca_repair_execution_reruns_second_medication_step_for_second_medication_failure() -> None:
+    artifacts = await _build_repair_inputs(
+        mutator=_remove_second_medicationrequest_content,
+        medication_texts=[
+            "Atorvastatin 20 MG oral tablet",
+            "Metformin 500 MG oral tablet",
+        ],
+    )
+
+    execution = await build_psca_repair_execution_result(
+        artifacts["repair_decision"],
+        artifacts["normalized_request"],
+        artifacts["build_plan"],
+        artifacts["schematic"],
+        artifacts["resource_construction"],
+        LocalCandidateBundleScaffoldStandardsValidator(),
+    )
+
+    assert execution.execution_outcome == "executed"
+    assert execution.requested_target == "resource_construction"
+    assert execution.applied_resource_construction_repair_directive is not None
+    assert execution.applied_resource_construction_repair_directive.target_step_ids == [
+        "build-medicationrequest-2",
+    ]
+    assert execution.post_retry_resource_construction is not None
+    assert [step.step_id for step in execution.post_retry_resource_construction.step_results] == [
+        "build-medicationrequest-2",
+    ]
+    assert execution.post_retry_resource_construction.regenerated_placeholder_ids == [
+        "medicationrequest-2",
     ]
     assert execution.post_retry_validation_report is not None
     assert execution.post_retry_validation_report.overall_status == "passed_with_warnings"
@@ -547,15 +585,32 @@ async def test_psca_repair_execution_marks_build_plan_retry_as_unsupported() -> 
     assert execution.unsupported_reason is not None
 
 
-async def _build_repair_inputs(mutator=None, construction_mutator=None):
+async def _build_repair_inputs(mutator=None, construction_mutator=None, medication_texts=None):
     repository = PscaAssetRepository()
     normalized_assets = repository.load_foundation_context(PscaAssetQuery())
+    medication_texts = medication_texts or ["Atorvastatin 20 MG oral tablet"]
     normalized_request = build_psca_normalized_request(
         WorkflowBuildInput(
             specification=SpecificationSelection(),
             patient_profile=ProfileReferenceInput(
                 profile_id="patient-retry-test",
                 display_name="Retry Test Patient",
+            ),
+            patient_context=PatientContextInput(
+                patient=PatientIdentityInput(
+                    patient_id="patient-retry-test",
+                    display_name="Retry Test Patient",
+                    source_type="patient_management",
+                ),
+                medications=[
+                    PatientMedicationInput(
+                        medication_id=f"med-retry-{index}",
+                        display_text=display_text,
+                    )
+                    for index, display_text in enumerate(medication_texts, start=1)
+                ],
+                allergies=[],
+                conditions=[],
             ),
             provider_profile=ProfileReferenceInput(
                 profile_id="provider-retry-test",
@@ -637,6 +692,13 @@ def _remove_allergies_and_problems_sections(candidate_bundle):
 def _remove_medicationrequest_content(candidate_bundle):
     broken_bundle = deepcopy(candidate_bundle)
     medication = broken_bundle.candidate_bundle.fhir_bundle["entry"][5]["resource"]
+    medication["medicationCodeableConcept"]["text"] = ""
+    return broken_bundle
+
+
+def _remove_second_medicationrequest_content(candidate_bundle):
+    broken_bundle = deepcopy(candidate_bundle)
+    medication = broken_bundle.candidate_bundle.fhir_bundle["entry"][6]["resource"]
     medication["medicationCodeableConcept"]["text"] = ""
     return broken_bundle
 

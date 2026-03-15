@@ -101,16 +101,26 @@ def build_psca_bundle_schematic(
         if selected_profile_id not in used_profile_ids:
             used_profile_ids.append(selected_profile_id)
 
-        placeholder = ResourcePlaceholder(
-            placeholder_id=f"{selected_resource_type.lower()}-1",
-            resource_type=selected_resource_type,
-            role=f"{section_definition.section_key}-section-entry",
-            profile_url=selected_profile_url,
-            required=True,
-            section_keys=[section_definition.section_key],
-            required_later_fields=["identifier", "clinical content"],
+        placeholder_ids = (
+            _planned_medication_placeholder_ids(normalized_request)
+            if section_definition.section_key == "medications"
+            else [f"{selected_resource_type.lower()}-1"]
         )
-        section_resource_placeholders.append(placeholder)
+        for index, placeholder_id in enumerate(placeholder_ids, start=1):
+            placeholder = ResourcePlaceholder(
+                placeholder_id=placeholder_id,
+                resource_type=selected_resource_type,
+                role=(
+                    f"{section_definition.section_key}-section-entry-{index}"
+                    if len(placeholder_ids) > 1
+                    else f"{section_definition.section_key}-section-entry"
+                ),
+                profile_url=selected_profile_url,
+                required=True,
+                section_keys=[section_definition.section_key],
+                required_later_fields=["identifier", "clinical content"],
+            )
+            section_resource_placeholders.append(placeholder)
         section_scaffolds.append(
             SectionScaffold(
                 section_key=section_definition.section_key,
@@ -119,7 +129,7 @@ def build_psca_bundle_schematic(
                 loinc_code=section_definition.loinc_code,
                 required=section_definition.required,
                 allowed_resource_types=section_definition.allowed_entry_resource_types,
-                entry_placeholder_ids=[placeholder.placeholder_id],
+                entry_placeholder_ids=list(placeholder_ids),
             )
         )
 
@@ -247,14 +257,15 @@ def build_psca_bundle_schematic(
         ],
         *[
             SchematicRelationship(
-                relationship_id=f"section-entry-{section.section_key}",
+                relationship_id=_section_entry_relationship_id(section.section_key, index),
                 relationship_type="composition_section_entry",
                 source_id="composition-1",
-                target_id=section.entry_placeholder_ids[0],
+                target_id=placeholder_id,
                 reference_path=f"Composition.section:{section.slice_name}.entry",
                 description=f"Composition scaffold wires the {section.title} section to its placeholder entry resource.",
             )
             for section in section_scaffolds
+            for index, placeholder_id in enumerate(section.entry_placeholder_ids, start=1)
         ],
     ]
 
@@ -264,15 +275,20 @@ def build_psca_bundle_schematic(
         if not section.required
     ]
     clinical_section_contexts = _clinical_section_contexts(section_scaffolds, normalized_request)
-    multiple_items_deferred = any(
-        context.planning_disposition == "fixed_single_entry_multiple_items_deferred"
-        for context in clinical_section_contexts
+    medications_context = next(
+        context for context in clinical_section_contexts if context.section_key == "medications"
     )
-    multiplicity_summary = (
-        "with one-entry-per-section planning still fixed despite additional structured clinical items"
-        if multiple_items_deferred
-        else "with one-entry-per-section planning unchanged for the current fixed trio"
+    medications_bounded_expansion = medications_context.planned_placeholder_count == 2
+    medications_overflow_deferred = (
+        medications_context.available_item_count > medications_context.planned_placeholder_count
     )
+    multiplicity_summary = "with one-entry-per-section planning unchanged for the current fixed trio"
+    if medications_bounded_expansion:
+        multiplicity_summary = "with medications planning expanded to a bounded two-placeholder path"
+    if medications_overflow_deferred:
+        multiplicity_summary = (
+            "with medications planning expanded to the first two structured items while additional medication items remain deferred"
+        )
 
     return BundleSchematic(
         stage_id="bundle_schematic",
@@ -285,7 +301,7 @@ def build_psca_bundle_schematic(
         placeholder_note=(
             "This slice builds a real schematic scaffold only; build ordering, resource population, "
             f"and optional PS-CA sections remain deferred. {provider_context_note} "
-            f"{patient_context_note} Planning remains fixed to one placeholder per required medications/allergies/problems section in this slice."
+            f"{patient_context_note} Planning remains fixed to one placeholder per required allergies/problems section and supports at most two medication placeholders in this slice."
         ),
         source_refs=normalized_assets.source_refs,
         generation_basis="deterministic_psca_foundation_rules",
@@ -453,16 +469,23 @@ def _clinical_section_contexts(
             section.section_key,
             normalized_request,
         )
+        planned_entry_display_texts = _planned_section_display_texts(
+            section.section_key,
+            normalized_request,
+        )
         contexts.append(
             SchematicClinicalSectionContextEvidence(
                 section_key=section.section_key,
                 available_item_count=available_item_count,
                 selected_single_entry_display_text=selected_display_text,
+                planned_entry_display_texts=planned_entry_display_texts,
                 planned_placeholder_count=len(section.entry_placeholder_ids),
                 planning_disposition=_section_planning_disposition(
+                    section.section_key,
                     normalized_request,
                     available_item_count,
                     selected_display_text,
+                    len(section.entry_placeholder_ids),
                 ),
             )
         )
@@ -504,15 +527,50 @@ def _patient_section_context_values(
     raise ValueError(f"Unsupported patient-context section key '{section_key}'.")
 
 
+def _planned_section_display_texts(
+    section_key: str,
+    normalized_request: NormalizedBuildRequest,
+) -> list[str]:
+    patient_context = normalized_request.patient_context
+    if section_key == "medications":
+        return [
+            medication.display_text
+            for medication in patient_context.medications[:2]
+        ]
+    if section_key == "allergies" and patient_context.selected_allergy_for_single_entry is not None:
+        return [patient_context.selected_allergy_for_single_entry.display_text]
+    if section_key == "problems" and patient_context.selected_condition_for_single_entry is not None:
+        return [patient_context.selected_condition_for_single_entry.display_text]
+    return []
+
+
 def _section_planning_disposition(
+    section_key: str,
     normalized_request: NormalizedBuildRequest,
     available_item_count: int,
     selected_display_text: str | None,
+    planned_placeholder_count: int,
 ) -> str:
     if normalized_request.patient_context.normalization_mode == "legacy_patient_profile":
         return "legacy_profile_fallback"
+    if section_key == "medications" and planned_placeholder_count == 2:
+        return "bounded_two_entry_selected_first_two"
     if available_item_count > 1:
         return "fixed_single_entry_multiple_items_deferred"
     if selected_display_text is not None:
         return "fixed_single_entry_selected_item"
     return "fixed_single_entry_no_structured_items"
+
+
+def _planned_medication_placeholder_ids(
+    normalized_request: NormalizedBuildRequest,
+) -> list[str]:
+    if len(normalized_request.patient_context.medications) >= 2:
+        return ["medicationrequest-1", "medicationrequest-2"]
+    return ["medicationrequest-1"]
+
+
+def _section_entry_relationship_id(section_key: str, index: int) -> str:
+    if index == 1:
+        return f"section-entry-{section_key}"
+    return f"section-entry-{section_key}-{index}"

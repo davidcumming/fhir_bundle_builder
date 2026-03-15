@@ -485,7 +485,12 @@ def _build_section_entry_result(
     section = sections.get(step.owning_section_key or "")
     if section is None:
         raise ValueError(f"Missing section scaffold for section-entry step '{step.step_id}'.")
-    placeholder_text = _section_entry_placeholder_text(step.resource_type, section, normalized_request)
+    placeholder_text = _section_entry_placeholder_text(
+        step.resource_type,
+        section,
+        normalized_request,
+        placeholder.placeholder_id,
+    )
     populated_paths = _base_populated_paths(placeholder) + [reference_path]
     deterministic_value_evidence = [
         _value_evidence(reference_path, "deterministic_reference_policy", f"{step.resource_type} references patient-1."),
@@ -502,8 +507,18 @@ def _build_section_entry_result(
                 _value_evidence("intent", "deterministic_content_policy", "MedicationRequest intent is fixed to proposal for placeholder content."),
                 _value_evidence(
                     "medicationCodeableConcept.text",
-                    _section_entry_text_source_artifact(step.resource_type, normalized_request, section.section_key),
-                    _section_entry_text_source_detail(step.resource_type, normalized_request, section.title),
+                    _section_entry_text_source_artifact(
+                        step.resource_type,
+                        normalized_request,
+                        section.section_key,
+                        placeholder.placeholder_id,
+                    ),
+                    _section_entry_text_source_detail(
+                        step.resource_type,
+                        normalized_request,
+                        section.title,
+                        placeholder.placeholder_id,
+                    ),
                 ),
             ]
         )
@@ -540,8 +555,18 @@ def _build_section_entry_result(
                 _value_evidence("verificationStatus.coding[0].code", "deterministic_content_policy", "Fixed AllergyIntolerance verification status code."),
                 _value_evidence(
                     "code.text",
-                    _section_entry_text_source_artifact(step.resource_type, normalized_request, section.section_key),
-                    _section_entry_text_source_detail(step.resource_type, normalized_request, section.title),
+                    _section_entry_text_source_artifact(
+                        step.resource_type,
+                        normalized_request,
+                        section.section_key,
+                        placeholder.placeholder_id,
+                    ),
+                    _section_entry_text_source_detail(
+                        step.resource_type,
+                        normalized_request,
+                        section.title,
+                        placeholder.placeholder_id,
+                    ),
                 ),
             ]
         )
@@ -578,8 +603,18 @@ def _build_section_entry_result(
                 _value_evidence("verificationStatus.coding[0].code", "deterministic_content_policy", "Fixed Condition verification status code."),
                 _value_evidence(
                     "code.text",
-                    _section_entry_text_source_artifact(step.resource_type, normalized_request, section.section_key),
-                    _section_entry_text_source_detail(step.resource_type, normalized_request, section.title),
+                    _section_entry_text_source_artifact(
+                        step.resource_type,
+                        normalized_request,
+                        section.section_key,
+                        placeholder.placeholder_id,
+                    ),
+                    _section_entry_text_source_detail(
+                        step.resource_type,
+                        normalized_request,
+                        section.title,
+                        placeholder.placeholder_id,
+                    ),
                 ),
             ]
         )
@@ -711,9 +746,15 @@ def _build_composition_finalize_result(
         raise ValueError(
             f"Missing section scaffold '{step.owning_section_key}' required for Composition finalization."
         )
-    entry_placeholder_id = target_section.entry_placeholder_ids[0]
-    entry_reference = _local_reference_for_placeholder(entry_placeholder_id)
-    section_blocks_by_key[step.owning_section_key] = _composition_section_block(target_section, entry_reference)
+    entry_placeholder_ids = list(target_section.entry_placeholder_ids)
+    entry_references = [
+        _local_reference_for_placeholder(entry_placeholder_id)
+        for entry_placeholder_id in entry_placeholder_ids
+    ]
+    section_blocks_by_key[step.owning_section_key] = _composition_section_block(
+        target_section,
+        entry_references,
+    )
 
     ordered_section_keys = [
         section_key
@@ -728,15 +769,7 @@ def _build_composition_finalize_result(
             f"section[{section_index}].code.coding[0].system",
             f"section[{section_index}].code.coding[0].code",
             f"section[{section_index}].code.coding[0].display",
-            f"section[{section_index}].entry[0].reference",
         ]
-    )
-    reference_contributions.append(
-        _reference_contribution(
-            f"section[{section_index}].entry[0].reference",
-            entry_placeholder_id,
-            entry_reference,
-        )
     )
     deterministic_value_evidence.extend(
         [
@@ -760,13 +793,26 @@ def _build_composition_finalize_result(
                 f"bundle_schematic.section_scaffolds[{target_section.section_key}]",
                 "title",
             ),
-            _value_evidence(
-                f"section[{section_index}].entry[0].reference",
-                "deterministic_reference_policy",
-                f"Composition section entry references {entry_placeholder_id}.",
-            ),
         ]
     )
+    for entry_index, (entry_placeholder_id, entry_reference) in enumerate(
+        zip(entry_placeholder_ids, entry_references, strict=False)
+    ):
+        populated_paths.append(f"section[{section_index}].entry[{entry_index}].reference")
+        reference_contributions.append(
+            _reference_contribution(
+                f"section[{section_index}].entry[{entry_index}].reference",
+                entry_placeholder_id,
+                entry_reference,
+            )
+        )
+        deterministic_value_evidence.append(
+            _value_evidence(
+                f"section[{section_index}].entry[{entry_index}].reference",
+                "deterministic_reference_policy",
+                f"Composition section entry references {entry_placeholder_id}.",
+            )
+        )
 
     scaffold_dict["section"] = section_blocks
     resource_scaffold = ResourceScaffoldArtifact(
@@ -790,7 +836,7 @@ def _build_composition_finalize_result(
         reference_contributions=reference_contributions,
         deterministic_value_evidence=deterministic_value_evidence,
         assumptions=[
-            "Composition finalization attaches one deterministic required section block at a time while preserving previously attached sections.",
+            "Composition finalization attaches one deterministic required section block at a time while preserving previously attached sections and can contribute up to two medication section-entry references in this slice.",
         ],
         warnings=[],
         unresolved_fields=resource_scaffold.deferred_paths,
@@ -835,7 +881,7 @@ def _section_block_matches_scaffold(
 
 def _composition_section_block(
     section: SectionScaffold,
-    entry_reference: str,
+    entry_references: list[str],
 ) -> dict[str, object]:
     return {
         "title": section.title,
@@ -848,7 +894,7 @@ def _composition_section_block(
                 }
             ]
         },
-        "entry": [{"reference": entry_reference}],
+        "entry": [{"reference": entry_reference} for entry_reference in entry_references],
     }
 
 
@@ -917,9 +963,10 @@ def _section_entry_placeholder_text(
     resource_type: str,
     section: SectionScaffold,
     normalized_request: NormalizedBuildRequest,
+    placeholder_id: str,
 ) -> str:
     if resource_type == "MedicationRequest":
-        selected = normalized_request.patient_context.selected_medication_for_single_entry
+        selected = _selected_medication_for_placeholder(normalized_request, placeholder_id)
         if selected is not None:
             return selected.display_text
     elif resource_type == "AllergyIntolerance":
@@ -937,9 +984,12 @@ def _section_entry_text_source_artifact(
     resource_type: str,
     normalized_request: NormalizedBuildRequest,
     section_key: str,
+    placeholder_id: str,
 ) -> str:
-    if resource_type == "MedicationRequest" and normalized_request.patient_context.selected_medication_for_single_entry is not None:
-        return "normalized_request.patient_context.selected_medication_for_single_entry"
+    if resource_type == "MedicationRequest":
+        selected = _selected_medication_for_placeholder(normalized_request, placeholder_id)
+        if selected is not None:
+            return f"normalized_request.patient_context.medications[{_medication_placeholder_index(placeholder_id)}]"
     if resource_type == "AllergyIntolerance" and normalized_request.patient_context.selected_allergy_for_single_entry is not None:
         return "normalized_request.patient_context.selected_allergy_for_single_entry"
     if resource_type == "Condition" and normalized_request.patient_context.selected_condition_for_single_entry is not None:
@@ -951,14 +1001,38 @@ def _section_entry_text_source_detail(
     resource_type: str,
     normalized_request: NormalizedBuildRequest,
     section_title: str,
+    placeholder_id: str,
 ) -> str:
-    if resource_type == "MedicationRequest" and normalized_request.patient_context.selected_medication_for_single_entry is not None:
-        return "display_text"
+    if resource_type == "MedicationRequest":
+        selected = _selected_medication_for_placeholder(normalized_request, placeholder_id)
+        if selected is not None:
+            return "display_text"
     if resource_type == "AllergyIntolerance" and normalized_request.patient_context.selected_allergy_for_single_entry is not None:
         return "display_text"
     if resource_type == "Condition" and normalized_request.patient_context.selected_condition_for_single_entry is not None:
         return "display_text"
     return f"{section_title} + scenario_label"
+
+
+def _selected_medication_for_placeholder(
+    normalized_request: NormalizedBuildRequest,
+    placeholder_id: str,
+):
+    medication_index = _medication_placeholder_index(placeholder_id)
+    medications = normalized_request.patient_context.medications
+    if 0 <= medication_index < len(medications):
+        return medications[medication_index]
+    if placeholder_id == "medicationrequest-1":
+        return normalized_request.patient_context.selected_medication_for_single_entry
+    return None
+
+
+def _medication_placeholder_index(placeholder_id: str) -> int:
+    if placeholder_id == "medicationrequest-1":
+        return 0
+    if placeholder_id == "medicationrequest-2":
+        return 1
+    raise ValueError(f"Unsupported MedicationRequest placeholder id '{placeholder_id}'.")
 
 
 def _reference_contribution(reference_path: str, target_placeholder_id: str, reference_value: str) -> ReferenceContribution:

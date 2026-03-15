@@ -121,6 +121,12 @@ _FINDING_ROUTE_MAP: dict[str, tuple[str, str, bool, str]] = {
         True,
         "MedicationRequest placeholder content is populated during resource construction.",
     ),
+    "bundle.medicationrequest_2_placeholder_content_present": (
+        "resource_construction",
+        "resource_construction",
+        True,
+        "The second MedicationRequest placeholder content is populated during resource construction.",
+    ),
     "bundle.allergyintolerance_placeholder_content_present": (
         "resource_construction",
         "resource_construction",
@@ -169,6 +175,12 @@ _FINDING_ROUTE_MAP: dict[str, tuple[str, str, bool, str]] = {
         True,
         "MedicationRequest.subject local reference contribution is created during resource construction before bundle fullUrl rewriting.",
     ),
+    "bundle.medicationrequest_2_subject_reference_contribution_aligned": (
+        "resource_construction",
+        "resource_construction",
+        True,
+        "The second MedicationRequest.subject local reference contribution is created during resource construction before bundle fullUrl rewriting.",
+    ),
     "bundle.allergyintolerance_patient_reference_contribution_aligned": (
         "resource_construction",
         "resource_construction",
@@ -198,6 +210,12 @@ _FINDING_ROUTE_MAP: dict[str, tuple[str, str, bool, str]] = {
         "bundle_finalization",
         True,
         "MedicationRequest.subject final fullUrl alignment is applied during candidate bundle assembly.",
+    ),
+    "bundle.medicationrequest_2_subject_reference_aligned": (
+        "bundle_finalization",
+        "bundle_finalization",
+        True,
+        "The second MedicationRequest.subject final fullUrl alignment is applied during candidate bundle assembly.",
     ),
     "bundle.allergyintolerance_patient_reference_aligned": (
         "bundle_finalization",
@@ -340,6 +358,11 @@ _RESOURCE_CONSTRUCTION_DIRECTIVE_MAP: dict[str, tuple[list[str], list[str], str]
         ["medicationrequest-1"],
         "Rerun the MedicationRequest section-entry step to restore the deterministic local Patient reference contribution before downstream fullUrl rewriting.",
     ),
+    "bundle.medicationrequest_2_subject_reference_contribution_aligned": (
+        ["build-medicationrequest-2"],
+        ["medicationrequest-2"],
+        "Rerun the second MedicationRequest section-entry step to restore the deterministic local Patient reference contribution before downstream fullUrl rewriting.",
+    ),
     "bundle.allergyintolerance_patient_reference_contribution_aligned": (
         ["build-allergyintolerance-1"],
         ["allergyintolerance-1"],
@@ -365,6 +388,11 @@ _RESOURCE_CONSTRUCTION_DIRECTIVE_MAP: dict[str, tuple[list[str], list[str], str]
         ["medicationrequest-1"],
         "Rerun the MedicationRequest section-entry step to restore deterministic placeholder content for the medications section entry.",
     ),
+    "bundle.medicationrequest_2_placeholder_content_present": (
+        ["build-medicationrequest-2"],
+        ["medicationrequest-2"],
+        "Rerun the second MedicationRequest section-entry step to restore deterministic placeholder content for the medications section entry.",
+    ),
     "bundle.allergyintolerance_placeholder_content_present": (
         ["build-allergyintolerance-1"],
         ["allergyintolerance-1"],
@@ -384,11 +412,12 @@ _RESOURCE_CONSTRUCTION_STEP_ORDER = {
     "build-practitionerrole-1": 4,
     "build-composition-1-scaffold": 5,
     "build-medicationrequest-1": 6,
-    "build-allergyintolerance-1": 7,
-    "build-condition-1": 8,
-    "finalize-composition-1-medications-section": 9,
-    "finalize-composition-1-allergies-section": 10,
-    "finalize-composition-1-problems-section": 11,
+    "build-medicationrequest-2": 7,
+    "build-allergyintolerance-1": 8,
+    "build-condition-1": 9,
+    "finalize-composition-1-medications-section": 10,
+    "finalize-composition-1-allergies-section": 11,
+    "finalize-composition-1-problems-section": 12,
 }
 
 

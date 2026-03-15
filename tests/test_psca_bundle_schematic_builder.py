@@ -79,6 +79,7 @@ def test_psca_bundle_schematic_builder_generates_required_scaffold() -> None:
     section_contexts = {context.section_key: context for context in schematic.evidence.clinical_section_contexts}
     assert section_contexts["medications"].available_item_count == 1
     assert section_contexts["medications"].selected_single_entry_display_text == "Atorvastatin 20 MG oral tablet"
+    assert section_contexts["medications"].planned_entry_display_texts == ["Atorvastatin 20 MG oral tablet"]
     assert section_contexts["medications"].planned_placeholder_count == 1
     assert section_contexts["medications"].planning_disposition == "fixed_single_entry_selected_item"
     assert section_contexts["allergies"].planning_disposition == "fixed_single_entry_selected_item"
@@ -89,7 +90,7 @@ def test_psca_bundle_schematic_builder_generates_required_scaffold() -> None:
     assert schematic.evidence.provider_context.selected_provider_role_relationship_id == "provider-role-schematic-1"
     assert schematic.evidence.provider_context.selected_provider_role_label == "attending-physician"
     assert "explicit structured patient/clinical context" in schematic.summary
-    assert "one placeholder per required medications/allergies/problems section" in schematic.placeholder_note
+    assert "supports at most two medication placeholders" in schematic.placeholder_note
     assert "explicitly selected provider-role relationship context" in schematic.summary
     assert "explicitly selected provider-role relationship" in schematic.placeholder_note
 
@@ -116,7 +117,7 @@ def test_psca_bundle_schematic_builder_records_legacy_provider_context_fallback(
     assert "legacy provider-profile fallback only" in schematic.placeholder_note
 
 
-def test_psca_bundle_schematic_builder_records_multiple_patient_items_as_deferred_under_fixed_single_entry_planning() -> None:
+def test_psca_bundle_schematic_builder_supports_bounded_two_medication_planning() -> None:
     repository = PscaAssetRepository()
     normalized_assets = repository.load_foundation_context(PscaAssetQuery())
     normalized_request = build_psca_normalized_request(
@@ -171,14 +172,78 @@ def test_psca_bundle_schematic_builder_records_multiple_patient_items_as_deferre
 
     assert section_contexts["medications"].available_item_count == 2
     assert section_contexts["medications"].selected_single_entry_display_text is None
-    assert section_contexts["medications"].planned_placeholder_count == 1
-    assert section_contexts["medications"].planning_disposition == "fixed_single_entry_multiple_items_deferred"
+    assert section_contexts["medications"].planned_entry_display_texts == [
+        "Atorvastatin 20 MG oral tablet",
+        "Metformin 500 MG oral tablet",
+    ]
+    assert section_contexts["medications"].planned_placeholder_count == 2
+    assert section_contexts["medications"].planning_disposition == "bounded_two_entry_selected_first_two"
+    assert section_contexts["allergies"].planned_placeholder_count == 1
     assert {placeholder.placeholder_id for placeholder in schematic.resource_placeholders} >= {
         "medicationrequest-1",
+        "medicationrequest-2",
         "allergyintolerance-1",
         "condition-1",
     }
-    assert "with one-entry-per-section planning still fixed despite additional structured clinical items" in schematic.summary
+    medications_section = next(
+        section for section in schematic.section_scaffolds if section.section_key == "medications"
+    )
+    assert medications_section.entry_placeholder_ids == ["medicationrequest-1", "medicationrequest-2"]
+    relationships = {relationship.relationship_id: relationship for relationship in schematic.relationships}
+    assert relationships["section-entry-medications"].target_id == "medicationrequest-1"
+    assert relationships["section-entry-medications-2"].target_id == "medicationrequest-2"
+    assert "bounded two-placeholder path" in schematic.summary
+
+
+def test_psca_bundle_schematic_builder_records_medication_overflow_beyond_two_as_deferred() -> None:
+    repository = PscaAssetRepository()
+    normalized_assets = repository.load_foundation_context(PscaAssetQuery())
+    normalized_request = build_psca_normalized_request(
+        WorkflowBuildInput(
+            specification=SpecificationSelection(),
+            patient_profile=ProfileReferenceInput(
+                profile_id="patient-schematic-overflow-test",
+                display_name="Schematic Overflow Patient",
+            ),
+            patient_context=PatientContextInput(
+                patient=PatientIdentityInput(
+                    patient_id="patient-schematic-overflow-test",
+                    display_name="Schematic Overflow Patient",
+                    source_type="patient_management",
+                ),
+                medications=[
+                    PatientMedicationInput(medication_id="med-overflow-1", display_text="Atorvastatin 20 MG oral tablet"),
+                    PatientMedicationInput(medication_id="med-overflow-2", display_text="Metformin 500 MG oral tablet"),
+                    PatientMedicationInput(medication_id="med-overflow-3", display_text="Lisinopril 10 MG oral tablet"),
+                ],
+                allergies=[],
+                conditions=[],
+            ),
+            provider_profile=ProfileReferenceInput(
+                profile_id="provider-schematic-overflow-test",
+                display_name="Schematic Overflow Provider",
+            ),
+            request=BundleRequestInput(
+                request_text="Create a deterministic schematic for bounded medication overflow testing.",
+                scenario_label="pytest-schematic-overflow",
+            ),
+        )
+    )
+
+    schematic = build_psca_bundle_schematic(normalized_assets, normalized_request)
+    medications_context = next(
+        context
+        for context in schematic.evidence.clinical_section_contexts
+        if context.section_key == "medications"
+    )
+
+    assert medications_context.available_item_count == 3
+    assert medications_context.planned_placeholder_count == 2
+    assert medications_context.planned_entry_display_texts == [
+        "Atorvastatin 20 MG oral tablet",
+        "Metformin 500 MG oral tablet",
+    ]
+    assert "additional medication items remain deferred" in schematic.summary
 
 
 def _build_normalized_request():
