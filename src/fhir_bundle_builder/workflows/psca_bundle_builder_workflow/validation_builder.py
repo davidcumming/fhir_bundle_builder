@@ -239,6 +239,7 @@ def _build_workflow_validation_result(
         )
 
     patient = _find_resource_by_type(bundle, "Patient")
+    expected_patient = normalized_request.patient_context.patient
     patient_identifier = patient.get("identifier") if isinstance(patient, dict) else None
     patient_name = patient.get("name") if isinstance(patient, dict) else None
     identifier_value = (
@@ -251,12 +252,23 @@ def _build_workflow_validation_result(
         if isinstance(patient_name, list) and patient_name and isinstance(patient_name[0], dict)
         else None
     )
-    if patient.get("active") is not True or not identifier_value or not patient_name_text:
+    patient_gender = patient.get("gender") if isinstance(patient, dict) else None
+    patient_birth_date = patient.get("birthDate") if isinstance(patient, dict) else None
+    if (
+        patient.get("active") is not True
+        or identifier_value != expected_patient.patient_id
+        or patient_name_text != expected_patient.display_name
+        or (
+            expected_patient.administrative_gender is not None
+            and patient_gender != expected_patient.administrative_gender
+        )
+        or (expected_patient.birth_date is not None and patient_birth_date != expected_patient.birth_date)
+    ):
         findings.append(
             _workflow_error(
                 "bundle.patient_identity_content_present",
                 "Bundle.entry[1].resource",
-                "Expected Patient enriched content to include active=true, identifier[0].value, and name[0].text.",
+                "Expected Patient enriched content to include active=true, identifier[0].value, and name[0].text from normalized patient context, plus gender/birthDate when supplied.",
             )
         )
 
@@ -360,30 +372,30 @@ def _build_workflow_validation_result(
             )
         )
 
-    if not _medicationrequest_placeholder_content_present(bundle):
+    if not _medicationrequest_placeholder_content_present(bundle, normalized_request, schematic):
         findings.append(
             _workflow_error(
                 "bundle.medicationrequest_placeholder_content_present",
                 "Bundle.entry[5].resource",
-                "Expected MedicationRequest placeholder content to include status='draft', intent='proposal', and medicationCodeableConcept.text.",
+                "Expected MedicationRequest content to include status='draft', intent='proposal', and the deterministic medication text from normalized patient context or the section-title fallback.",
             )
         )
 
-    if not _allergyintolerance_placeholder_content_present(bundle):
+    if not _allergyintolerance_placeholder_content_present(bundle, normalized_request, schematic):
         findings.append(
             _workflow_error(
                 "bundle.allergyintolerance_placeholder_content_present",
                 "Bundle.entry[6].resource",
-                "Expected AllergyIntolerance placeholder content to include fixed clinical/verification status codes and code.text.",
+                "Expected AllergyIntolerance content to include fixed clinical/verification status codes and the deterministic allergy text from normalized patient context or the section-title fallback.",
             )
         )
 
-    if not _condition_placeholder_content_present(bundle):
+    if not _condition_placeholder_content_present(bundle, normalized_request, schematic):
         findings.append(
             _workflow_error(
                 "bundle.condition_placeholder_content_present",
                 "Bundle.entry[7].resource",
-                "Expected Condition placeholder content to include fixed clinical/verification status codes and code.text.",
+                "Expected Condition content to include fixed clinical/verification status codes and the deterministic condition text from normalized patient context or the section-title fallback.",
             )
         )
 
@@ -895,17 +907,26 @@ def _workflow_error(code: str, location: str, message: str) -> ValidationFinding
     )
 
 
-def _medicationrequest_placeholder_content_present(bundle: dict[str, object]) -> bool:
+def _medicationrequest_placeholder_content_present(
+    bundle: dict[str, object],
+    normalized_request: NormalizedBuildRequest,
+    schematic: BundleSchematic,
+) -> bool:
     medication = _find_resource_by_type(bundle, "MedicationRequest")
     return (
         medication.get("status") == "draft"
         and medication.get("intent") == "proposal"
         and isinstance(medication.get("medicationCodeableConcept"), dict)
-        and bool(medication["medicationCodeableConcept"].get("text"))
+        and medication["medicationCodeableConcept"].get("text")
+        == _expected_medication_text(normalized_request, schematic)
     )
 
 
-def _allergyintolerance_placeholder_content_present(bundle: dict[str, object]) -> bool:
+def _allergyintolerance_placeholder_content_present(
+    bundle: dict[str, object],
+    normalized_request: NormalizedBuildRequest,
+    schematic: BundleSchematic,
+) -> bool:
     allergy = _find_resource_by_type(bundle, "AllergyIntolerance")
     allergy_clinical = _first_coding(allergy.get("clinicalStatus"))
     allergy_verification = _first_coding(allergy.get("verificationStatus"))
@@ -913,11 +934,15 @@ def _allergyintolerance_placeholder_content_present(bundle: dict[str, object]) -
         allergy_clinical.get("code") == "active"
         and allergy_verification.get("code") == "unconfirmed"
         and isinstance(allergy.get("code"), dict)
-        and bool(allergy["code"].get("text"))
+        and allergy["code"].get("text") == _expected_allergy_text(normalized_request, schematic)
     )
 
 
-def _condition_placeholder_content_present(bundle: dict[str, object]) -> bool:
+def _condition_placeholder_content_present(
+    bundle: dict[str, object],
+    normalized_request: NormalizedBuildRequest,
+    schematic: BundleSchematic,
+) -> bool:
     condition = _find_resource_by_type(bundle, "Condition")
     condition_clinical = _first_coding(condition.get("clinicalStatus"))
     condition_verification = _first_coding(condition.get("verificationStatus"))
@@ -925,7 +950,7 @@ def _condition_placeholder_content_present(bundle: dict[str, object]) -> bool:
         condition_clinical.get("code") == "active"
         and condition_verification.get("code") == "provisional"
         and isinstance(condition.get("code"), dict)
-        and bool(condition["code"].get("text"))
+        and condition["code"].get("text") == _expected_condition_text(normalized_request, schematic)
     )
 
 
@@ -961,3 +986,44 @@ def _dedupe(values: list[str]) -> list[str]:
         if value not in ordered:
             ordered.append(value)
     return ordered
+
+
+def _expected_medication_text(
+    normalized_request: NormalizedBuildRequest,
+    schematic: BundleSchematic,
+) -> str:
+    selected = normalized_request.patient_context.selected_medication_for_single_entry
+    if selected is not None:
+        return selected.display_text
+    return _fallback_section_placeholder_text("medications", schematic, normalized_request)
+
+
+def _expected_allergy_text(
+    normalized_request: NormalizedBuildRequest,
+    schematic: BundleSchematic,
+) -> str:
+    selected = normalized_request.patient_context.selected_allergy_for_single_entry
+    if selected is not None:
+        return selected.display_text
+    return _fallback_section_placeholder_text("allergies", schematic, normalized_request)
+
+
+def _expected_condition_text(
+    normalized_request: NormalizedBuildRequest,
+    schematic: BundleSchematic,
+) -> str:
+    selected = normalized_request.patient_context.selected_condition_for_single_entry
+    if selected is not None:
+        return selected.display_text
+    return _fallback_section_placeholder_text("problems", schematic, normalized_request)
+
+
+def _fallback_section_placeholder_text(
+    section_key: str,
+    schematic: BundleSchematic,
+    normalized_request: NormalizedBuildRequest,
+) -> str:
+    for section in schematic.section_scaffolds:
+        if section.section_key == section_key:
+            return f"{section.title} placeholder for {normalized_request.request.scenario_label}"
+    raise ValueError(f"Expected section scaffold '{section_key}' to be present.")

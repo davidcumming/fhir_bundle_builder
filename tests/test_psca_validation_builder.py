@@ -15,6 +15,11 @@ from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.bundle_finalizat
 from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.models import (
     BundleRequestInput,
     NormalizedBuildRequest,
+    PatientAllergyInput,
+    PatientConditionInput,
+    PatientContextInput,
+    PatientIdentityInput,
+    PatientMedicationInput,
     ProfileReferenceInput,
     ProviderContextInput,
     ProviderIdentityInput,
@@ -183,6 +188,26 @@ async def test_psca_validation_builder_fails_when_composition_or_patient_content
         finding.code == "bundle.composition_core_scaffold_content_present" and finding.severity == "error"
         for finding in report.workflow_validation.findings
     )
+    assert any(
+        finding.code == "bundle.patient_identity_content_present" and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+
+
+async def test_psca_validation_builder_fails_when_patient_context_demographics_are_missing() -> None:
+    normalized_request, schematic, candidate_bundle = _build_validation_inputs()
+    broken_bundle = deepcopy(candidate_bundle)
+    patient = broken_bundle.candidate_bundle.fhir_bundle["entry"][1]["resource"]
+    patient.pop("gender", None)
+
+    report = await build_psca_validation_report(
+        broken_bundle,
+        schematic,
+        normalized_request,
+        LocalCandidateBundleScaffoldStandardsValidator(),
+    )
+
+    assert report.workflow_validation.status == "failed"
     assert any(
         finding.code == "bundle.patient_identity_content_present" and finding.severity == "error"
         for finding in report.workflow_validation.findings
@@ -955,6 +980,33 @@ def _build_validation_inputs(
                 profile_id="patient-validation-test",
                 display_name="Validation Test Patient",
             ),
+            patient_context=PatientContextInput(
+                patient=PatientIdentityInput(
+                    patient_id="patient-validation-test",
+                    display_name="Validation Test Patient",
+                    source_type="patient_management",
+                    administrative_gender="female",
+                    birth_date="1985-02-14",
+                ),
+                medications=[
+                    PatientMedicationInput(
+                        medication_id="med-validation-1",
+                        display_text="Atorvastatin 20 MG oral tablet",
+                    )
+                ],
+                allergies=[
+                    PatientAllergyInput(
+                        allergy_id="alg-validation-1",
+                        display_text="Peanut allergy",
+                    )
+                ],
+                conditions=[
+                    PatientConditionInput(
+                        condition_id="cond-validation-1",
+                        display_text="Type 2 diabetes mellitus",
+                    )
+                ],
+            ),
             provider_profile=ProfileReferenceInput(
                 profile_id="provider-validation-test",
                 display_name="Validation Test Provider",
@@ -1008,6 +1060,33 @@ def _build_validation_artifacts(
             patient_profile=ProfileReferenceInput(
                 profile_id="patient-validation-test",
                 display_name="Validation Test Patient",
+            ),
+            patient_context=PatientContextInput(
+                patient=PatientIdentityInput(
+                    patient_id="patient-validation-test",
+                    display_name="Validation Test Patient",
+                    source_type="patient_management",
+                    administrative_gender="female",
+                    birth_date="1985-02-14",
+                ),
+                medications=[
+                    PatientMedicationInput(
+                        medication_id="med-validation-1",
+                        display_text="Atorvastatin 20 MG oral tablet",
+                    )
+                ],
+                allergies=[
+                    PatientAllergyInput(
+                        allergy_id="alg-validation-1",
+                        display_text="Peanut allergy",
+                    )
+                ],
+                conditions=[
+                    PatientConditionInput(
+                        condition_id="cond-validation-1",
+                        display_text="Type 2 diabetes mellitus",
+                    )
+                ],
             ),
             provider_profile=ProfileReferenceInput(
                 profile_id="provider-validation-test",

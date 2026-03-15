@@ -6,6 +6,11 @@ import pytest
 
 from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.models import (
     BundleRequestInput,
+    PatientAllergyInput,
+    PatientConditionInput,
+    PatientContextInput,
+    PatientIdentityInput,
+    PatientMedicationInput,
     ProfileReferenceInput,
     ProviderContextInput,
     ProviderIdentityInput,
@@ -39,6 +44,10 @@ def test_request_normalization_supports_legacy_provider_profile_mode() -> None:
     )
 
     assert normalized.provider_profile.profile_id == "provider-normalization-test"
+    assert normalized.patient_profile.profile_id == "patient-normalization-test"
+    assert normalized.patient_context.normalization_mode == "legacy_patient_profile"
+    assert normalized.patient_context.patient.patient_id == "patient-normalization-test"
+    assert normalized.patient_context.selected_medication_for_single_entry is None
     assert normalized.provider_context.normalization_mode == "legacy_provider_profile"
     assert normalized.provider_context.provider.provider_id == "provider-normalization-test"
     assert normalized.provider_context.selected_provider_role_relationship is None
@@ -57,6 +66,23 @@ def test_request_normalization_supports_explicit_provider_context_selection() ->
     assert normalized.provider_context.selected_provider_role_relationship.relationship_id == "provider-role-2"
     assert normalized.provider_context.selected_organization is not None
     assert normalized.provider_context.selected_organization.organization_id == "org-normalization-2"
+
+
+def test_request_normalization_supports_explicit_patient_context() -> None:
+    normalized = build_psca_normalized_request(_workflow_input_with_patient_context())
+
+    assert normalized.patient_profile.profile_id == "patient-normalization-test"
+    assert normalized.patient_profile.source_type == "patient_management"
+    assert normalized.patient_context.normalization_mode == "patient_context_explicit"
+    assert normalized.patient_context.patient.patient_id == "patient-normalization-test"
+    assert normalized.patient_context.patient.administrative_gender == "female"
+    assert normalized.patient_context.patient.birth_date == "1985-02-14"
+    assert normalized.patient_context.selected_medication_for_single_entry is not None
+    assert normalized.patient_context.selected_medication_for_single_entry.medication_id == "med-1"
+    assert normalized.patient_context.selected_allergy_for_single_entry is not None
+    assert normalized.patient_context.selected_allergy_for_single_entry.allergy_id == "alg-1"
+    assert normalized.patient_context.selected_condition_for_single_entry is not None
+    assert normalized.patient_context.selected_condition_for_single_entry.condition_id == "cond-1"
 
 
 def test_request_normalization_selects_single_relationship_deterministically() -> None:
@@ -152,6 +178,52 @@ def test_request_normalization_rejects_selected_relationship_with_unknown_organi
         )
 
 
+def test_request_normalization_keeps_multiple_patient_items_inspectable_without_selecting_one() -> None:
+    normalized = build_psca_normalized_request(
+        WorkflowBuildInput(
+            specification=SpecificationSelection(),
+            patient_profile=ProfileReferenceInput(
+                profile_id="patient-profile-legacy",
+                display_name="Legacy Patient",
+            ),
+            patient_context=PatientContextInput(
+                patient=PatientIdentityInput(
+                    patient_id="patient-normalization-test",
+                    display_name="Normalization Test Patient",
+                    source_type="patient_management",
+                ),
+                medications=[
+                    PatientMedicationInput(medication_id="med-1", display_text="Atorvastatin 20 MG oral tablet"),
+                    PatientMedicationInput(medication_id="med-2", display_text="Metformin 500 MG oral tablet"),
+                ],
+                allergies=[
+                    PatientAllergyInput(allergy_id="alg-1", display_text="Peanut allergy"),
+                    PatientAllergyInput(allergy_id="alg-2", display_text="Latex allergy"),
+                ],
+                conditions=[
+                    PatientConditionInput(condition_id="cond-1", display_text="Type 2 diabetes mellitus"),
+                    PatientConditionInput(condition_id="cond-2", display_text="Hypertension"),
+                ],
+            ),
+            provider_profile=ProfileReferenceInput(
+                profile_id="provider-normalization-test",
+                display_name="Normalization Test Provider",
+            ),
+            request=BundleRequestInput(
+                request_text="Create a deterministic normalized request for testing.",
+                scenario_label="pytest-normalization-multi-patient",
+            ),
+        )
+    )
+
+    assert len(normalized.patient_context.medications) == 2
+    assert len(normalized.patient_context.allergies) == 2
+    assert len(normalized.patient_context.conditions) == 2
+    assert normalized.patient_context.selected_medication_for_single_entry is None
+    assert normalized.patient_context.selected_allergy_for_single_entry is None
+    assert normalized.patient_context.selected_condition_for_single_entry is None
+
+
 def _workflow_input_with_provider_context(
     *,
     selected_relationship_id: str | None = None,
@@ -199,5 +271,50 @@ def _workflow_input_with_provider_context(
         request=BundleRequestInput(
             request_text="Create a deterministic normalized request for testing.",
             scenario_label="pytest-normalization-rich",
+        ),
+    )
+
+
+def _workflow_input_with_patient_context() -> WorkflowBuildInput:
+    return WorkflowBuildInput(
+        specification=SpecificationSelection(),
+        patient_profile=ProfileReferenceInput(
+            profile_id="patient-profile-legacy",
+            display_name="Legacy Patient",
+        ),
+        patient_context=PatientContextInput(
+            patient=PatientIdentityInput(
+                patient_id="patient-normalization-test",
+                display_name="Normalization Test Patient",
+                source_type="patient_management",
+                administrative_gender="female",
+                birth_date="1985-02-14",
+            ),
+            medications=[
+                PatientMedicationInput(
+                    medication_id="med-1",
+                    display_text="Atorvastatin 20 MG oral tablet",
+                )
+            ],
+            allergies=[
+                PatientAllergyInput(
+                    allergy_id="alg-1",
+                    display_text="Peanut allergy",
+                )
+            ],
+            conditions=[
+                PatientConditionInput(
+                    condition_id="cond-1",
+                    display_text="Type 2 diabetes mellitus",
+                )
+            ],
+        ),
+        provider_profile=ProfileReferenceInput(
+            profile_id="provider-normalization-test",
+            display_name="Normalization Test Provider",
+        ),
+        request=BundleRequestInput(
+            request_text="Create a deterministic normalized request for testing.",
+            scenario_label="pytest-normalization-patient",
         ),
     )

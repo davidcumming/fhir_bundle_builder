@@ -11,6 +11,7 @@ The implemented slice is intentionally narrow:
 - structured dual-channel validation over the candidate bundle scaffold
 - optional Matchbox-backed standards validation behind the existing validator boundary
 - structured repair decision and bounded retry execution artifacts
+- structured patient/clinical request normalization for richer patient-centered realism
 - structured provider/org/role request normalization for richer support-resource realism
 - provider-context-aware schematic provenance before resource construction begins
 - inspectable structured artifacts emitted at each stage
@@ -78,6 +79,7 @@ Then open [http://127.0.0.1:8080](http://127.0.0.1:8080).
 - A structured top-level input form with:
   - `specification`
   - `patient_profile`
+  - `patient_context`
   - `provider_profile`
   - `provider_context`
   - `request`
@@ -106,7 +108,7 @@ The `specification_asset_retrieval` stage now emits the first normalized PS-CA a
 
 ## Current slice boundaries
 
-This slice is for workflow shape, PS-CA normalized asset retrieval, the first real schematic artifact, the first real build plan, the first meaningful content-enriched resource-construction path for core clinical resources, the first support-resource enrichment for the selected provider-facing author path, the first structured provider/org/role input-normalization path, the first provider-context-aware schematic provenance path, the first candidate-bundle finalization foundation, the first validation foundation, the first optional Matchbox-backed external standards-validation path, the first repair-decision foundation, and the first bounded repair-execution foundation with narrow step-subset repair directives for resource construction plus narrower bundle-finalization-owned reference-alignment findings.
+This slice is for workflow shape, PS-CA normalized asset retrieval, the first real schematic artifact, the first real build plan, the first meaningful content-enriched resource-construction path for core clinical resources, the first structured patient/clinical input-normalization path, the first support-resource enrichment for the selected provider-facing author path, the first structured provider/org/role input-normalization path, the first provider-context-aware schematic provenance path, the first candidate-bundle finalization foundation, the first validation foundation, the first optional Matchbox-backed external standards-validation path, the first repair-decision foundation, and the first bounded repair-execution foundation with narrow step-subset repair directives for resource construction plus narrower bundle-finalization-owned reference-alignment findings.
 
 - The workflow reads existing PS-CA package files deterministically from the repo.
 - The spec retrieval stage exposes a normalized PS-CA asset context with foundational profiles, Composition section definitions, and selected example evidence.
@@ -181,11 +183,13 @@ The `resource_construction` stage now emits the first real scaffold-oriented con
   - section-entry references attached to `Composition`
 - deterministic placeholder content such as:
   - a Patient identifier and display name
+  - optional Patient gender and birth date when structured patient context supplies them
   - a Practitioner identifier and display name from normalized provider identity context
   - an Organization identifier system/value and name when selected provider-organization context is available
   - a PractitionerRole relationship identifier system/value plus a narrow author label from the selected provider-role relationship when available
   - a Composition status and title
-  - section-entry status and text content for medications, allergies, and problems
+  - section-entry status and text content for medications, allergies, and problems, using structured patient clinical profile text when exactly one matching item is available
+- normalized patient-context inspectability showing the selected patient identity and any single-entry clinical profile items currently consumable by the fixed one-entry-per-section workflow
 - normalized provider-context inspectability showing the selected provider, selected organization, and selected provider-role relationship when available
 - a resource registry showing the latest scaffold state per placeholder
 - explicit incremental `Composition` behavior:

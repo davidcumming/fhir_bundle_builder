@@ -229,9 +229,10 @@ def _build_anchor_result(
     ]
 
     if step.resource_type == "Patient":
+        patient = normalized_request.patient_context.patient
         scaffold_dict["active"] = True
-        scaffold_dict["identifier"] = [{"value": normalized_request.patient_profile.profile_id}]
-        scaffold_dict["name"] = [{"text": normalized_request.patient_profile.display_name}]
+        scaffold_dict["identifier"] = [{"value": patient.patient_id}]
+        scaffold_dict["name"] = [{"text": patient.display_name}]
         populated_paths += ["active", "identifier[0].value", "name[0].text"]
         deterministic_value_evidence.extend(
             [
@@ -242,18 +243,40 @@ def _build_anchor_result(
                 ),
                 _value_evidence(
                     "identifier[0].value",
-                    "normalized_request.patient_profile",
-                    "patient_profile.profile_id",
+                    "normalized_request.patient_context.patient",
+                    "patient.patient_id",
                 ),
                 _value_evidence(
                     "name[0].text",
-                    "normalized_request.patient_profile",
-                    "patient_profile.display_name",
+                    "normalized_request.patient_context.patient",
+                    "patient.display_name",
                 ),
             ]
         )
         extra_deferred = ["gender", "birthDate"]
-        assumptions.append("Patient identity content is derived deterministically from the selected patient profile stub.")
+        if patient.administrative_gender is not None:
+            scaffold_dict["gender"] = patient.administrative_gender
+            populated_paths.append("gender")
+            deterministic_value_evidence.append(
+                _value_evidence(
+                    "gender",
+                    "normalized_request.patient_context.patient",
+                    "patient.administrative_gender",
+                )
+            )
+        if patient.birth_date is not None:
+            scaffold_dict["birthDate"] = patient.birth_date
+            populated_paths.append("birthDate")
+            deterministic_value_evidence.append(
+                _value_evidence(
+                    "birthDate",
+                    "normalized_request.patient_context.patient",
+                    "patient.birth_date",
+                )
+            )
+        assumptions.append(
+            "Patient identity content is derived deterministically from the normalized patient identity context."
+        )
     elif step.resource_type == "Practitioner":
         provider = normalized_request.provider_context.provider
         scaffold_dict["active"] = True
@@ -462,7 +485,7 @@ def _build_section_entry_result(
     section = sections.get(step.owning_section_key or "")
     if section is None:
         raise ValueError(f"Missing section scaffold for section-entry step '{step.step_id}'.")
-    placeholder_text = f"{section.title} placeholder for {normalized_request.request.scenario_label}"
+    placeholder_text = _section_entry_placeholder_text(step.resource_type, section, normalized_request)
     populated_paths = _base_populated_paths(placeholder) + [reference_path]
     deterministic_value_evidence = [
         _value_evidence(reference_path, "deterministic_reference_policy", f"{step.resource_type} references patient-1."),
@@ -479,8 +502,8 @@ def _build_section_entry_result(
                 _value_evidence("intent", "deterministic_content_policy", "MedicationRequest intent is fixed to proposal for placeholder content."),
                 _value_evidence(
                     "medicationCodeableConcept.text",
-                    f"bundle_schematic.section_scaffolds[{section.section_key}] + normalized_request.request",
-                    f"{section.title} + scenario_label",
+                    _section_entry_text_source_artifact(step.resource_type, normalized_request, section.section_key),
+                    _section_entry_text_source_detail(step.resource_type, normalized_request, section.title),
                 ),
             ]
         )
@@ -517,8 +540,8 @@ def _build_section_entry_result(
                 _value_evidence("verificationStatus.coding[0].code", "deterministic_content_policy", "Fixed AllergyIntolerance verification status code."),
                 _value_evidence(
                     "code.text",
-                    f"bundle_schematic.section_scaffolds[{section.section_key}] + normalized_request.request",
-                    f"{section.title} + scenario_label",
+                    _section_entry_text_source_artifact(step.resource_type, normalized_request, section.section_key),
+                    _section_entry_text_source_detail(step.resource_type, normalized_request, section.title),
                 ),
             ]
         )
@@ -555,8 +578,8 @@ def _build_section_entry_result(
                 _value_evidence("verificationStatus.coding[0].code", "deterministic_content_policy", "Fixed Condition verification status code."),
                 _value_evidence(
                     "code.text",
-                    f"bundle_schematic.section_scaffolds[{section.section_key}] + normalized_request.request",
-                    f"{section.title} + scenario_label",
+                    _section_entry_text_source_artifact(step.resource_type, normalized_request, section.section_key),
+                    _section_entry_text_source_detail(step.resource_type, normalized_request, section.title),
                 ),
             ]
         )
@@ -586,7 +609,9 @@ def _build_section_entry_result(
         reference_contributions=[_reference_contribution(reference_path, "patient-1", reference_value)],
         deterministic_value_evidence=deterministic_value_evidence,
         assumptions=[
-            "Section-entry resources use deterministic placeholder content derived from the section scaffold and scenario label.",
+            (
+                "Section-entry resources use deterministic structured clinical profile text when exactly one matching item is available; otherwise they fall back to section-scaffold placeholder text."
+            ),
         ],
         warnings=[],
         unresolved_fields=resource_scaffold.deferred_paths,
@@ -886,6 +911,54 @@ def _section_subject_reference(resource_type: str) -> tuple[str, str]:
     if resource_type == "Condition":
         return "subject.reference", "Patient/patient-1"
     raise ValueError(f"Unsupported section-entry resource type '{resource_type}'.")
+
+
+def _section_entry_placeholder_text(
+    resource_type: str,
+    section: SectionScaffold,
+    normalized_request: NormalizedBuildRequest,
+) -> str:
+    if resource_type == "MedicationRequest":
+        selected = normalized_request.patient_context.selected_medication_for_single_entry
+        if selected is not None:
+            return selected.display_text
+    elif resource_type == "AllergyIntolerance":
+        selected = normalized_request.patient_context.selected_allergy_for_single_entry
+        if selected is not None:
+            return selected.display_text
+    elif resource_type == "Condition":
+        selected = normalized_request.patient_context.selected_condition_for_single_entry
+        if selected is not None:
+            return selected.display_text
+    return f"{section.title} placeholder for {normalized_request.request.scenario_label}"
+
+
+def _section_entry_text_source_artifact(
+    resource_type: str,
+    normalized_request: NormalizedBuildRequest,
+    section_key: str,
+) -> str:
+    if resource_type == "MedicationRequest" and normalized_request.patient_context.selected_medication_for_single_entry is not None:
+        return "normalized_request.patient_context.selected_medication_for_single_entry"
+    if resource_type == "AllergyIntolerance" and normalized_request.patient_context.selected_allergy_for_single_entry is not None:
+        return "normalized_request.patient_context.selected_allergy_for_single_entry"
+    if resource_type == "Condition" and normalized_request.patient_context.selected_condition_for_single_entry is not None:
+        return "normalized_request.patient_context.selected_condition_for_single_entry"
+    return f"bundle_schematic.section_scaffolds[{section_key}] + normalized_request.request"
+
+
+def _section_entry_text_source_detail(
+    resource_type: str,
+    normalized_request: NormalizedBuildRequest,
+    section_title: str,
+) -> str:
+    if resource_type == "MedicationRequest" and normalized_request.patient_context.selected_medication_for_single_entry is not None:
+        return "display_text"
+    if resource_type == "AllergyIntolerance" and normalized_request.patient_context.selected_allergy_for_single_entry is not None:
+        return "display_text"
+    if resource_type == "Condition" and normalized_request.patient_context.selected_condition_for_single_entry is not None:
+        return "display_text"
+    return f"{section_title} + scenario_label"
 
 
 def _reference_contribution(reference_path: str, target_placeholder_id: str, reference_value: str) -> ReferenceContribution:

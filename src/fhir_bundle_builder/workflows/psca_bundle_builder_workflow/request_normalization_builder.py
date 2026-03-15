@@ -2,9 +2,17 @@
 
 from __future__ import annotations
 
+from typing import TypeVar
+
 from .models import (
     NormalizedBuildRequest,
+    NormalizedPatientContext,
     NormalizedProviderContext,
+    PatientAllergyInput,
+    PatientConditionInput,
+    PatientContextInput,
+    PatientIdentityInput,
+    PatientMedicationInput,
     ProfileReferenceInput,
     ProviderContextInput,
     ProviderIdentityInput,
@@ -14,10 +22,26 @@ from .models import (
     WorkflowDefaults,
 )
 
+TPatientItem = TypeVar(
+    "TPatientItem",
+    PatientConditionInput,
+    PatientMedicationInput,
+    PatientAllergyInput,
+)
+
 
 def build_psca_normalized_request(message: WorkflowBuildInput) -> NormalizedBuildRequest:
     """Normalize the top-level workflow request into deterministic workflow inputs."""
 
+    patient_context = _normalize_patient_context(
+        message.patient_context,
+        message.patient_profile,
+    )
+    patient_profile = ProfileReferenceInput(
+        profile_id=patient_context.patient.patient_id,
+        display_name=patient_context.patient.display_name,
+        source_type=patient_context.patient.source_type,
+    )
     provider_context = _normalize_provider_context(
         message.provider_context,
         message.provider_profile,
@@ -32,10 +56,11 @@ def build_psca_normalized_request(message: WorkflowBuildInput) -> NormalizedBuil
         stage_id="request_normalization",
         status="placeholder_complete",
         summary="Validated the top-level workflow input and applied deterministic request-normalization defaults.",
-        placeholder_note="This stage now normalizes structured provider context deterministically but still defers deeper request interpretation and patient-specific provider-context selection.",
+        placeholder_note="This stage now normalizes structured patient and provider context deterministically but still defers deeper request interpretation, multi-item patient clinical consumption, and patient-specific provider-context selection.",
         source_refs=[],
         specification=message.specification,
-        patient_profile=message.patient_profile,
+        patient_profile=patient_profile,
+        patient_context=patient_context,
         provider_profile=provider_profile,
         provider_context=provider_context,
         request=message.request,
@@ -46,6 +71,54 @@ def build_psca_normalized_request(message: WorkflowBuildInput) -> NormalizedBuil
             resource_construction_mode="deterministic_content_enriched_foundation",
         ),
         run_label=f"{message.request.scenario_label}:{message.specification.package_id}:{message.specification.version}",
+    )
+
+
+def _normalize_patient_context(
+    patient_context: PatientContextInput | None,
+    patient_profile: ProfileReferenceInput,
+) -> NormalizedPatientContext:
+    if patient_context is None:
+        return NormalizedPatientContext(
+            patient=PatientIdentityInput(
+                patient_id=patient_profile.profile_id,
+                display_name=patient_profile.display_name,
+                source_type=(
+                    "patient_management"
+                    if patient_profile.source_type == "patient_management"
+                    else "stub"
+                ),
+            ),
+            conditions=[],
+            medications=[],
+            allergies=[],
+            selected_condition_for_single_entry=None,
+            selected_medication_for_single_entry=None,
+            selected_allergy_for_single_entry=None,
+            normalization_mode="legacy_patient_profile",
+        )
+
+    return NormalizedPatientContext(
+        patient=PatientIdentityInput.model_validate(patient_context.patient.model_dump()),
+        conditions=[
+            PatientConditionInput.model_validate(condition.model_dump())
+            for condition in patient_context.conditions
+        ],
+        medications=[
+            PatientMedicationInput.model_validate(medication.model_dump())
+            for medication in patient_context.medications
+        ],
+        allergies=[
+            PatientAllergyInput.model_validate(allergy.model_dump())
+            for allergy in patient_context.allergies
+        ],
+        selected_condition_for_single_entry=_select_single_item(patient_context.conditions, PatientConditionInput),
+        selected_medication_for_single_entry=_select_single_item(
+            patient_context.medications,
+            PatientMedicationInput,
+        ),
+        selected_allergy_for_single_entry=_select_single_item(patient_context.allergies, PatientAllergyInput),
+        normalization_mode="patient_context_explicit",
     )
 
 
@@ -136,3 +209,12 @@ def _select_provider_role_relationship(
         "provider_context includes multiple provider-role relationships but no explicit "
         "selected_provider_role_relationship_id."
     )
+
+
+def _select_single_item(
+    values: list[TPatientItem],
+    model_type: type[TPatientItem],
+) -> TPatientItem | None:
+    if len(values) != 1:
+        return None
+    return model_type.model_validate(values[0].model_dump())

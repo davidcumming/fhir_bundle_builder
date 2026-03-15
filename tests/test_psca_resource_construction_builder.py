@@ -9,6 +9,11 @@ from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.build_plan_build
 from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.models import (
     BundleRequestInput,
     NormalizedBuildRequest,
+    PatientAllergyInput,
+    PatientConditionInput,
+    PatientContextInput,
+    PatientIdentityInput,
+    PatientMedicationInput,
     ProfileReferenceInput,
     ResourceConstructionRepairDirective,
     SpecificationSelection,
@@ -72,24 +77,23 @@ def test_psca_resource_construction_builder_generates_scaffolds_and_registry() -
     allergy = registry["allergyintolerance-1"].current_scaffold.fhir_scaffold
     condition = registry["condition-1"].current_scaffold.fhir_scaffold
     patient = registry["patient-1"].current_scaffold.fhir_scaffold
-    section_titles = {section.section_key: section.title for section in schematic.section_scaffolds}
     assert medication["subject"]["reference"] == "Patient/patient-1"
     assert medication["status"] == "draft"
     assert medication["intent"] == "proposal"
-    assert medication["medicationCodeableConcept"]["text"] == (
-        f"{section_titles['medications']} placeholder for pytest-resource"
-    )
+    assert medication["medicationCodeableConcept"]["text"] == "Atorvastatin 20 MG oral tablet"
     assert allergy["patient"]["reference"] == "Patient/patient-1"
     assert allergy["clinicalStatus"]["coding"][0]["code"] == "active"
     assert allergy["verificationStatus"]["coding"][0]["code"] == "unconfirmed"
-    assert allergy["code"]["text"] == f"{section_titles['allergies']} placeholder for pytest-resource"
+    assert allergy["code"]["text"] == "Peanut allergy"
     assert condition["subject"]["reference"] == "Patient/patient-1"
     assert condition["clinicalStatus"]["coding"][0]["code"] == "active"
     assert condition["verificationStatus"]["coding"][0]["code"] == "provisional"
-    assert condition["code"]["text"] == f"{section_titles['problems']} placeholder for pytest-resource"
+    assert condition["code"]["text"] == "Type 2 diabetes mellitus"
     assert patient["active"] is True
     assert patient["identifier"][0]["value"] == "patient-resource-test"
     assert patient["name"][0]["text"] == "Resource Test Patient"
+    assert patient["gender"] == "female"
+    assert patient["birthDate"] == "1985-02-14"
 
     composition_scaffold = steps["build-composition-1-scaffold"].resource_scaffold.fhir_scaffold
     assert composition_scaffold["type"]["coding"][0]["system"] == "http://loinc.org"
@@ -99,7 +103,7 @@ def test_psca_resource_construction_builder_generates_scaffolds_and_registry() -
     assert composition_scaffold["subject"]["reference"] == "Patient/patient-1"
     assert composition_scaffold["author"][0]["reference"] == "PractitionerRole/practitionerrole-1"
     assert composition_scaffold["section"] == []
-    assert steps["build-patient-1"].resource_scaffold.deferred_paths == ["gender", "birthDate"]
+    assert steps["build-patient-1"].resource_scaffold.deferred_paths == []
     assert steps["build-practitioner-1"].resource_scaffold.deferred_paths == ["telecom", "address", "qualification"]
     assert steps["build-organization-1"].resource_scaffold.deferred_paths == []
     assert steps["build-practitionerrole-1"].resource_scaffold.deferred_paths == [
@@ -109,7 +113,15 @@ def test_psca_resource_construction_builder_generates_scaffolds_and_registry() -
         "availableTime",
     ]
     assert any(
-        evidence.target_path == "identifier[0].value" and evidence.source_detail == "patient_profile.profile_id"
+        evidence.target_path == "identifier[0].value" and evidence.source_detail == "patient.patient_id"
+        for evidence in steps["build-patient-1"].deterministic_value_evidence
+    )
+    assert any(
+        evidence.target_path == "gender" and evidence.source_detail == "patient.administrative_gender"
+        for evidence in steps["build-patient-1"].deterministic_value_evidence
+    )
+    assert any(
+        evidence.target_path == "birthDate" and evidence.source_detail == "patient.birth_date"
         for evidence in steps["build-patient-1"].deterministic_value_evidence
     )
     assert any(
@@ -148,7 +160,16 @@ def test_psca_resource_construction_builder_generates_scaffolds_and_registry() -
     )
     assert any(
         evidence.target_path == "medicationCodeableConcept.text"
+        and evidence.source_detail == "display_text"
         for evidence in steps["build-medicationrequest-1"].deterministic_value_evidence
+    )
+    assert any(
+        evidence.target_path == "code.text" and evidence.source_detail == "display_text"
+        for evidence in steps["build-allergyintolerance-1"].deterministic_value_evidence
+    )
+    assert any(
+        evidence.target_path == "code.text" and evidence.source_detail == "display_text"
+        for evidence in steps["build-condition-1"].deterministic_value_evidence
     )
 
     finalized_composition = registry["composition-1"].current_scaffold
@@ -191,6 +212,12 @@ def test_psca_resource_construction_builder_keeps_organization_thin_in_legacy_pr
     assert "name" not in organization
     assert "identifier" not in practitioner_role
     assert practitioner_role["code"][0]["text"] == "document-author"
+    assert "gender" not in registry["patient-1"].current_scaffold.fhir_scaffold
+    assert "birthDate" not in registry["patient-1"].current_scaffold.fhir_scaffold
+    assert (
+        registry["medicationrequest-1"].current_scaffold.fhir_scaffold["medicationCodeableConcept"]["text"]
+        == "Medication Summary section placeholder for pytest-resource-legacy"
+    )
     assert construction.step_results[2].resource_scaffold.deferred_paths == ["identifier", "name"]
 
 
@@ -304,6 +331,33 @@ def _build_normalized_request(scenario_label: str) -> NormalizedBuildRequest:
             patient_profile=ProfileReferenceInput(
                 profile_id="patient-resource-test",
                 display_name="Resource Test Patient",
+            ),
+            patient_context=PatientContextInput(
+                patient=PatientIdentityInput(
+                    patient_id="patient-resource-test",
+                    display_name="Resource Test Patient",
+                    source_type="patient_management",
+                    administrative_gender="female",
+                    birth_date="1985-02-14",
+                ),
+                medications=[
+                    PatientMedicationInput(
+                        medication_id="med-1",
+                        display_text="Atorvastatin 20 MG oral tablet",
+                    )
+                ],
+                allergies=[
+                    PatientAllergyInput(
+                        allergy_id="alg-1",
+                        display_text="Peanut allergy",
+                    )
+                ],
+                conditions=[
+                    PatientConditionInput(
+                        condition_id="cond-1",
+                        display_text="Type 2 diabetes mellitus",
+                    )
+                ],
             ),
             provider_profile=ProfileReferenceInput(
                 profile_id="provider-resource-test",

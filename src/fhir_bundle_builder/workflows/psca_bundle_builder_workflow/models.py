@@ -46,7 +46,7 @@ class ProfileReferenceInput(BaseModel):
         ...,
         description="Human-readable label shown in Dev UI and traces.",
     )
-    source_type: Literal["stub", "provider_management"] = Field(
+    source_type: Literal["stub", "provider_management", "patient_management"] = Field(
         default="stub",
         description="Current profile source type for this workflow skeleton.",
     )
@@ -111,6 +111,79 @@ class ProviderContextInput(BaseModel):
     )
 
 
+class PatientIdentityInput(BaseModel):
+    """Structured patient identity supplied by an upstream patient-management layer."""
+
+    patient_id: str = Field(
+        ...,
+        description="Stable identifier for the selected patient.",
+    )
+    display_name: str = Field(
+        ...,
+        description="Human-readable patient label shown in Dev UI and traces.",
+    )
+    source_type: Literal["stub", "patient_management"] = Field(
+        default="stub",
+        description="Source type for the upstream patient identity context.",
+    )
+    administrative_gender: Literal["female", "male", "other", "unknown"] | None = Field(
+        default=None,
+        description="Administrative gender available from structured upstream context.",
+    )
+    birth_date: str | None = Field(
+        default=None,
+        description="Birth date from structured upstream context in YYYY-MM-DD format when available.",
+    )
+
+
+class PatientConditionInput(BaseModel):
+    """Structured patient condition available to the workflow."""
+
+    condition_id: str = Field(
+        ...,
+        description="Stable identifier for the condition profile item.",
+    )
+    display_text: str = Field(
+        ...,
+        description="Deterministic condition label available to downstream construction.",
+    )
+
+
+class PatientMedicationInput(BaseModel):
+    """Structured patient medication available to the workflow."""
+
+    medication_id: str = Field(
+        ...,
+        description="Stable identifier for the medication profile item.",
+    )
+    display_text: str = Field(
+        ...,
+        description="Deterministic medication label available to downstream construction.",
+    )
+
+
+class PatientAllergyInput(BaseModel):
+    """Structured patient allergy available to the workflow."""
+
+    allergy_id: str = Field(
+        ...,
+        description="Stable identifier for the allergy profile item.",
+    )
+    display_text: str = Field(
+        ...,
+        description="Deterministic allergy label available to downstream construction.",
+    )
+
+
+class PatientContextInput(BaseModel):
+    """Structured patient/clinical profile context supplied by an upstream layer."""
+
+    patient: PatientIdentityInput
+    conditions: list[PatientConditionInput] = Field(default_factory=list)
+    medications: list[PatientMedicationInput] = Field(default_factory=list)
+    allergies: list[PatientAllergyInput] = Field(default_factory=list)
+
+
 class BundleRequestInput(BaseModel):
     """Structured request details for the workflow run."""
 
@@ -155,6 +228,7 @@ class WorkflowBuildInput(BaseModel):
             display_name="Default patient profile stub",
         )
     )
+    patient_context: PatientContextInput | None = None
     provider_profile: ProfileReferenceInput = Field(
         default_factory=lambda: ProfileReferenceInput(
             profile_id="provider-profile-stub",
@@ -204,11 +278,28 @@ class NormalizedProviderContext(BaseModel):
     ]
 
 
+class NormalizedPatientContext(BaseModel):
+    """Deterministically normalized patient/clinical context for workflow use."""
+
+    patient: PatientIdentityInput
+    conditions: list[PatientConditionInput] = Field(default_factory=list)
+    medications: list[PatientMedicationInput] = Field(default_factory=list)
+    allergies: list[PatientAllergyInput] = Field(default_factory=list)
+    selected_condition_for_single_entry: PatientConditionInput | None = None
+    selected_medication_for_single_entry: PatientMedicationInput | None = None
+    selected_allergy_for_single_entry: PatientAllergyInput | None = None
+    normalization_mode: Literal[
+        "legacy_patient_profile",
+        "patient_context_explicit",
+    ]
+
+
 class NormalizedBuildRequest(StageArtifact):
     """Deterministic normalized workflow request."""
 
     specification: SpecificationSelection
     patient_profile: ProfileReferenceInput
+    patient_context: NormalizedPatientContext
     provider_profile: ProfileReferenceInput
     provider_context: NormalizedProviderContext
     request: BundleRequestInput

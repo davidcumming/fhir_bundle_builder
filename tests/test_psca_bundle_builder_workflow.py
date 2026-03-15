@@ -4,6 +4,11 @@ from __future__ import annotations
 
 from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.models import (
     BundleRequestInput,
+    PatientAllergyInput,
+    PatientConditionInput,
+    PatientContextInput,
+    PatientIdentityInput,
+    PatientMedicationInput,
     ProfileReferenceInput,
     ProviderContextInput,
     ProviderIdentityInput,
@@ -26,6 +31,33 @@ async def test_psca_bundle_builder_workflow_smoke() -> None:
         patient_profile=ProfileReferenceInput(
             profile_id="patient-smoke-test",
             display_name="Smoke Test Patient",
+        ),
+        patient_context=PatientContextInput(
+            patient=PatientIdentityInput(
+                patient_id="patient-smoke-test",
+                display_name="Smoke Test Patient",
+                source_type="patient_management",
+                administrative_gender="female",
+                birth_date="1985-02-14",
+            ),
+            medications=[
+                PatientMedicationInput(
+                    medication_id="med-smoke-1",
+                    display_text="Atorvastatin 20 MG oral tablet",
+                )
+            ],
+            allergies=[
+                PatientAllergyInput(
+                    allergy_id="alg-smoke-1",
+                    display_text="Peanut allergy",
+                )
+            ],
+            conditions=[
+                PatientConditionInput(
+                    condition_id="cond-smoke-1",
+                    display_text="Type 2 diabetes mellitus",
+                )
+            ],
         ),
         provider_profile=ProfileReferenceInput(
             profile_id="provider-smoke-test",
@@ -78,6 +110,13 @@ async def test_psca_bundle_builder_workflow_smoke() -> None:
     assert final_output.workflow_name == "PS-CA Bundle Builder Skeleton"
     assert final_output.stage_order[-1] == "repair_execution"
     assert final_output.normalized_request.request.scenario_label == "pytest-smoke"
+    assert final_output.normalized_request.patient_context.normalization_mode == "patient_context_explicit"
+    assert final_output.normalized_request.patient_context.patient.patient_id == "patient-smoke-test"
+    assert final_output.normalized_request.patient_context.selected_medication_for_single_entry is not None
+    assert (
+        final_output.normalized_request.patient_context.selected_medication_for_single_entry.display_text
+        == "Atorvastatin 20 MG oral tablet"
+    )
     assert final_output.normalized_request.provider_context.normalization_mode == "provider_context_explicit_selection"
     assert final_output.normalized_request.provider_context.selected_provider_role_relationship is not None
     assert (
@@ -212,6 +251,8 @@ async def test_psca_bundle_builder_workflow_smoke() -> None:
     assert final_output.resource_construction.step_results[-1].execution_status == "scaffold_updated"
     assert final_output.resource_construction.step_results[0].resource_scaffold.fhir_scaffold["identifier"][0]["value"] == "patient-smoke-test"
     assert final_output.resource_construction.step_results[0].resource_scaffold.fhir_scaffold["name"][0]["text"] == "Smoke Test Patient"
+    assert final_output.resource_construction.step_results[0].resource_scaffold.fhir_scaffold["gender"] == "female"
+    assert final_output.resource_construction.step_results[0].resource_scaffold.fhir_scaffold["birthDate"] == "1985-02-14"
     assert final_output.resource_construction.step_results[1].resource_scaffold.fhir_scaffold["active"] is True
     assert final_output.resource_construction.step_results[1].resource_scaffold.fhir_scaffold["identifier"][0]["value"] == "provider-smoke-test"
     assert final_output.resource_construction.step_results[1].resource_scaffold.fhir_scaffold["name"][0]["text"] == "Smoke Test Provider"
@@ -239,6 +280,15 @@ async def test_psca_bundle_builder_workflow_smoke() -> None:
     assert final_output.resource_construction.step_results[4].resource_scaffold.fhir_scaffold["status"] == "final"
     assert final_output.resource_construction.step_results[4].resource_scaffold.fhir_scaffold["title"] == (
         "PS-CA document bundle skeleton - pytest-smoke"
+    )
+    assert (
+        final_output.resource_construction.step_results[5].resource_scaffold.fhir_scaffold["medicationCodeableConcept"]["text"]
+        == "Atorvastatin 20 MG oral tablet"
+    )
+    assert final_output.resource_construction.step_results[6].resource_scaffold.fhir_scaffold["code"]["text"] == "Peanut allergy"
+    assert (
+        final_output.resource_construction.step_results[7].resource_scaffold.fhir_scaffold["code"]["text"]
+        == "Type 2 diabetes mellitus"
     )
     assert {entry.placeholder_id for entry in final_output.resource_construction.resource_registry} == {
         "patient-1",
@@ -325,12 +375,16 @@ async def test_psca_bundle_builder_workflow_smoke() -> None:
     )
     assert final_output.candidate_bundle.candidate_bundle.fhir_bundle["entry"][5]["resource"]["status"] == "draft"
     assert (
+        final_output.candidate_bundle.candidate_bundle.fhir_bundle["entry"][5]["resource"]["medicationCodeableConcept"]["text"]
+        == "Atorvastatin 20 MG oral tablet"
+    )
+    assert (
         final_output.candidate_bundle.candidate_bundle.fhir_bundle["entry"][6]["resource"]["code"]["text"]
-        == f"{final_output.bundle_schematic.section_scaffolds[1].title} placeholder for pytest-smoke"
+        == "Peanut allergy"
     )
     assert (
         final_output.candidate_bundle.candidate_bundle.fhir_bundle["entry"][7]["resource"]["code"]["text"]
-        == f"{final_output.bundle_schematic.section_scaffolds[2].title} placeholder for pytest-smoke"
+        == "Type 2 diabetes mellitus"
     )
     assert final_output.candidate_bundle.candidate_bundle.deferred_paths == []
     assert len(final_output.candidate_bundle.candidate_bundle.fhir_bundle["entry"][0]["resource"]["section"]) == 3
