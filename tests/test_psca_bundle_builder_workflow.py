@@ -2,6 +2,11 @@
 
 from __future__ import annotations
 
+from fhir_bundle_builder.authoring import (
+    PatientAuthoringInput,
+    build_patient_authored_record,
+    map_authored_patient_to_patient_context,
+)
 from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.models import (
     BundleRequestInput,
     PatientAllergyInput,
@@ -932,3 +937,55 @@ async def test_psca_bundle_builder_workflow_preserves_current_bounded_scope_afte
         "bundle.practitionerrole_author_context_aligned_to_context"
         in validation_traceability["practitionerrole-1"].workflow_check_codes
     )
+
+
+async def test_psca_bundle_builder_workflow_accepts_authored_patient_context_mapping() -> None:
+    authored = build_patient_authored_record(
+        PatientAuthoringInput(
+            authoring_text=(
+                "The patient's name is Nora Field. She is a female age 55 who lives in Red Deer, Alberta. "
+                "She has diabetes, takes metformin, and has a peanut allergy."
+            ),
+            complexity_level="medium",
+            scenario_label="pytest-authored-workflow",
+        )
+    )
+    mapped = map_authored_patient_to_patient_context(authored)
+
+    result = await workflow.run(
+        message=WorkflowBuildInput(
+            specification=SpecificationSelection(),
+            patient_profile=ProfileReferenceInput(
+                profile_id="patient-profile-authored-workflow",
+                display_name="Authored Workflow Patient",
+            ),
+            patient_context=mapped.patient_context,
+            provider_profile=ProfileReferenceInput(
+                profile_id="provider-authored-workflow",
+                display_name="Authored Workflow Provider",
+            ),
+            request=BundleRequestInput(
+                request_text="Create a deterministic bundle from authored patient context.",
+                scenario_label="pytest-authored-workflow",
+            ),
+        ),
+        include_status_events=True,
+    )
+    final_output = result.get_outputs()[0]
+
+    assert final_output.normalized_request.patient_context.patient.patient_id == authored.patient.patient_id
+    assert final_output.normalized_request.patient_context.patient.display_name == "Nora Field"
+    assert final_output.resource_construction.step_results[0].resource_scaffold.fhir_scaffold["name"][0]["text"] == (
+        "Nora Field"
+    )
+    assert (
+        final_output.resource_construction.step_results[5].resource_scaffold.fhir_scaffold["medicationCodeableConcept"]["text"]
+        == "Metformin 500 MG oral tablet"
+    )
+    assert final_output.resource_construction.step_results[6].resource_scaffold.fhir_scaffold["code"]["text"] == (
+        "Peanut allergy"
+    )
+    assert final_output.resource_construction.step_results[7].resource_scaffold.fhir_scaffold["code"]["text"] == (
+        "Type 2 diabetes mellitus"
+    )
+    assert final_output.validation_report.workflow_validation.status == "passed"

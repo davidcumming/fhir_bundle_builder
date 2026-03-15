@@ -4,6 +4,11 @@ from __future__ import annotations
 
 import pytest
 
+from fhir_bundle_builder.authoring import (
+    PatientAuthoringInput,
+    build_patient_authored_record,
+    map_authored_patient_to_patient_context,
+)
 from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.models import (
     BundleRequestInput,
     PatientAllergyInput,
@@ -279,6 +284,50 @@ def test_request_normalization_records_bounded_medication_overflow_explicitly() 
         "med-2",
     ]
     assert normalized.patient_context.deferred_additional_medication_count == 1
+
+
+def test_request_normalization_accepts_mapped_authored_patient_context() -> None:
+    authored = build_patient_authored_record(
+        PatientAuthoringInput(
+            authoring_text=(
+                "The patient's name is Jane River. She is a female age 58 who lives in Calgary, Alberta. "
+                "She has diabetes and hypertension, takes metformin and lisinopril, and has a peanut allergy and a latex allergy."
+            ),
+            complexity_level="high",
+            scenario_label="pytest-normalization-authored",
+        )
+    )
+    mapped = map_authored_patient_to_patient_context(authored)
+
+    normalized = build_psca_normalized_request(
+        WorkflowBuildInput(
+            specification=SpecificationSelection(),
+            patient_profile=ProfileReferenceInput(
+                profile_id="patient-profile-authored",
+                display_name="Authored Patient Profile",
+            ),
+            patient_context=mapped.patient_context,
+            provider_profile=ProfileReferenceInput(
+                profile_id="provider-normalization-test",
+                display_name="Normalization Test Provider",
+            ),
+            request=BundleRequestInput(
+                request_text="Create a deterministic normalized request from authored patient context.",
+                scenario_label="pytest-normalization-authored",
+            ),
+        )
+    )
+
+    assert normalized.patient_context.normalization_mode == "patient_context_explicit"
+    assert normalized.patient_context.patient.patient_id == authored.patient.patient_id
+    assert normalized.patient_context.patient.display_name == "Jane River"
+    assert [entry.medication_id for entry in normalized.patient_context.planned_medication_entries] == [
+        "medication-authored-1",
+        "medication-authored-2",
+    ]
+    assert normalized.patient_context.deferred_additional_medication_count == 0
+    assert normalized.patient_context.selected_allergy_for_single_entry is None
+    assert normalized.patient_context.selected_condition_for_single_entry is None
 
 
 def _workflow_input_with_provider_context(

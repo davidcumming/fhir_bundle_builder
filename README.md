@@ -18,11 +18,13 @@ The implemented slice is intentionally narrow:
 - no product UI
 - no full bundle population yet
 - no arbitrary-spec ingestion yet
+- bounded upstream patient authoring foundation for workflow testing
 
 ## Current bounded capabilities
 
 The workflow currently supports one narrow but real PS-CA path:
 
+- bounded natural-language patient authoring into a structured authored patient record, with deterministic mapping into the current `patient_context` input shape
 - provider identity plus selected organization and selected provider-role relationship identity only
 - patient identity and demographics plus deterministic section-entry text alignment only for fields the normalized patient context can honestly supply
 - medications-only multiplicity up to two planned `MedicationRequest` entries, with explicit overflow deferral beyond those two
@@ -42,6 +44,7 @@ The workflow does not currently claim:
 
 - `docs/` contains architecture, workflow, and planning guidance.
 - `fhir/ca.infoway.io.psca-2.1.1-dft/` contains the PS-CA source package already present in the repo.
+- `src/fhir_bundle_builder/authoring/` contains the first bounded upstream patient authoring foundation.
 - `src/fhir_bundle_builder/workflows/psca_bundle_builder_workflow/` contains the workflow skeleton.
 - `entities/psca_bundle_builder_workflow/` exports the workflow for Dev UI discovery.
 
@@ -130,6 +133,8 @@ The `specification_asset_retrieval` stage now emits the first normalized PS-CA a
 This slice is for workflow shape, PS-CA normalized asset retrieval, the first real schematic artifact, the first real build plan, the first meaningful content-enriched resource-construction path for core clinical resources, the first structured patient/clinical input-normalization path, the first support-resource enrichment for the selected provider-facing author path, the first structured provider/org/role input-normalization path, the first provider-context-aware schematic provenance path, the first candidate-bundle finalization foundation, the first validation foundation, the first optional Matchbox-backed external standards-validation path, the first repair-decision foundation, and the first bounded repair-execution foundation with narrow step-subset repair directives for resource construction plus narrower bundle-finalization-owned reference-alignment findings, including a bounded medications-only multiplicity expansion of up to two entries, medication-specific standards/validation hardening for that bounded path, explicit patient-context-to-bundle alignment hardening for the fields the workflow can honestly populate, explicit provider-context-to-bundle alignment hardening for the support-resource identity fields the workflow can honestly populate, and compact end-to-end placeholder-scoped traceability carried from resource construction through candidate bundle and validation.
 
 The current repo is intentionally consolidating these capabilities rather than expanding realism further in the same step.
+
+The repo now also includes a bounded upstream patient authoring foundation that accepts natural-language patient descriptions, applies a fixed complexity policy, emits a structured authored patient record, and maps that record into the workflow's existing `patient_context` boundary without changing bundle-generation behavior.
 
 - The workflow reads existing PS-CA package files deterministically from the repo.
 - The spec retrieval stage exposes a normalized PS-CA asset context with foundational profiles, Composition section definitions, and selected example evidence.
