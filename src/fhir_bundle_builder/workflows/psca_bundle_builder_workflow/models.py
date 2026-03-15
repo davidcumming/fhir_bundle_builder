@@ -687,6 +687,8 @@ class CandidateBundleEvidence(BaseModel):
     source_build_plan_stage_id: str
     required_entry_placeholder_ids: list[str] = Field(default_factory=list)
     ordered_placeholder_ids: list[str] = Field(default_factory=list)
+    planned_medication_placeholder_ids: list[str] = Field(default_factory=list)
+    assembled_medication_placeholder_ids: list[str] = Field(default_factory=list)
     source_refs: list[str] = Field(default_factory=list)
 
 

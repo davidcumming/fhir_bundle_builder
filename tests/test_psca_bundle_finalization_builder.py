@@ -80,6 +80,8 @@ def test_psca_bundle_finalization_builder_assembles_expected_bundle_scaffold() -
     assert [assembly.full_url for assembly in result.entry_assembly] == full_urls
     assert result.entry_assembly[0].required_by_bundle_scaffold is True
     assert result.entry_assembly[1].required_by_bundle_scaffold is True
+    assert result.evidence.planned_medication_placeholder_ids == ["medicationrequest-1"]
+    assert result.evidence.assembled_medication_placeholder_ids == ["medicationrequest-1"]
     assert result.candidate_bundle.deferred_paths == []
     assert len(result.candidate_bundle.fhir_bundle["entry"][0]["resource"]["section"]) == 3
     assert result.candidate_bundle.fhir_bundle["entry"][0]["resource"]["subject"]["reference"] == full_urls[1]
@@ -126,6 +128,14 @@ def test_psca_bundle_finalization_builder_supports_second_medication_entry() -> 
     full_urls = {assembly.placeholder_id: assembly.full_url for assembly in result.entry_assembly}
 
     assert result.candidate_bundle.entry_count == 9
+    assert result.evidence.planned_medication_placeholder_ids == [
+        "medicationrequest-1",
+        "medicationrequest-2",
+    ]
+    assert result.evidence.assembled_medication_placeholder_ids == [
+        "medicationrequest-1",
+        "medicationrequest-2",
+    ]
     assert [assembly.placeholder_id for assembly in result.entry_assembly] == [
         "composition-1",
         "patient-1",

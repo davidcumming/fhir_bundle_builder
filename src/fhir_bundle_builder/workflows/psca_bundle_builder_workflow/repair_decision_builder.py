@@ -49,6 +49,18 @@ _FINDING_ROUTE_MAP: dict[str, tuple[str, str, bool, str]] = {
         True,
         "Bundle entry fullUrls are assigned during candidate bundle assembly.",
     ),
+    "bundle.entry_fullurls_unique": (
+        "bundle_finalization",
+        "bundle_finalization",
+        True,
+        "Bundle entry fullUrl uniqueness is enforced during candidate bundle assembly.",
+    ),
+    "bundle.entry_resource_ids_unique": (
+        "bundle_finalization",
+        "bundle_finalization",
+        True,
+        "Bundle entry resource id uniqueness is enforced during candidate bundle assembly.",
+    ),
     "bundle.composition_first_placeholder": (
         "bundle_finalization",
         "bundle_finalization",
@@ -126,6 +138,12 @@ _FINDING_ROUTE_MAP: dict[str, tuple[str, str, bool, str]] = {
         "resource_construction",
         True,
         "The second MedicationRequest placeholder content is populated during resource construction.",
+    ),
+    "bundle.medications_bundle_entries_aligned_to_plan": (
+        "bundle_finalization",
+        "bundle_finalization",
+        True,
+        "Medication bundle-entry ordering and presence are finalized during candidate bundle assembly.",
     ),
     "bundle.allergyintolerance_placeholder_content_present": (
         "resource_construction",

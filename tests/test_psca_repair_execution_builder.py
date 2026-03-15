@@ -96,6 +96,52 @@ async def test_psca_repair_execution_reruns_bundle_finalization_once() -> None:
     assert execution.post_retry_repair_decision.overall_decision == "external_validation_pending"
 
 
+async def test_psca_repair_execution_reruns_only_bundle_finalization_for_medication_bundle_entry_plan_alignment_failure() -> None:
+    artifacts = await _build_repair_inputs(
+        mutator=_swap_medication_bundle_entries,
+        medication_texts=[
+            "Atorvastatin 20 MG oral tablet",
+            "Metformin 500 MG oral tablet",
+        ],
+    )
+
+    execution = await build_psca_repair_execution_result(
+        artifacts["repair_decision"],
+        artifacts["normalized_request"],
+        artifacts["build_plan"],
+        artifacts["schematic"],
+        artifacts["resource_construction"],
+        LocalCandidateBundleScaffoldStandardsValidator(),
+    )
+
+    assert execution.execution_outcome == "executed"
+    assert execution.requested_target == "bundle_finalization"
+    assert execution.executed_target == "bundle_finalization"
+    assert execution.rerun_stage_ids == ["bundle_finalization", "validation", "repair_decision"]
+    assert execution.post_retry_validation_report is not None
+    assert execution.post_retry_validation_report.overall_status == "passed_with_warnings"
+
+
+async def test_psca_repair_execution_reruns_only_bundle_finalization_for_duplicate_entry_fullurl() -> None:
+    artifacts = await _build_repair_inputs(mutator=_duplicate_bundle_entry_fullurl)
+
+    execution = await build_psca_repair_execution_result(
+        artifacts["repair_decision"],
+        artifacts["normalized_request"],
+        artifacts["build_plan"],
+        artifacts["schematic"],
+        artifacts["resource_construction"],
+        LocalCandidateBundleScaffoldStandardsValidator(),
+    )
+
+    assert execution.execution_outcome == "executed"
+    assert execution.requested_target == "bundle_finalization"
+    assert execution.executed_target == "bundle_finalization"
+    assert execution.rerun_stage_ids == ["bundle_finalization", "validation", "repair_decision"]
+    assert execution.post_retry_validation_report is not None
+    assert execution.post_retry_validation_report.overall_status == "passed_with_warnings"
+
+
 async def test_psca_repair_execution_reruns_resource_construction_once() -> None:
     artifacts = await _build_repair_inputs(mutator=_remove_required_section)
 
@@ -672,6 +718,31 @@ async def _build_repair_inputs(mutator=None, construction_mutator=None, medicati
 def _break_bundle_type(candidate_bundle):
     broken_bundle = deepcopy(candidate_bundle)
     broken_bundle.candidate_bundle.fhir_bundle["type"] = "collection"
+    return broken_bundle
+
+
+def _swap_medication_bundle_entries(candidate_bundle):
+    broken_bundle = deepcopy(candidate_bundle)
+    broken_bundle.entry_assembly[5], broken_bundle.entry_assembly[6] = (
+        broken_bundle.entry_assembly[6],
+        broken_bundle.entry_assembly[5],
+    )
+    broken_bundle.evidence.assembled_medication_placeholder_ids = [
+        "medicationrequest-2",
+        "medicationrequest-1",
+    ]
+    broken_bundle.candidate_bundle.fhir_bundle["entry"][5], broken_bundle.candidate_bundle.fhir_bundle["entry"][6] = (
+        broken_bundle.candidate_bundle.fhir_bundle["entry"][6],
+        broken_bundle.candidate_bundle.fhir_bundle["entry"][5],
+    )
+    return broken_bundle
+
+
+def _duplicate_bundle_entry_fullurl(candidate_bundle):
+    broken_bundle = deepcopy(candidate_bundle)
+    broken_bundle.candidate_bundle.fhir_bundle["entry"][6]["fullUrl"] = (
+        broken_bundle.candidate_bundle.fhir_bundle["entry"][5]["fullUrl"]
+    )
     return broken_bundle
 
 

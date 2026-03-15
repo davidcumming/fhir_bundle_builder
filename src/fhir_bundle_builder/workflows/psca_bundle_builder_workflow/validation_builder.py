@@ -112,6 +112,7 @@ def _build_workflow_validation_result(
             if len(medication_placeholder_ids) > 1
             else []
         ),
+        "bundle.medications_bundle_entries_aligned_to_plan",
         "bundle.allergyintolerance_placeholder_content_present",
         "bundle.condition_placeholder_content_present",
         "bundle.composition_medications_section_present",
@@ -414,6 +415,18 @@ def _build_workflow_validation_result(
                 "Expected the second MedicationRequest content to include status='draft', intent='proposal', and the deterministic second medication text from normalized patient context.",
             )
         )
+    medications_bundle_entries_aligned = _medications_bundle_entries_aligned_to_plan(
+        candidate_bundle,
+        schematic,
+    )
+    if not medications_bundle_entries_aligned:
+        findings.append(
+            _workflow_error(
+                "bundle.medications_bundle_entries_aligned_to_plan",
+                "Bundle.entry",
+                "Expected final bundle-entry assembly to contain exactly the planned MedicationRequest placeholders in scaffold order, with matching resource ids, MedicationRequest resource types, and non-empty fullUrls.",
+            )
+        )
 
     if not _allergyintolerance_placeholder_content_present(bundle, normalized_request, schematic):
         findings.append(
@@ -595,12 +608,21 @@ def _build_workflow_validation_result(
             )
         )
 
+    entry_fullurls_unique = _entry_fullurls_unique(bundle)
+
     section_entry_alignment_codes = {
         "medications": "bundle.composition_medications_section_entry_reference_aligned",
         "allergies": "bundle.composition_allergies_section_entry_reference_aligned",
         "problems": "bundle.composition_problems_section_entry_reference_aligned",
     }
     for section_scaffold in schematic.section_scaffolds:
+        if not entry_fullurls_unique:
+            continue
+        if (
+            section_scaffold.section_key == "medications"
+            and not medications_bundle_entries_aligned
+        ):
+            continue
         if _composition_section_entry_reference_aligned(
             sections,
             section_scaffold,
@@ -759,6 +781,62 @@ def _entry_fullurls_present(bundle: dict[str, object]) -> bool:
     if not isinstance(entries, list):
         return False
     return all(isinstance(entry, dict) and bool(entry.get("fullUrl")) for entry in entries)
+
+
+def _entry_fullurls_unique(bundle: dict[str, object]) -> bool:
+    entries = bundle.get("entry", [])
+    if not isinstance(entries, list):
+        return False
+    full_urls = [entry.get("fullUrl") for entry in entries if isinstance(entry, dict)]
+    if any(not isinstance(full_url, str) or not full_url for full_url in full_urls):
+        return False
+    return len(full_urls) == len(set(full_urls))
+
+
+def _medications_bundle_entries_aligned_to_plan(
+    candidate_bundle: CandidateBundleResult,
+    schematic: BundleSchematic,
+) -> bool:
+    planned_placeholder_ids = list(candidate_bundle.evidence.planned_medication_placeholder_ids)
+    if not planned_placeholder_ids:
+        planned_placeholder_ids = _medication_placeholder_ids_from_schematic(schematic)
+
+    assembled_placeholder_ids = list(candidate_bundle.evidence.assembled_medication_placeholder_ids)
+    if not assembled_placeholder_ids:
+        assembled_placeholder_ids = [
+            entry.placeholder_id
+            for entry in candidate_bundle.entry_assembly
+            if entry.placeholder_id.startswith("medicationrequest-")
+        ]
+
+    if assembled_placeholder_ids != planned_placeholder_ids:
+        return False
+
+    entries = candidate_bundle.candidate_bundle.fhir_bundle.get("entry", [])
+    if not isinstance(entries, list):
+        return False
+
+    entry_lookup: dict[str, dict[str, object]] = {}
+    for entry in entries:
+        if not isinstance(entry, dict):
+            continue
+        resource = entry.get("resource")
+        if not isinstance(resource, dict):
+            continue
+        resource_id = resource.get("id")
+        if isinstance(resource_id, str):
+            entry_lookup[resource_id] = entry
+
+    for placeholder_id in planned_placeholder_ids:
+        entry = entry_lookup.get(placeholder_id)
+        if not isinstance(entry, dict) or not entry.get("fullUrl"):
+            return False
+        resource = entry.get("resource")
+        if not isinstance(resource, dict):
+            return False
+        if resource.get("id") != placeholder_id or resource.get("resourceType") != "MedicationRequest":
+            return False
+    return True
 
 
 def _expected_full_url(

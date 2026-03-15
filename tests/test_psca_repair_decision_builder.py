@@ -391,6 +391,55 @@ async def test_psca_repair_decision_routes_bundle_identity_failures_to_bundle_fi
     )
 
 
+async def test_psca_repair_decision_routes_medication_bundle_entry_plan_alignment_to_bundle_finalization() -> None:
+    report = await _build_validation_report(
+        mutator=_swap_medication_bundle_entries,
+        medication_texts=[
+            "Atorvastatin 20 MG oral tablet",
+            "Metformin 500 MG oral tablet",
+        ],
+    )
+
+    decision = build_psca_repair_decision(report)
+
+    assert decision.recommended_target == "bundle_finalization"
+    assert any(
+        route.finding_code == "bundle.medications_bundle_entries_aligned_to_plan"
+        and route.route_target == "bundle_finalization"
+        and route.actionable is True
+        for route in decision.finding_routes
+    )
+    assert decision.recommended_resource_construction_repair_directive is None
+
+
+async def test_psca_repair_decision_routes_duplicate_bundle_entry_fullurls_to_bundle_finalization() -> None:
+    report = await _build_validation_report(mutator=_duplicate_bundle_entry_fullurl)
+
+    decision = build_psca_repair_decision(report)
+
+    assert decision.recommended_target == "bundle_finalization"
+    assert any(
+        route.finding_code == "bundle.entry_fullurls_unique"
+        and route.route_target == "bundle_finalization"
+        and route.actionable is True
+        for route in decision.finding_routes
+    )
+
+
+async def test_psca_repair_decision_routes_duplicate_bundle_entry_resource_ids_to_bundle_finalization() -> None:
+    report = await _build_validation_report(mutator=_duplicate_bundle_entry_resource_id)
+
+    decision = build_psca_repair_decision(report)
+
+    assert decision.recommended_target == "bundle_finalization"
+    assert any(
+        route.finding_code == "bundle.entry_resource_ids_unique"
+        and route.route_target == "bundle_finalization"
+        and route.actionable is True
+        for route in decision.finding_routes
+    )
+
+
 async def test_psca_repair_decision_routes_practitionerrole_practitioner_reference_alignment_to_bundle_finalization() -> None:
     report = await _build_validation_report(mutator=_break_practitionerrole_practitioner_reference)
 
@@ -771,6 +820,39 @@ def _remove_allergies_and_problems_sections(candidate_bundle):
 def _break_bundle_type(candidate_bundle):
     broken_bundle = deepcopy(candidate_bundle)
     broken_bundle.candidate_bundle.fhir_bundle["type"] = "collection"
+    return broken_bundle
+
+
+def _swap_medication_bundle_entries(candidate_bundle):
+    broken_bundle = deepcopy(candidate_bundle)
+    broken_bundle.entry_assembly[5], broken_bundle.entry_assembly[6] = (
+        broken_bundle.entry_assembly[6],
+        broken_bundle.entry_assembly[5],
+    )
+    broken_bundle.evidence.assembled_medication_placeholder_ids = [
+        "medicationrequest-2",
+        "medicationrequest-1",
+    ]
+    broken_bundle.candidate_bundle.fhir_bundle["entry"][5], broken_bundle.candidate_bundle.fhir_bundle["entry"][6] = (
+        broken_bundle.candidate_bundle.fhir_bundle["entry"][6],
+        broken_bundle.candidate_bundle.fhir_bundle["entry"][5],
+    )
+    return broken_bundle
+
+
+def _duplicate_bundle_entry_fullurl(candidate_bundle):
+    broken_bundle = deepcopy(candidate_bundle)
+    broken_bundle.candidate_bundle.fhir_bundle["entry"][6]["fullUrl"] = (
+        broken_bundle.candidate_bundle.fhir_bundle["entry"][5]["fullUrl"]
+    )
+    return broken_bundle
+
+
+def _duplicate_bundle_entry_resource_id(candidate_bundle):
+    broken_bundle = deepcopy(candidate_bundle)
+    broken_bundle.candidate_bundle.fhir_bundle["entry"][6]["resource"]["id"] = (
+        broken_bundle.candidate_bundle.fhir_bundle["entry"][5]["resource"]["id"]
+    )
     return broken_bundle
 
 

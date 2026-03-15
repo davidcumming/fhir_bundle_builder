@@ -49,6 +49,7 @@ def build_psca_candidate_bundle_result(
         for relationship in schematic.relationships
         if relationship.relationship_type == "bundle_entry"
     ]
+    planned_medication_placeholder_ids = _planned_medication_placeholder_ids(schematic)
 
     missing_required = [placeholder_id for placeholder_id in required_entry_ids if placeholder_id not in registry]
     if missing_required:
@@ -196,6 +197,8 @@ def build_psca_candidate_bundle_result(
             source_build_plan_stage_id=construction.evidence.source_build_plan_stage_id,
             required_entry_placeholder_ids=required_entry_ids,
             ordered_placeholder_ids=ordered_placeholder_ids,
+            planned_medication_placeholder_ids=planned_medication_placeholder_ids,
+            assembled_medication_placeholder_ids=_assembled_medication_placeholder_ids(entry_assembly),
             source_refs=construction.source_refs,
         ),
     )
@@ -283,3 +286,20 @@ def _value_evidence(target_path: str, source_artifact: str, source_detail: str) 
         source_artifact=source_artifact,
         source_detail=source_detail,
     )
+
+
+def _planned_medication_placeholder_ids(schematic: BundleSchematic) -> list[str]:
+    for section in schematic.section_scaffolds:
+        if section.section_key == "medications":
+            return list(section.entry_placeholder_ids)
+    return []
+
+
+def _assembled_medication_placeholder_ids(
+    entry_assembly: list[BundleEntryAssemblyResult],
+) -> list[str]:
+    return [
+        entry.placeholder_id
+        for entry in entry_assembly
+        if entry.placeholder_id.startswith("medicationrequest-")
+    ]

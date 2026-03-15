@@ -422,6 +422,12 @@ async def test_psca_bundle_builder_workflow_smoke() -> None:
         == "Type 2 diabetes mellitus"
     )
     assert final_output.candidate_bundle.candidate_bundle.deferred_paths == []
+    assert final_output.candidate_bundle.evidence.planned_medication_placeholder_ids == [
+        "medicationrequest-1"
+    ]
+    assert final_output.candidate_bundle.evidence.assembled_medication_placeholder_ids == [
+        "medicationrequest-1"
+    ]
     assert len(final_output.candidate_bundle.candidate_bundle.fhir_bundle["entry"][0]["resource"]["section"]) == 3
     assert final_output.validation_report.overall_status == "passed_with_warnings"
     assert final_output.validation_report.standards_validation.validator_id == "local_candidate_bundle_scaffold_validator"
@@ -555,6 +561,14 @@ async def test_psca_bundle_builder_workflow_supports_bounded_two_medication_path
     }
     assert final_output.candidate_bundle.candidate_bundle.entry_count == 9
     assert [entry.placeholder_id for entry in final_output.candidate_bundle.entry_assembly][5:7] == [
+        "medicationrequest-1",
+        "medicationrequest-2",
+    ]
+    assert final_output.candidate_bundle.evidence.planned_medication_placeholder_ids == [
+        "medicationrequest-1",
+        "medicationrequest-2",
+    ]
+    assert final_output.candidate_bundle.evidence.assembled_medication_placeholder_ids == [
         "medicationrequest-1",
         "medicationrequest-2",
     ]

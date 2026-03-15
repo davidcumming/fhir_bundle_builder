@@ -99,6 +99,10 @@ async def test_psca_validation_builder_happy_path_reports_split_channels() -> No
         for finding in report.workflow_validation.findings
     )
     assert not any(
+        finding.code == "bundle.medications_bundle_entries_aligned_to_plan" and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
         finding.code == "bundle.composition_allergies_section_entry_reference_aligned" and finding.severity == "error"
         for finding in report.workflow_validation.findings
     )
@@ -666,6 +670,86 @@ async def test_psca_validation_builder_fails_when_medications_section_entry_refe
     )
     assert not any(
         finding.code == "bundle.composition_medications_section_present"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.medications_bundle_entries_aligned_to_plan"
+        for finding in report.workflow_validation.findings
+    )
+
+
+async def test_psca_validation_builder_fails_when_medication_bundle_entries_do_not_match_plan() -> None:
+    normalized_request, schematic, candidate_bundle = _build_validation_inputs(
+        medication_texts=[
+            "Atorvastatin 20 MG oral tablet",
+            "Metformin 500 MG oral tablet",
+        ]
+    )
+    broken_bundle = deepcopy(candidate_bundle)
+    broken_bundle.entry_assembly[5], broken_bundle.entry_assembly[6] = (
+        broken_bundle.entry_assembly[6],
+        broken_bundle.entry_assembly[5],
+    )
+    broken_bundle.evidence.assembled_medication_placeholder_ids = [
+        "medicationrequest-2",
+        "medicationrequest-1",
+    ]
+    broken_bundle.candidate_bundle.fhir_bundle["entry"][5], broken_bundle.candidate_bundle.fhir_bundle["entry"][6] = (
+        broken_bundle.candidate_bundle.fhir_bundle["entry"][6],
+        broken_bundle.candidate_bundle.fhir_bundle["entry"][5],
+    )
+
+    report = await build_psca_validation_report(
+        broken_bundle,
+        schematic,
+        normalized_request,
+        LocalCandidateBundleScaffoldStandardsValidator(),
+    )
+
+    assert any(
+        finding.code == "bundle.medications_bundle_entries_aligned_to_plan"
+        and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.composition_medications_section_entry_reference_aligned"
+        for finding in report.workflow_validation.findings
+    )
+
+
+async def test_psca_validation_builder_fails_when_second_planned_medication_bundle_entry_is_missing() -> None:
+    normalized_request, schematic, candidate_bundle = _build_validation_inputs(
+        medication_texts=[
+            "Atorvastatin 20 MG oral tablet",
+            "Metformin 500 MG oral tablet",
+        ]
+    )
+    broken_bundle = deepcopy(candidate_bundle)
+    broken_bundle.entry_assembly = [
+        entry for entry in broken_bundle.entry_assembly if entry.placeholder_id != "medicationrequest-2"
+    ]
+    broken_bundle.evidence.assembled_medication_placeholder_ids = ["medicationrequest-1"]
+    broken_bundle.candidate_bundle.fhir_bundle["entry"] = [
+        entry
+        for entry in broken_bundle.candidate_bundle.fhir_bundle["entry"]
+        if entry["resource"]["id"] != "medicationrequest-2"
+    ]
+    broken_bundle.candidate_bundle.entry_count -= 1
+
+    report = await build_psca_validation_report(
+        broken_bundle,
+        schematic,
+        normalized_request,
+        LocalCandidateBundleScaffoldStandardsValidator(),
+    )
+
+    assert any(
+        finding.code == "bundle.medications_bundle_entries_aligned_to_plan"
+        and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.composition_medications_section_entry_reference_aligned"
         for finding in report.workflow_validation.findings
     )
 

@@ -152,3 +152,71 @@ async def test_matchbox_runtime_falls_back_to_local_scaffold_validator() -> None
         in area
         for area in result.deferred_areas
     )
+
+
+async def test_local_scaffold_validator_flags_duplicate_entry_fullurls() -> None:
+    result = await LocalCandidateBundleScaffoldStandardsValidator().validate(
+        StandardsValidationRequest(
+            bundle_id="bundle-dup-fullurl",
+            bundle_json={
+                "resourceType": "Bundle",
+                "id": "bundle-dup-fullurl",
+                "identifier": {"system": "urn:test", "value": "bundle-dup-fullurl"},
+                "timestamp": "2025-01-01T00:00:00Z",
+                "meta": {"profile": ["http://example.org/StructureDefinition/test-bundle"]},
+                "type": "document",
+                "entry": [
+                    {
+                        "fullUrl": "urn:uuid:dup",
+                        "resource": {"resourceType": "MedicationRequest", "id": "medicationrequest-1"},
+                    },
+                    {
+                        "fullUrl": "urn:uuid:dup",
+                        "resource": {"resourceType": "MedicationRequest", "id": "medicationrequest-2"},
+                    },
+                ],
+            },
+            bundle_profile_url="http://example.org/StructureDefinition/test-bundle",
+            specification_package_id="ca.infoway.io.psca",
+            specification_version="2.1.1-DFT",
+        )
+    )
+
+    assert any(
+        finding.code == "bundle.entry_fullurls_unique" and finding.severity == "error"
+        for finding in result.findings
+    )
+
+
+async def test_local_scaffold_validator_flags_duplicate_entry_resource_ids() -> None:
+    result = await LocalCandidateBundleScaffoldStandardsValidator().validate(
+        StandardsValidationRequest(
+            bundle_id="bundle-dup-id",
+            bundle_json={
+                "resourceType": "Bundle",
+                "id": "bundle-dup-id",
+                "identifier": {"system": "urn:test", "value": "bundle-dup-id"},
+                "timestamp": "2025-01-01T00:00:00Z",
+                "meta": {"profile": ["http://example.org/StructureDefinition/test-bundle"]},
+                "type": "document",
+                "entry": [
+                    {
+                        "fullUrl": "urn:uuid:med-1",
+                        "resource": {"resourceType": "MedicationRequest", "id": "medicationrequest-1"},
+                    },
+                    {
+                        "fullUrl": "urn:uuid:med-2",
+                        "resource": {"resourceType": "MedicationRequest", "id": "medicationrequest-1"},
+                    },
+                ],
+            },
+            bundle_profile_url="http://example.org/StructureDefinition/test-bundle",
+            specification_package_id="ca.infoway.io.psca",
+            specification_version="2.1.1-DFT",
+        )
+    )
+
+    assert any(
+        finding.code == "bundle.entry_resource_ids_unique" and finding.severity == "error"
+        for finding in result.findings
+    )

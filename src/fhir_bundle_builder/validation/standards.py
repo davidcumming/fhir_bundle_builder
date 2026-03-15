@@ -63,10 +63,14 @@ class LocalCandidateBundleScaffoldStandardsValidator:
         self._require(entries_is_list, findings, "bundle.entry_list", "Bundle.entry", "Expected Bundle.entry to be present as a list.")
 
         if entries_is_list:
+            seen_full_urls: set[str] = set()
+            seen_resource_ids: set[str] = set()
             for index, entry in enumerate(entries):
                 resource = entry.get("resource") if isinstance(entry, dict) else None
+                full_url = entry.get("fullUrl") if isinstance(entry, dict) else None
+                resource_id = resource.get("id") if isinstance(resource, dict) else None
                 self._require(
-                    isinstance(entry, dict) and bool(entry.get("fullUrl")),
+                    isinstance(entry, dict) and bool(full_url),
                     findings,
                     "bundle.entry_fullurl_present",
                     f"Bundle.entry[{index}].fullUrl",
@@ -80,12 +84,30 @@ class LocalCandidateBundleScaffoldStandardsValidator:
                     "Expected Bundle.entry resourceType to be present.",
                 )
                 self._require(
-                    isinstance(resource, dict) and bool(resource.get("id")),
+                    isinstance(resource, dict) and bool(resource_id),
                     findings,
                     "bundle.entry_resource_id_present",
                     f"Bundle.entry[{index}].resource.id",
                     "Expected Bundle.entry resource id to be present.",
                 )
+                self._require(
+                    isinstance(full_url, str) and full_url not in seen_full_urls,
+                    findings,
+                    "bundle.entry_fullurls_unique",
+                    f"Bundle.entry[{index}].fullUrl",
+                    "Expected Bundle.entry fullUrl values to be unique.",
+                )
+                self._require(
+                    isinstance(resource_id, str) and resource_id not in seen_resource_ids,
+                    findings,
+                    "bundle.entry_resource_ids_unique",
+                    f"Bundle.entry[{index}].resource.id",
+                    "Expected Bundle.entry.resource.id values to be unique.",
+                )
+                if isinstance(full_url, str) and full_url:
+                    seen_full_urls.add(full_url)
+                if isinstance(resource_id, str) and resource_id:
+                    seen_resource_ids.add(resource_id)
 
         findings.append(
             ValidationFinding(
@@ -115,6 +137,8 @@ class LocalCandidateBundleScaffoldStandardsValidator:
                 "bundle.entry_fullurl_present",
                 "bundle.entry_resource_type_present",
                 "bundle.entry_resource_id_present",
+                "bundle.entry_fullurls_unique",
+                "bundle.entry_resource_ids_unique",
             ],
             findings=findings,
             deferred_areas=[
