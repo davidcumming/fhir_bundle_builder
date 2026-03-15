@@ -5,6 +5,11 @@ from __future__ import annotations
 from fhir_bundle_builder.specifications.psca import PscaAssetQuery, PscaAssetRepository
 from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.models import (
     BundleRequestInput,
+    PatientAllergyInput,
+    PatientConditionInput,
+    PatientContextInput,
+    PatientIdentityInput,
+    PatientMedicationInput,
     ProfileReferenceInput,
     SpecificationSelection,
     WorkflowBuildInput,
@@ -29,6 +34,31 @@ def test_psca_build_plan_builder_generates_expected_order_and_dependencies() -> 
             patient_profile=ProfileReferenceInput(
                 profile_id="patient-plan-test",
                 display_name="Plan Test Patient",
+            ),
+            patient_context=PatientContextInput(
+                patient=PatientIdentityInput(
+                    patient_id="patient-plan-test",
+                    display_name="Plan Test Patient",
+                    source_type="patient_management",
+                ),
+                medications=[
+                    PatientMedicationInput(
+                        medication_id="med-plan-1",
+                        display_text="Atorvastatin 20 MG oral tablet",
+                    )
+                ],
+                allergies=[
+                    PatientAllergyInput(
+                        allergy_id="alg-plan-1",
+                        display_text="Peanut allergy",
+                    )
+                ],
+                conditions=[
+                    PatientConditionInput(
+                        condition_id="cond-plan-1",
+                        display_text="Type 2 diabetes mellitus",
+                    )
+                ],
             ),
             provider_profile=ProfileReferenceInput(
                 profile_id="provider-plan-test",
@@ -101,6 +131,9 @@ def test_psca_build_plan_builder_generates_expected_order_and_dependencies() -> 
     assert steps["build-medicationrequest-1"].owning_section_key == "medications"
     assert steps["build-allergyintolerance-1"].owning_section_key == "allergies"
     assert steps["build-condition-1"].owning_section_key == "problems"
+    assert [
+        section.entry_placeholder_ids for section in schematic.section_scaffolds
+    ] == [["medicationrequest-1"], ["allergyintolerance-1"], ["condition-1"]]
 
     assert steps["build-patient-1"].target_placeholder_id == "patient-1"
     assert steps["build-composition-1-scaffold"].target_placeholder_id == "composition-1"

@@ -385,6 +385,35 @@ class SchematicProviderContextEvidence(BaseModel):
     selected_provider_role_label: str | None = None
 
 
+class SchematicPatientContextEvidence(BaseModel):
+    """Selected patient context copied into schematic provenance."""
+
+    normalization_mode: Literal[
+        "legacy_patient_profile",
+        "patient_context_explicit",
+    ]
+    patient_id: str
+    patient_display_name: str
+    patient_source_type: Literal["stub", "patient_management"]
+    administrative_gender_present: bool
+    birth_date_present: bool
+
+
+class SchematicClinicalSectionContextEvidence(BaseModel):
+    """Section-level patient clinical context availability recorded for planning inspectability."""
+
+    section_key: str
+    available_item_count: int
+    selected_single_entry_display_text: str | None = None
+    planned_placeholder_count: int
+    planning_disposition: Literal[
+        "legacy_profile_fallback",
+        "fixed_single_entry_no_structured_items",
+        "fixed_single_entry_selected_item",
+        "fixed_single_entry_multiple_items_deferred",
+    ]
+
+
 class SchematicEvidence(BaseModel):
     """Provenance captured for the generated schematic."""
 
@@ -393,6 +422,8 @@ class SchematicEvidence(BaseModel):
     selected_example_entry_resource_types: list[str] = Field(default_factory=list)
     used_profile_ids: list[str] = Field(default_factory=list)
     used_section_slice_names: list[str] = Field(default_factory=list)
+    patient_context: SchematicPatientContextEvidence
+    clinical_section_contexts: list[SchematicClinicalSectionContextEvidence] = Field(default_factory=list)
     provider_context: SchematicProviderContextEvidence
     source_refs: list[str] = Field(default_factory=list)
 

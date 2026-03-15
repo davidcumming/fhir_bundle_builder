@@ -5,6 +5,11 @@ from __future__ import annotations
 from fhir_bundle_builder.specifications.psca import PscaAssetQuery, PscaAssetRepository
 from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.models import (
     BundleRequestInput,
+    PatientAllergyInput,
+    PatientConditionInput,
+    PatientContextInput,
+    PatientIdentityInput,
+    PatientMedicationInput,
     ProfileReferenceInput,
     ProviderContextInput,
     ProviderIdentityInput,
@@ -67,11 +72,24 @@ def test_psca_bundle_schematic_builder_generates_required_scaffold() -> None:
     assert "sectionImmunizations:Immunizations" in schematic.omitted_optional_sections
     assert schematic.evidence.selected_example_filename == "Bundle1Example.json"
     assert "composition-ca-ps" in schematic.evidence.used_profile_ids
+    assert schematic.evidence.patient_context.normalization_mode == "patient_context_explicit"
+    assert schematic.evidence.patient_context.patient_id == "patient-schematic-test"
+    assert schematic.evidence.patient_context.administrative_gender_present is True
+    assert schematic.evidence.patient_context.birth_date_present is True
+    section_contexts = {context.section_key: context for context in schematic.evidence.clinical_section_contexts}
+    assert section_contexts["medications"].available_item_count == 1
+    assert section_contexts["medications"].selected_single_entry_display_text == "Atorvastatin 20 MG oral tablet"
+    assert section_contexts["medications"].planned_placeholder_count == 1
+    assert section_contexts["medications"].planning_disposition == "fixed_single_entry_selected_item"
+    assert section_contexts["allergies"].planning_disposition == "fixed_single_entry_selected_item"
+    assert section_contexts["problems"].planning_disposition == "fixed_single_entry_selected_item"
     assert schematic.evidence.provider_context.normalization_mode == "provider_context_explicit_selection"
     assert schematic.evidence.provider_context.provider_id == "provider-schematic-test"
     assert schematic.evidence.provider_context.selected_organization_id == "org-schematic-test"
     assert schematic.evidence.provider_context.selected_provider_role_relationship_id == "provider-role-schematic-1"
     assert schematic.evidence.provider_context.selected_provider_role_label == "attending-physician"
+    assert "explicit structured patient/clinical context" in schematic.summary
+    assert "one placeholder per required medications/allergies/problems section" in schematic.placeholder_note
     assert "explicitly selected provider-role relationship context" in schematic.summary
     assert "explicitly selected provider-role relationship" in schematic.placeholder_note
 
@@ -85,11 +103,82 @@ def test_psca_bundle_schematic_builder_records_legacy_provider_context_fallback(
     placeholders = {placeholder.placeholder_id: placeholder for placeholder in schematic.resource_placeholders}
 
     assert placeholders["practitionerrole-1"].role == "document-author"
+    assert schematic.evidence.patient_context.normalization_mode == "legacy_patient_profile"
+    assert all(
+        context.planning_disposition == "legacy_profile_fallback"
+        for context in schematic.evidence.clinical_section_contexts
+    )
     assert schematic.evidence.provider_context.normalization_mode == "legacy_provider_profile"
     assert schematic.evidence.provider_context.selected_organization_id is None
     assert schematic.evidence.provider_context.selected_provider_role_relationship_id is None
+    assert "legacy patient-profile fallback context" in schematic.summary
     assert "legacy provider-profile fallback context" in schematic.summary
     assert "legacy provider-profile fallback only" in schematic.placeholder_note
+
+
+def test_psca_bundle_schematic_builder_records_multiple_patient_items_as_deferred_under_fixed_single_entry_planning() -> None:
+    repository = PscaAssetRepository()
+    normalized_assets = repository.load_foundation_context(PscaAssetQuery())
+    normalized_request = build_psca_normalized_request(
+        WorkflowBuildInput(
+            specification=SpecificationSelection(),
+            patient_profile=ProfileReferenceInput(
+                profile_id="patient-schematic-test",
+                display_name="Schematic Test Patient",
+            ),
+            patient_context=PatientContextInput(
+                patient=PatientIdentityInput(
+                    patient_id="patient-schematic-test",
+                    display_name="Schematic Test Patient",
+                    source_type="patient_management",
+                ),
+                medications=[
+                    PatientMedicationInput(
+                        medication_id="med-schematic-1",
+                        display_text="Atorvastatin 20 MG oral tablet",
+                    ),
+                    PatientMedicationInput(
+                        medication_id="med-schematic-2",
+                        display_text="Metformin 500 MG oral tablet",
+                    ),
+                ],
+                allergies=[
+                    PatientAllergyInput(
+                        allergy_id="alg-schematic-1",
+                        display_text="Peanut allergy",
+                    )
+                ],
+                conditions=[
+                    PatientConditionInput(
+                        condition_id="cond-schematic-1",
+                        display_text="Type 2 diabetes mellitus",
+                    )
+                ],
+            ),
+            provider_profile=ProfileReferenceInput(
+                profile_id="provider-schematic-test",
+                display_name="Schematic Test Provider",
+            ),
+            request=BundleRequestInput(
+                request_text="Create a deterministic schematic for testing.",
+                scenario_label="pytest-schematic-multi-patient",
+            ),
+        )
+    )
+
+    schematic = build_psca_bundle_schematic(normalized_assets, normalized_request)
+    section_contexts = {context.section_key: context for context in schematic.evidence.clinical_section_contexts}
+
+    assert section_contexts["medications"].available_item_count == 2
+    assert section_contexts["medications"].selected_single_entry_display_text is None
+    assert section_contexts["medications"].planned_placeholder_count == 1
+    assert section_contexts["medications"].planning_disposition == "fixed_single_entry_multiple_items_deferred"
+    assert {placeholder.placeholder_id for placeholder in schematic.resource_placeholders} >= {
+        "medicationrequest-1",
+        "allergyintolerance-1",
+        "condition-1",
+    }
+    assert "with one-entry-per-section planning still fixed despite additional structured clinical items" in schematic.summary
 
 
 def _build_normalized_request():
@@ -99,6 +188,33 @@ def _build_normalized_request():
             patient_profile=ProfileReferenceInput(
                 profile_id="patient-schematic-test",
                 display_name="Schematic Test Patient",
+            ),
+            patient_context=PatientContextInput(
+                patient=PatientIdentityInput(
+                    patient_id="patient-schematic-test",
+                    display_name="Schematic Test Patient",
+                    source_type="patient_management",
+                    administrative_gender="female",
+                    birth_date="1985-02-14",
+                ),
+                medications=[
+                    PatientMedicationInput(
+                        medication_id="med-schematic-1",
+                        display_text="Atorvastatin 20 MG oral tablet",
+                    )
+                ],
+                allergies=[
+                    PatientAllergyInput(
+                        allergy_id="alg-schematic-1",
+                        display_text="Peanut allergy",
+                    )
+                ],
+                conditions=[
+                    PatientConditionInput(
+                        condition_id="cond-schematic-1",
+                        display_text="Type 2 diabetes mellitus",
+                    )
+                ],
             ),
             provider_profile=ProfileReferenceInput(
                 profile_id="provider-schematic-test",

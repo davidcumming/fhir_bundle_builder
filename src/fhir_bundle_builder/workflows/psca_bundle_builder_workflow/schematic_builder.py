@@ -14,7 +14,9 @@ from .models import (
     CompositionScaffold,
     NormalizedBuildRequest,
     ResourcePlaceholder,
+    SchematicClinicalSectionContextEvidence,
     SchematicEvidence,
+    SchematicPatientContextEvidence,
     SchematicProviderContextEvidence,
     SchematicRelationship,
     SectionScaffold,
@@ -73,6 +75,9 @@ def build_psca_bundle_schematic(
     practitioner_profile = normalized_assets.selected_profiles.practitioner
     practitioner_role_profile = normalized_assets.selected_profiles.practitioner_role
     organization_profile = normalized_assets.selected_profiles.organization
+    patient_context_evidence = _patient_context_evidence(normalized_request)
+    patient_context_summary = _patient_context_summary(patient_context_evidence.normalization_mode)
+    patient_context_note = _patient_context_note(patient_context_evidence.normalization_mode)
     provider_context_evidence = _provider_context_evidence(normalized_request)
     provider_context_summary = _provider_context_summary(provider_context_evidence.normalization_mode)
     provider_context_note = _provider_context_note(provider_context_evidence.normalization_mode)
@@ -258,17 +263,29 @@ def build_psca_bundle_schematic(
         for section in normalized_assets.composition_section_definitions
         if not section.required
     ]
+    clinical_section_contexts = _clinical_section_contexts(section_scaffolds, normalized_request)
+    multiple_items_deferred = any(
+        context.planning_disposition == "fixed_single_entry_multiple_items_deferred"
+        for context in clinical_section_contexts
+    )
+    multiplicity_summary = (
+        "with one-entry-per-section planning still fixed despite additional structured clinical items"
+        if multiple_items_deferred
+        else "with one-entry-per-section planning unchanged for the current fixed trio"
+    )
 
     return BundleSchematic(
         stage_id="bundle_schematic",
         status="placeholder_complete",
         summary=(
             "Generated the first deterministic PS-CA bundle schematic from normalized assets, "
-            f"required section definitions, selected example evidence, and {provider_context_summary}."
+            f"required section definitions, selected example evidence, {provider_context_summary}, "
+            f"{patient_context_summary}, and {multiplicity_summary}."
         ),
         placeholder_note=(
             "This slice builds a real schematic scaffold only; build ordering, resource population, "
-            f"and optional PS-CA sections remain deferred. {provider_context_note}"
+            f"and optional PS-CA sections remain deferred. {provider_context_note} "
+            f"{patient_context_note} Planning remains fixed to one placeholder per required medications/allergies/problems section in this slice."
         ),
         source_refs=normalized_assets.source_refs,
         generation_basis="deterministic_psca_foundation_rules",
@@ -295,6 +312,8 @@ def build_psca_bundle_schematic(
             selected_example_entry_resource_types=normalized_assets.selected_bundle_example.entry_resource_types,
             used_profile_ids=used_profile_ids,
             used_section_slice_names=[section.slice_name for section in section_scaffolds],
+            patient_context=patient_context_evidence,
+            clinical_section_contexts=clinical_section_contexts,
             provider_context=provider_context_evidence,
             source_refs=normalized_assets.source_refs,
         ),
@@ -389,3 +408,111 @@ def _provider_context_note(normalization_mode: str) -> str:
         "The schematic records legacy provider-profile fallback only; richer selected "
         "organization and provider-role context remains unavailable in this run."
     )
+
+
+def _patient_context_evidence(
+    normalized_request: NormalizedBuildRequest,
+) -> SchematicPatientContextEvidence:
+    patient_context = normalized_request.patient_context
+    patient = patient_context.patient
+    return SchematicPatientContextEvidence(
+        normalization_mode=patient_context.normalization_mode,
+        patient_id=patient.patient_id,
+        patient_display_name=patient.display_name,
+        patient_source_type=patient.source_type,
+        administrative_gender_present=patient.administrative_gender is not None,
+        birth_date_present=patient.birth_date is not None,
+    )
+
+
+def _patient_context_summary(normalization_mode: str) -> str:
+    if normalization_mode == "patient_context_explicit":
+        return "explicit structured patient/clinical context"
+    return "legacy patient-profile fallback context"
+
+
+def _patient_context_note(normalization_mode: str) -> str:
+    if normalization_mode == "patient_context_explicit":
+        return (
+            "The schematic records structured patient identity and section-level clinical "
+            "context availability for inspectability."
+        )
+    return (
+        "The schematic records legacy patient-profile fallback only; richer structured "
+        "clinical context remains unavailable in this run."
+    )
+
+
+def _clinical_section_contexts(
+    section_scaffolds: list[SectionScaffold],
+    normalized_request: NormalizedBuildRequest,
+) -> list[SchematicClinicalSectionContextEvidence]:
+    contexts: list[SchematicClinicalSectionContextEvidence] = []
+    for section in section_scaffolds:
+        available_item_count, selected_display_text = _patient_section_context_values(
+            section.section_key,
+            normalized_request,
+        )
+        contexts.append(
+            SchematicClinicalSectionContextEvidence(
+                section_key=section.section_key,
+                available_item_count=available_item_count,
+                selected_single_entry_display_text=selected_display_text,
+                planned_placeholder_count=len(section.entry_placeholder_ids),
+                planning_disposition=_section_planning_disposition(
+                    normalized_request,
+                    available_item_count,
+                    selected_display_text,
+                ),
+            )
+        )
+    return contexts
+
+
+def _patient_section_context_values(
+    section_key: str,
+    normalized_request: NormalizedBuildRequest,
+) -> tuple[int, str | None]:
+    patient_context = normalized_request.patient_context
+    if section_key == "medications":
+        return (
+            len(patient_context.medications),
+            (
+                patient_context.selected_medication_for_single_entry.display_text
+                if patient_context.selected_medication_for_single_entry is not None
+                else None
+            ),
+        )
+    if section_key == "allergies":
+        return (
+            len(patient_context.allergies),
+            (
+                patient_context.selected_allergy_for_single_entry.display_text
+                if patient_context.selected_allergy_for_single_entry is not None
+                else None
+            ),
+        )
+    if section_key == "problems":
+        return (
+            len(patient_context.conditions),
+            (
+                patient_context.selected_condition_for_single_entry.display_text
+                if patient_context.selected_condition_for_single_entry is not None
+                else None
+            ),
+        )
+    raise ValueError(f"Unsupported patient-context section key '{section_key}'.")
+
+
+def _section_planning_disposition(
+    normalized_request: NormalizedBuildRequest,
+    available_item_count: int,
+    selected_display_text: str | None,
+) -> str:
+    if normalized_request.patient_context.normalization_mode == "legacy_patient_profile":
+        return "legacy_profile_fallback"
+    if available_item_count > 1:
+        return "fixed_single_entry_multiple_items_deferred"
+    if selected_display_text is not None:
+        return "fixed_single_entry_selected_item"
+    return "fixed_single_entry_no_structured_items"

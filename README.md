@@ -148,7 +148,11 @@ The `bundle_schematic` stage now emits the first real PS-CA schematic artifact f
   - PractitionerRole support links
   - section-entry wiring
 - provenance showing which normalized assets, example evidence, and selected normalized provider/org/role context were used
+- provenance showing which normalized patient identity and section-level clinical context counts were available for the run
 - summary and placeholder-note text showing whether the run used:
+  - legacy patient-profile fallback
+  - explicit patient/clinical context with fixed single-entry consumption
+  - explicit patient/clinical context with additional structured items still deferred under fixed one-entry-per-section planning
   - legacy provider-profile fallback
   - deterministic single-relationship provider-context selection
   - explicit provider-role relationship selection
@@ -190,6 +194,7 @@ The `resource_construction` stage now emits the first real scaffold-oriented con
   - a Composition status and title
   - section-entry status and text content for medications, allergies, and problems, using structured patient clinical profile text when exactly one matching item is available
 - normalized patient-context inspectability showing the selected patient identity and any single-entry clinical profile items currently consumable by the fixed one-entry-per-section workflow
+- schematic-level patient-context inspectability showing available item counts for medications, allergies, and problems even when the current planner still keeps one placeholder per required section
 - normalized provider-context inspectability showing the selected provider, selected organization, and selected provider-role relationship when available
 - a resource registry showing the latest scaffold state per placeholder
 - explicit incremental `Composition` behavior:

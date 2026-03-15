@@ -137,6 +137,13 @@ async def test_psca_bundle_builder_workflow_smoke() -> None:
     assert final_output.bundle_schematic.bundle_scaffold.bundle_type == "document"
     assert final_output.bundle_schematic.composition_scaffold.expected_type_code == "60591-5"
     assert (
+        final_output.bundle_schematic.evidence.patient_context.normalization_mode
+        == "patient_context_explicit"
+    )
+    assert final_output.bundle_schematic.evidence.patient_context.patient_id == "patient-smoke-test"
+    assert final_output.bundle_schematic.evidence.patient_context.administrative_gender_present is True
+    assert final_output.bundle_schematic.evidence.patient_context.birth_date_present is True
+    assert (
         final_output.bundle_schematic.evidence.provider_context.normalization_mode
         == "provider_context_explicit_selection"
     )
@@ -148,6 +155,21 @@ async def test_psca_bundle_builder_workflow_smoke() -> None:
         final_output.bundle_schematic.evidence.provider_context.selected_organization_id
         == "org-smoke-test-2"
     )
+    clinical_section_contexts = {
+        context.section_key: context
+        for context in final_output.bundle_schematic.evidence.clinical_section_contexts
+    }
+    assert clinical_section_contexts["medications"].available_item_count == 1
+    assert (
+        clinical_section_contexts["medications"].selected_single_entry_display_text
+        == "Atorvastatin 20 MG oral tablet"
+    )
+    assert clinical_section_contexts["medications"].planned_placeholder_count == 1
+    assert clinical_section_contexts["medications"].planning_disposition == "fixed_single_entry_selected_item"
+    assert clinical_section_contexts["allergies"].planned_placeholder_count == 1
+    assert clinical_section_contexts["problems"].planned_placeholder_count == 1
+    assert "explicit structured patient/clinical context" in final_output.bundle_schematic.summary
+    assert "one placeholder per required medications/allergies/problems section" in final_output.bundle_schematic.placeholder_note
     assert "explicitly selected provider-role relationship context" in final_output.bundle_schematic.summary
     assert "explicitly selected provider-role relationship" in final_output.bundle_schematic.placeholder_note
     assert [section.section_key for section in final_output.bundle_schematic.section_scaffolds] == [
