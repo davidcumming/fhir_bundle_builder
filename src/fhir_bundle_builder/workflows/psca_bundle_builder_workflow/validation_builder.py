@@ -101,7 +101,9 @@ def _build_workflow_validation_result(
         "bundle.medicationrequest_subject_reference_aligned",
         "bundle.allergyintolerance_patient_reference_aligned",
         "bundle.condition_subject_reference_aligned",
-        "bundle.composition_section_entry_references_aligned",
+        "bundle.composition_medications_section_entry_reference_aligned",
+        "bundle.composition_allergies_section_entry_reference_aligned",
+        "bundle.composition_problems_section_entry_reference_aligned",
     ]
 
     if bundle.get("type") != "document":
@@ -370,12 +372,26 @@ def _build_workflow_validation_result(
             )
         )
 
-    if not _composition_section_entry_references_aligned(bundle, schematic, full_urls_by_placeholder_id):
+    section_entry_alignment_codes = {
+        "medications": "bundle.composition_medications_section_entry_reference_aligned",
+        "allergies": "bundle.composition_allergies_section_entry_reference_aligned",
+        "problems": "bundle.composition_problems_section_entry_reference_aligned",
+    }
+    for section_scaffold in schematic.section_scaffolds:
+        if _composition_section_entry_reference_aligned(
+            sections,
+            section_scaffold,
+            full_urls_by_placeholder_id,
+        ):
+            continue
         findings.append(
             _workflow_error(
-                "bundle.composition_section_entry_references_aligned",
-                "Bundle.entry[0].resource.section.entry.reference",
-                "Expected Composition section entry references to align to deterministic bundle entry fullUrls.",
+                section_entry_alignment_codes[section_scaffold.section_key],
+                "Bundle.entry[0].resource.section.entry[0].reference",
+                (
+                    f"Expected the Composition '{section_scaffold.section_key}' section entry reference "
+                    "to align exactly to the deterministic bundle entry fullUrl."
+                ),
             )
         )
 
@@ -459,11 +475,18 @@ def _composition_section_present(
     sections: object,
     section_scaffold: object,
 ) -> bool:
+    return _matching_composition_section_block(sections, section_scaffold) is not None
+
+
+def _matching_composition_section_block(
+    sections: object,
+    section_scaffold: object,
+) -> dict[str, object] | None:
     expected_title = getattr(section_scaffold, "title", None)
     expected_code = getattr(section_scaffold, "loinc_code", None)
     expected_entry_placeholder_ids = getattr(section_scaffold, "entry_placeholder_ids", [])
     if not isinstance(sections, list):
-        return False
+        return None
     for section in sections:
         if not isinstance(section, dict):
             continue
@@ -488,8 +511,8 @@ def _composition_section_present(
                 or entry_reference.startswith(expected_reference)
             )
         ):
-            return True
-    return False
+            return section
+    return None
 
 
 def _entry_fullurls_present(bundle: dict[str, object]) -> bool:
@@ -583,26 +606,25 @@ def _condition_subject_reference_aligned(
     )
 
 
-def _composition_section_entry_references_aligned(
-    bundle: dict[str, object],
-    schematic: BundleSchematic,
+def _composition_section_entry_reference_aligned(
+    sections: object,
+    section_scaffold: object,
     full_urls_by_placeholder_id: dict[str, str],
 ) -> bool:
-    composition = _find_resource_by_type(bundle, "Composition")
-    sections = composition.get("section")
-    if not isinstance(sections, list) or len(sections) != len(schematic.section_scaffolds):
+    matching_section = _matching_composition_section_block(sections, section_scaffold)
+    if matching_section is None:
         return True
-    for index, section_scaffold in enumerate(schematic.section_scaffolds):
-        expected_reference = _expected_full_url(
-            full_urls_by_placeholder_id,
-            section_scaffold.entry_placeholder_ids[0],
-        )
-        if expected_reference is None:
-            return True
-        entry_reference = _first_list_item(sections[index].get("entry")) if isinstance(sections[index], dict) else {}
-        if not isinstance(entry_reference, dict) or entry_reference.get("reference") != expected_reference:
-            return False
-    return True
+    expected_reference = _expected_full_url(
+        full_urls_by_placeholder_id,
+        section_scaffold.entry_placeholder_ids[0],
+    )
+    if expected_reference is None:
+        return True
+    entry_reference = _first_list_item(matching_section.get("entry"))
+    actual_reference = entry_reference.get("reference") if isinstance(entry_reference, dict) else None
+    if not isinstance(actual_reference, str) or not actual_reference or not actual_reference.startswith("urn:uuid:"):
+        return True
+    return actual_reference == expected_reference
 
 
 def _full_urls_by_placeholder_id(bundle: dict[str, object]) -> dict[str, str]:

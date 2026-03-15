@@ -388,19 +388,75 @@ async def test_psca_repair_decision_routes_condition_subject_reference_alignment
     assert decision.recommended_resource_construction_repair_directive is None
 
 
-async def test_psca_repair_decision_routes_composition_section_entry_reference_alignment_to_bundle_finalization() -> None:
-    report = await _build_validation_report(mutator=_break_composition_section_entry_reference)
+async def test_psca_repair_decision_routes_medications_section_entry_reference_alignment_to_resource_construction() -> None:
+    report = await _build_validation_report(mutator=_break_medications_section_entry_reference)
 
     decision = build_psca_repair_decision(report)
 
-    assert decision.recommended_target == "bundle_finalization"
+    assert decision.recommended_target == "resource_construction"
     assert any(
-        route.finding_code == "bundle.composition_section_entry_references_aligned"
-        and route.route_target == "bundle_finalization"
+        route.finding_code == "bundle.composition_medications_section_entry_reference_aligned"
+        and route.route_target == "resource_construction"
         and route.actionable is True
         for route in decision.finding_routes
     )
-    assert decision.recommended_resource_construction_repair_directive is None
+    assert decision.recommended_resource_construction_repair_directive is not None
+    assert decision.recommended_resource_construction_repair_directive.target_step_ids == [
+        "finalize-composition-1-medications-section"
+    ]
+
+
+async def test_psca_repair_decision_routes_allergies_section_entry_reference_alignment_to_resource_construction() -> None:
+    report = await _build_validation_report(mutator=_break_allergies_section_entry_reference)
+
+    decision = build_psca_repair_decision(report)
+
+    assert decision.recommended_target == "resource_construction"
+    assert any(
+        route.finding_code == "bundle.composition_allergies_section_entry_reference_aligned"
+        and route.route_target == "resource_construction"
+        and route.actionable is True
+        for route in decision.finding_routes
+    )
+    assert decision.recommended_resource_construction_repair_directive is not None
+    assert decision.recommended_resource_construction_repair_directive.target_step_ids == [
+        "finalize-composition-1-allergies-section"
+    ]
+
+
+async def test_psca_repair_decision_routes_problems_section_entry_reference_alignment_to_resource_construction() -> None:
+    report = await _build_validation_report(mutator=_break_problems_section_entry_reference)
+
+    decision = build_psca_repair_decision(report)
+
+    assert decision.recommended_target == "resource_construction"
+    assert any(
+        route.finding_code == "bundle.composition_problems_section_entry_reference_aligned"
+        and route.route_target == "resource_construction"
+        and route.actionable is True
+        for route in decision.finding_routes
+    )
+    assert decision.recommended_resource_construction_repair_directive is not None
+    assert decision.recommended_resource_construction_repair_directive.target_step_ids == [
+        "finalize-composition-1-problems-section"
+    ]
+
+
+async def test_psca_repair_decision_unions_multiple_composition_section_entry_reference_alignment_failures_in_plan_order() -> None:
+    report = await _build_validation_report(mutator=_break_medications_and_problems_section_entry_references)
+
+    decision = build_psca_repair_decision(report)
+
+    assert decision.recommended_target == "resource_construction"
+    assert decision.recommended_resource_construction_repair_directive is not None
+    assert decision.recommended_resource_construction_repair_directive.target_step_ids == [
+        "finalize-composition-1-medications-section",
+        "finalize-composition-1-problems-section",
+    ]
+    assert set(decision.recommended_resource_construction_repair_directive.trigger_finding_codes) == {
+        "bundle.composition_medications_section_entry_reference_aligned",
+        "bundle.composition_problems_section_entry_reference_aligned",
+    }
 
 
 async def test_psca_repair_decision_keeps_combined_non_composition_reference_alignment_failures_at_bundle_finalization() -> None:
@@ -562,12 +618,33 @@ def _break_condition_subject_reference(candidate_bundle):
     return broken_bundle
 
 
-def _break_composition_section_entry_reference(candidate_bundle):
+def _break_medications_section_entry_reference(candidate_bundle):
+    broken_bundle = deepcopy(candidate_bundle)
+    composition = broken_bundle.candidate_bundle.fhir_bundle["entry"][0]["resource"]
+    wrong_full_url = broken_bundle.candidate_bundle.fhir_bundle["entry"][6]["fullUrl"]
+    composition["section"][0]["entry"][0]["reference"] = wrong_full_url
+    return broken_bundle
+
+
+def _break_allergies_section_entry_reference(candidate_bundle):
     broken_bundle = deepcopy(candidate_bundle)
     composition = broken_bundle.candidate_bundle.fhir_bundle["entry"][0]["resource"]
     wrong_full_url = broken_bundle.candidate_bundle.fhir_bundle["entry"][7]["fullUrl"]
     composition["section"][1]["entry"][0]["reference"] = wrong_full_url
     return broken_bundle
+
+
+def _break_problems_section_entry_reference(candidate_bundle):
+    broken_bundle = deepcopy(candidate_bundle)
+    composition = broken_bundle.candidate_bundle.fhir_bundle["entry"][0]["resource"]
+    wrong_full_url = broken_bundle.candidate_bundle.fhir_bundle["entry"][5]["fullUrl"]
+    composition["section"][2]["entry"][0]["reference"] = wrong_full_url
+    return broken_bundle
+
+
+def _break_medications_and_problems_section_entry_references(candidate_bundle):
+    broken_bundle = _break_medications_section_entry_reference(candidate_bundle)
+    return _break_problems_section_entry_reference(broken_bundle)
 
 
 def _break_practitionerrole_and_condition_references(candidate_bundle):

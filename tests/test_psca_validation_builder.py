@@ -79,7 +79,15 @@ async def test_psca_validation_builder_happy_path_reports_split_channels() -> No
         for finding in report.workflow_validation.findings
     )
     assert not any(
-        finding.code == "bundle.composition_section_entry_references_aligned" and finding.severity == "error"
+        finding.code == "bundle.composition_medications_section_entry_reference_aligned" and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.composition_allergies_section_entry_reference_aligned" and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.composition_problems_section_entry_reference_aligned" and finding.severity == "error"
         for finding in report.workflow_validation.findings
     )
 
@@ -189,7 +197,7 @@ async def test_psca_validation_builder_fails_when_composition_subject_reference_
         for finding in report.workflow_validation.findings
     )
     assert not any(
-        finding.code == "bundle.composition_section_entry_references_aligned"
+        finding.code == "bundle.composition_medications_section_entry_reference_aligned"
         for finding in report.workflow_validation.findings
     )
 
@@ -213,7 +221,7 @@ async def test_psca_validation_builder_fails_when_composition_author_reference_i
         for finding in report.workflow_validation.findings
     )
     assert not any(
-        finding.code == "bundle.composition_section_entry_references_aligned"
+        finding.code == "bundle.composition_medications_section_entry_reference_aligned"
         for finding in report.workflow_validation.findings
     )
 
@@ -528,7 +536,33 @@ async def test_psca_validation_builder_fails_when_condition_subject_reference_is
     )
 
 
-async def test_psca_validation_builder_fails_when_composition_section_entry_references_are_not_aligned() -> None:
+async def test_psca_validation_builder_fails_when_medications_section_entry_reference_is_not_aligned() -> None:
+    normalized_request, schematic, candidate_bundle = _build_validation_inputs()
+    broken_bundle = deepcopy(candidate_bundle)
+    composition = broken_bundle.candidate_bundle.fhir_bundle["entry"][0]["resource"]
+    wrong_full_url = broken_bundle.candidate_bundle.fhir_bundle["entry"][6]["fullUrl"]
+    composition["section"][0]["entry"][0]["reference"] = wrong_full_url
+
+    report = await build_psca_validation_report(
+        broken_bundle,
+        schematic,
+        normalized_request,
+        LocalCandidateBundleScaffoldStandardsValidator(),
+    )
+
+    assert report.workflow_validation.status == "failed"
+    assert any(
+        finding.code == "bundle.composition_medications_section_entry_reference_aligned"
+        and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.composition_medications_section_present"
+        for finding in report.workflow_validation.findings
+    )
+
+
+async def test_psca_validation_builder_fails_when_allergies_section_entry_reference_is_not_aligned() -> None:
     normalized_request, schematic, candidate_bundle = _build_validation_inputs()
     broken_bundle = deepcopy(candidate_bundle)
     composition = broken_bundle.candidate_bundle.fhir_bundle["entry"][0]["resource"]
@@ -544,12 +578,87 @@ async def test_psca_validation_builder_fails_when_composition_section_entry_refe
 
     assert report.workflow_validation.status == "failed"
     assert any(
-        finding.code == "bundle.composition_section_entry_references_aligned"
+        finding.code == "bundle.composition_allergies_section_entry_reference_aligned"
         and finding.severity == "error"
         for finding in report.workflow_validation.findings
     )
     assert not any(
         finding.code == "bundle.composition_allergies_section_present"
+        for finding in report.workflow_validation.findings
+    )
+
+
+async def test_psca_validation_builder_fails_when_problems_section_entry_reference_is_not_aligned() -> None:
+    normalized_request, schematic, candidate_bundle = _build_validation_inputs()
+    broken_bundle = deepcopy(candidate_bundle)
+    composition = broken_bundle.candidate_bundle.fhir_bundle["entry"][0]["resource"]
+    wrong_full_url = broken_bundle.candidate_bundle.fhir_bundle["entry"][5]["fullUrl"]
+    composition["section"][2]["entry"][0]["reference"] = wrong_full_url
+
+    report = await build_psca_validation_report(
+        broken_bundle,
+        schematic,
+        normalized_request,
+        LocalCandidateBundleScaffoldStandardsValidator(),
+    )
+
+    assert report.workflow_validation.status == "failed"
+    assert any(
+        finding.code == "bundle.composition_problems_section_entry_reference_aligned"
+        and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.composition_problems_section_present"
+        for finding in report.workflow_validation.findings
+    )
+
+
+async def test_psca_validation_builder_fails_when_multiple_composition_section_entry_references_are_not_aligned() -> None:
+    normalized_request, schematic, candidate_bundle = _build_validation_inputs()
+    broken_bundle = deepcopy(candidate_bundle)
+    composition = broken_bundle.candidate_bundle.fhir_bundle["entry"][0]["resource"]
+    composition["section"][0]["entry"][0]["reference"] = broken_bundle.candidate_bundle.fhir_bundle["entry"][6]["fullUrl"]
+    composition["section"][2]["entry"][0]["reference"] = broken_bundle.candidate_bundle.fhir_bundle["entry"][5]["fullUrl"]
+
+    report = await build_psca_validation_report(
+        broken_bundle,
+        schematic,
+        normalized_request,
+        LocalCandidateBundleScaffoldStandardsValidator(),
+    )
+
+    assert report.workflow_validation.status == "failed"
+    assert set(finding.code for finding in report.workflow_validation.findings if finding.severity == "error") >= {
+        "bundle.composition_medications_section_entry_reference_aligned",
+        "bundle.composition_problems_section_entry_reference_aligned",
+    }
+    assert not any(
+        finding.code == "bundle.composition_allergies_section_entry_reference_aligned"
+        for finding in report.workflow_validation.findings
+    )
+
+
+async def test_psca_validation_builder_lets_section_presence_own_missing_composition_section_blocks() -> None:
+    normalized_request, schematic, candidate_bundle = _build_validation_inputs()
+    broken_bundle = deepcopy(candidate_bundle)
+    composition = broken_bundle.candidate_bundle.fhir_bundle["entry"][0]["resource"]
+    composition["section"] = composition["section"][:2]
+
+    report = await build_psca_validation_report(
+        broken_bundle,
+        schematic,
+        normalized_request,
+        LocalCandidateBundleScaffoldStandardsValidator(),
+    )
+
+    assert report.workflow_validation.status == "failed"
+    assert any(
+        finding.code == "bundle.composition_problems_section_present"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.composition_problems_section_entry_reference_aligned"
         for finding in report.workflow_validation.findings
     )
 
@@ -589,6 +698,18 @@ async def test_psca_validation_builder_does_not_spray_specific_reference_finding
     )
     assert not any(
         finding.code == "bundle.condition_subject_reference_aligned"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.composition_medications_section_entry_reference_aligned"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.composition_allergies_section_entry_reference_aligned"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.composition_problems_section_entry_reference_aligned"
         for finding in report.workflow_validation.findings
     )
 

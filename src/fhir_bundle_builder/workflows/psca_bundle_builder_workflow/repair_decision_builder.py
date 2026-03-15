@@ -169,11 +169,23 @@ _FINDING_ROUTE_MAP: dict[str, tuple[str, str, bool, str]] = {
         True,
         "Condition.subject final fullUrl alignment is applied during candidate bundle assembly.",
     ),
-    "bundle.composition_section_entry_references_aligned": (
-        "bundle_finalization",
-        "bundle_finalization",
+    "bundle.composition_medications_section_entry_reference_aligned": (
+        "resource_construction",
+        "resource_construction",
         True,
-        "Composition section-entry final fullUrl alignment is applied during candidate bundle assembly.",
+        "The medications Composition section-entry reference originates in section-specific Composition finalization and safe replay reruns that finalize step plus downstream bundle finalization.",
+    ),
+    "bundle.composition_allergies_section_entry_reference_aligned": (
+        "resource_construction",
+        "resource_construction",
+        True,
+        "The allergies Composition section-entry reference originates in section-specific Composition finalization and safe replay reruns that finalize step plus downstream bundle finalization.",
+    ),
+    "bundle.composition_problems_section_entry_reference_aligned": (
+        "resource_construction",
+        "resource_construction",
+        True,
+        "The problems Composition section-entry reference originates in section-specific Composition finalization and safe replay reruns that finalize step plus downstream bundle finalization.",
     ),
 }
 
@@ -255,6 +267,21 @@ _RESOURCE_CONSTRUCTION_DIRECTIVE_MAP: dict[str, tuple[list[str], list[str], str]
         ["finalize-composition-1-problems-section"],
         ["composition-1"],
         "Rerun problems section finalization to reattach the deterministic problems section block.",
+    ),
+    "bundle.composition_medications_section_entry_reference_aligned": (
+        ["finalize-composition-1-medications-section"],
+        ["composition-1"],
+        "Rerun medications section finalization so the Composition medications section contributes the correct section-entry reference before downstream bundle fullUrl rewriting.",
+    ),
+    "bundle.composition_allergies_section_entry_reference_aligned": (
+        ["finalize-composition-1-allergies-section"],
+        ["composition-1"],
+        "Rerun allergies section finalization so the Composition allergies section contributes the correct section-entry reference before downstream bundle fullUrl rewriting.",
+    ),
+    "bundle.composition_problems_section_entry_reference_aligned": (
+        ["finalize-composition-1-problems-section"],
+        ["composition-1"],
+        "Rerun problems section finalization so the Composition problems section contributes the correct section-entry reference before downstream bundle fullUrl rewriting.",
     ),
     "bundle.medicationrequest_placeholder_content_present": (
         ["build-medicationrequest-1"],

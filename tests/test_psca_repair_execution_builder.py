@@ -319,8 +319,8 @@ async def test_psca_repair_execution_reruns_only_bundle_finalization_for_practit
     assert execution.post_retry_validation_report.overall_status == "passed_with_warnings"
 
 
-async def test_psca_repair_execution_reruns_only_bundle_finalization_for_composition_section_entry_alignment_failure() -> None:
-    artifacts = await _build_repair_inputs(mutator=_break_composition_section_entry_reference)
+async def test_psca_repair_execution_reruns_only_targeted_section_finalize_for_allergies_section_entry_alignment_failure() -> None:
+    artifacts = await _build_repair_inputs(mutator=_break_allergies_section_entry_reference)
 
     execution = await build_psca_repair_execution_result(
         artifacts["repair_decision"],
@@ -332,11 +332,47 @@ async def test_psca_repair_execution_reruns_only_bundle_finalization_for_composi
     )
 
     assert execution.execution_outcome == "executed"
-    assert execution.requested_target == "bundle_finalization"
-    assert execution.executed_target == "bundle_finalization"
-    assert execution.applied_resource_construction_repair_directive is None
-    assert execution.rerun_stage_ids == ["bundle_finalization", "validation", "repair_decision"]
-    assert execution.post_retry_resource_construction is None
+    assert execution.requested_target == "resource_construction"
+    assert execution.executed_target == "resource_construction"
+    assert execution.applied_resource_construction_repair_directive is not None
+    assert execution.applied_resource_construction_repair_directive.target_step_ids == [
+        "finalize-composition-1-allergies-section"
+    ]
+    assert execution.rerun_stage_ids == ["resource_construction", "bundle_finalization", "validation", "repair_decision"]
+    assert execution.post_retry_resource_construction is not None
+    assert execution.post_retry_resource_construction.execution_scope == "targeted_repair"
+    assert [step.step_id for step in execution.post_retry_resource_construction.step_results] == [
+        "finalize-composition-1-allergies-section"
+    ]
+    assert execution.post_retry_validation_report is not None
+    assert execution.post_retry_validation_report.overall_status == "passed_with_warnings"
+
+
+async def test_psca_repair_execution_unions_multiple_composition_section_entry_alignment_failures_in_plan_order() -> None:
+    artifacts = await _build_repair_inputs(mutator=_break_medications_and_problems_section_entry_references)
+
+    execution = await build_psca_repair_execution_result(
+        artifacts["repair_decision"],
+        artifacts["normalized_request"],
+        artifacts["build_plan"],
+        artifacts["schematic"],
+        artifacts["resource_construction"],
+        LocalCandidateBundleScaffoldStandardsValidator(),
+    )
+
+    assert execution.execution_outcome == "executed"
+    assert execution.requested_target == "resource_construction"
+    assert execution.applied_resource_construction_repair_directive is not None
+    assert execution.applied_resource_construction_repair_directive.target_step_ids == [
+        "finalize-composition-1-medications-section",
+        "finalize-composition-1-problems-section",
+    ]
+    assert execution.post_retry_resource_construction is not None
+    assert execution.post_retry_resource_construction.execution_scope == "targeted_repair"
+    assert [step.step_id for step in execution.post_retry_resource_construction.step_results] == [
+        "finalize-composition-1-medications-section",
+        "finalize-composition-1-problems-section",
+    ]
     assert execution.post_retry_validation_report is not None
     assert execution.post_retry_validation_report.overall_status == "passed_with_warnings"
 
@@ -493,9 +529,17 @@ def _break_practitionerrole_practitioner_reference(candidate_bundle):
     return broken_bundle
 
 
-def _break_composition_section_entry_reference(candidate_bundle):
+def _break_allergies_section_entry_reference(candidate_bundle):
     broken_bundle = deepcopy(candidate_bundle)
     composition = broken_bundle.candidate_bundle.fhir_bundle["entry"][0]["resource"]
     wrong_full_url = broken_bundle.candidate_bundle.fhir_bundle["entry"][7]["fullUrl"]
     composition["section"][1]["entry"][0]["reference"] = wrong_full_url
+    return broken_bundle
+
+
+def _break_medications_and_problems_section_entry_references(candidate_bundle):
+    broken_bundle = deepcopy(candidate_bundle)
+    composition = broken_bundle.candidate_bundle.fhir_bundle["entry"][0]["resource"]
+    composition["section"][0]["entry"][0]["reference"] = broken_bundle.candidate_bundle.fhir_bundle["entry"][6]["fullUrl"]
+    composition["section"][2]["entry"][0]["reference"] = broken_bundle.candidate_bundle.fhir_bundle["entry"][5]["fullUrl"]
     return broken_bundle

@@ -235,7 +235,10 @@ The `validation` stage now emits the first real structured validation artifact f
     - `MedicationRequest.subject`
     - `AllergyIntolerance.patient`
     - `Condition.subject`
-  - one intentionally grouped Composition section-entry exact fullUrl alignment check
+  - section-specific Composition section-entry exact fullUrl alignment checks for:
+    - medications
+    - allergies
+    - problems
   - findings tied to bundle structure and PS-CA expectations
   - explicit deferred areas
 - counts for errors, warnings, and informational findings
@@ -265,9 +268,9 @@ The `repair_decision` stage now emits the first real structured repair-routing a
   - scaffold-plus-finalizers targeting for Composition scaffold/content issues where replaying the scaffold step still requires replaying section-finalize steps
   - section-specific Composition finalize targeting when one or more required Composition sections are missing
   - single-resource section-entry targeting when only one section-entry placeholder-content rule fails
+  - section-specific Composition finalize targeting when one Composition section-entry exact fullUrl alignment rule fails
 - when `bundle_finalization` is recommended:
   - narrower resource-specific reference-alignment findings for the non-Composition references that are rewritten during candidate bundle assembly
-  - an intentionally grouped Composition section-entry exact fullUrl alignment finding
 - a clear distinction between repair recommendation and actual repair execution, which is still deferred
 
 ## Repair-execution-stage output
