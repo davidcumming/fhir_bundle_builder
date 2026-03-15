@@ -115,11 +115,23 @@ _FINDING_ROUTE_MAP: dict[str, tuple[str, str, bool, str]] = {
         True,
         "Practitioner identity placeholder content is populated during resource construction.",
     ),
+    "bundle.practitioner_identity_aligned_to_context": (
+        "resource_construction",
+        "resource_construction",
+        True,
+        "Practitioner identity values are derived from normalized provider context during resource construction.",
+    ),
     "bundle.organization_identity_content_present": (
         "resource_construction",
         "resource_construction",
         True,
         "Organization identity placeholder content, including the structured selected-organization identifier, is populated during resource construction when normalized provider context supplies a selected organization.",
+    ),
+    "bundle.organization_identity_aligned_to_context": (
+        "resource_construction",
+        "resource_construction",
+        True,
+        "Organization identity values are derived from the selected normalized provider organization context during resource construction.",
     ),
     "bundle.practitionerrole_relationship_identity_present": (
         "resource_construction",
@@ -127,11 +139,23 @@ _FINDING_ROUTE_MAP: dict[str, tuple[str, str, bool, str]] = {
         True,
         "PractitionerRole relationship identity placeholder content is populated during resource construction when normalized provider context supplies a selected provider-role relationship.",
     ),
+    "bundle.practitionerrole_relationship_identity_aligned_to_context": (
+        "resource_construction",
+        "resource_construction",
+        True,
+        "PractitionerRole relationship identifier values are derived from the selected normalized provider-role relationship during resource construction.",
+    ),
     "bundle.practitionerrole_author_context_present": (
         "resource_construction",
         "resource_construction",
         True,
         "PractitionerRole author-context placeholder content is populated during resource construction from the normalized provider-role context or schematic fallback.",
+    ),
+    "bundle.practitionerrole_author_context_aligned_to_context": (
+        "resource_construction",
+        "resource_construction",
+        True,
+        "PractitionerRole author-context label is derived from normalized provider-role context or deterministic fallback policy during resource construction.",
     ),
     "bundle.medicationrequest_placeholder_content_present": (
         "resource_construction",
@@ -321,20 +345,40 @@ _RESOURCE_CONSTRUCTION_DIRECTIVE_MAP: dict[str, tuple[list[str], list[str], str]
         ["practitioner-1"],
         "Rerun the practitioner support step to restore deterministic practitioner identity content.",
     ),
+    "bundle.practitioner_identity_aligned_to_context": (
+        ["build-practitioner-1"],
+        ["practitioner-1"],
+        "Rerun the practitioner support step to restore exact practitioner identity alignment to normalized provider context.",
+    ),
     "bundle.organization_identity_content_present": (
         ["build-organization-1"],
         ["organization-1"],
         "Rerun the organization support step to restore deterministic organization identity content, including the structured selected-organization identifier.",
+    ),
+    "bundle.organization_identity_aligned_to_context": (
+        ["build-organization-1"],
+        ["organization-1"],
+        "Rerun the organization support step to restore exact organization identity alignment to the selected normalized provider organization context.",
     ),
     "bundle.practitionerrole_relationship_identity_present": (
         ["build-practitionerrole-1"],
         ["practitionerrole-1"],
         "Rerun the practitioner-role support step to restore deterministic relationship-identity content from the normalized selected provider-role relationship.",
     ),
+    "bundle.practitionerrole_relationship_identity_aligned_to_context": (
+        ["build-practitionerrole-1"],
+        ["practitionerrole-1"],
+        "Rerun the practitioner-role support step to restore exact relationship-identity alignment to the selected normalized provider-role relationship.",
+    ),
     "bundle.practitionerrole_author_context_present": (
         ["build-practitionerrole-1"],
         ["practitionerrole-1"],
         "Rerun the practitioner-role support step to restore the deterministic author-context label from normalized provider-role context or schematic fallback.",
+    ),
+    "bundle.practitionerrole_author_context_aligned_to_context": (
+        ["build-practitionerrole-1"],
+        ["practitionerrole-1"],
+        "Rerun the practitioner-role support step to restore exact author-context label alignment to normalized provider-role context or deterministic fallback policy.",
     ),
     "bundle.composition_type_matches_psca_summary": (
         [

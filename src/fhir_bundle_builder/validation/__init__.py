@@ -3,6 +3,8 @@
 from .models import (
     PatientContextAlignmentEvidence,
     PatientContextAlignmentMode,
+    ProviderContextAlignmentEvidence,
+    ProviderContextAlignmentMode,
     SectionEntryTextAlignmentExpectation,
     StandardsValidationConfig,
     StandardsValidationRequest,
@@ -39,6 +41,8 @@ __all__ = [
     "MatchboxWithLocalFallbackStandardsValidator",
     "PatientContextAlignmentEvidence",
     "PatientContextAlignmentMode",
+    "ProviderContextAlignmentEvidence",
+    "ProviderContextAlignmentMode",
     "SectionEntryTextAlignmentExpectation",
     "StandardsValidationConfig",
     "StandardsValidationRequest",

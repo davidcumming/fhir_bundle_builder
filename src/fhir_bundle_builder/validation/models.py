@@ -12,6 +12,11 @@ ValidationSeverity = Literal["information", "warning", "error"]
 ValidationStatus = Literal["passed", "passed_with_warnings", "failed"]
 StandardsValidatorMode = Literal["local_scaffold", "matchbox"]
 PatientContextAlignmentMode = Literal["structured_patient_context", "fallback_placeholder"]
+ProviderContextAlignmentMode = Literal[
+    "structured_provider_context",
+    "fallback_placeholder",
+    "not_applicable",
+]
 
 
 class ValidationFinding(BaseModel):
@@ -87,6 +92,22 @@ class PatientContextAlignmentEvidence(BaseModel):
     section_entry_expectations: list[SectionEntryTextAlignmentExpectation] = Field(default_factory=list)
 
 
+class ProviderContextAlignmentEvidence(BaseModel):
+    """Expected support-resource content derived from normalized provider context."""
+
+    normalization_mode: str
+    provider_id: str
+    provider_display_name: str
+    organization_alignment_mode: ProviderContextAlignmentMode
+    selected_organization_identifier_system_expected: str | None = None
+    selected_organization_id_expected: str | None = None
+    selected_organization_display_name_expected: str | None = None
+    practitionerrole_alignment_mode: ProviderContextAlignmentMode
+    selected_provider_role_relationship_identifier_system_expected: str | None = None
+    selected_provider_role_relationship_id_expected: str | None = None
+    expected_role_label: str
+
+
 class ValidationEvidence(BaseModel):
     """Provenance for the validation stage."""
 
@@ -96,4 +117,5 @@ class ValidationEvidence(BaseModel):
     source_resource_construction_stage_id: str
     validated_bundle_id: str
     patient_context_alignment: PatientContextAlignmentEvidence
+    provider_context_alignment: ProviderContextAlignmentEvidence
     source_refs: list[str] = Field(default_factory=list)

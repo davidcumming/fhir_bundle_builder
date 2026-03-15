@@ -480,6 +480,50 @@ async def test_psca_bundle_builder_workflow_smoke() -> None:
             "Type 2 diabetes mellitus",
         ),
     ]
+    assert (
+        final_output.validation_report.evidence.provider_context_alignment.normalization_mode
+        == "provider_context_explicit_selection"
+    )
+    assert (
+        final_output.validation_report.evidence.provider_context_alignment.provider_id
+        == "provider-smoke-test"
+    )
+    assert (
+        final_output.validation_report.evidence.provider_context_alignment.provider_display_name
+        == "Smoke Test Provider"
+    )
+    assert (
+        final_output.validation_report.evidence.provider_context_alignment.organization_alignment_mode
+        == "structured_provider_context"
+    )
+    assert (
+        final_output.validation_report.evidence.provider_context_alignment.selected_organization_identifier_system_expected
+        == SELECTED_PROVIDER_ORGANIZATION_IDENTIFIER_SYSTEM
+    )
+    assert (
+        final_output.validation_report.evidence.provider_context_alignment.selected_organization_id_expected
+        == "org-smoke-test-2"
+    )
+    assert (
+        final_output.validation_report.evidence.provider_context_alignment.selected_organization_display_name_expected
+        == "Smoke Test Organization Two"
+    )
+    assert (
+        final_output.validation_report.evidence.provider_context_alignment.practitionerrole_alignment_mode
+        == "structured_provider_context"
+    )
+    assert (
+        final_output.validation_report.evidence.provider_context_alignment.selected_provider_role_relationship_identifier_system_expected
+        == SELECTED_PROVIDER_ROLE_RELATIONSHIP_IDENTIFIER_SYSTEM
+    )
+    assert (
+        final_output.validation_report.evidence.provider_context_alignment.selected_provider_role_relationship_id_expected
+        == "provider-role-smoke-2"
+    )
+    assert (
+        final_output.validation_report.evidence.provider_context_alignment.expected_role_label
+        == "attending-physician"
+    )
     assert any(
         finding.code == "external_profile_validation_deferred"
         for finding in final_output.validation_report.standards_validation.findings
@@ -490,6 +534,22 @@ async def test_psca_bundle_builder_workflow_smoke() -> None:
     )
     assert not any(
         finding.code == "bundle.practitioner_identity_content_present"
+        for finding in final_output.validation_report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.practitioner_identity_aligned_to_context"
+        for finding in final_output.validation_report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.organization_identity_aligned_to_context"
+        for finding in final_output.validation_report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.practitionerrole_relationship_identity_aligned_to_context"
+        for finding in final_output.validation_report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.practitionerrole_author_context_aligned_to_context"
         for finding in final_output.validation_report.workflow_validation.findings
     )
     assert not any(

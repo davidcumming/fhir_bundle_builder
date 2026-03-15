@@ -149,6 +149,28 @@ async def test_psca_repair_decision_routes_support_resource_failures_to_resource
     ]
 
 
+async def test_psca_repair_decision_routes_practitioner_identity_alignment_failures_to_resource_construction() -> None:
+    report = await _build_validation_report(mutator=_misalign_practitioner_identity)
+
+    decision = build_psca_repair_decision(report)
+
+    assert decision.overall_decision == "repair_recommended"
+    assert decision.recommended_target == "resource_construction"
+    assert any(
+        route.finding_code == "bundle.practitioner_identity_aligned_to_context"
+        and route.route_target == "resource_construction"
+        and route.actionable is True
+        for route in decision.finding_routes
+    )
+    assert decision.recommended_resource_construction_repair_directive is not None
+    assert decision.recommended_resource_construction_repair_directive.target_step_ids == [
+        "build-practitioner-1"
+    ]
+    assert decision.recommended_resource_construction_repair_directive.target_placeholder_ids == [
+        "practitioner-1"
+    ]
+
+
 async def test_psca_repair_decision_routes_organization_identity_failures_to_resource_construction() -> None:
     report = await _build_validation_report(mutator=_remove_organization_identity)
 
@@ -171,6 +193,28 @@ async def test_psca_repair_decision_routes_organization_identity_failures_to_res
     ]
 
 
+async def test_psca_repair_decision_routes_organization_identity_alignment_failures_to_resource_construction() -> None:
+    report = await _build_validation_report(mutator=_misalign_organization_identity)
+
+    decision = build_psca_repair_decision(report)
+
+    assert decision.overall_decision == "repair_recommended"
+    assert decision.recommended_target == "resource_construction"
+    assert any(
+        route.finding_code == "bundle.organization_identity_aligned_to_context"
+        and route.route_target == "resource_construction"
+        and route.actionable is True
+        for route in decision.finding_routes
+    )
+    assert decision.recommended_resource_construction_repair_directive is not None
+    assert decision.recommended_resource_construction_repair_directive.target_step_ids == [
+        "build-organization-1"
+    ]
+    assert decision.recommended_resource_construction_repair_directive.target_placeholder_ids == [
+        "organization-1"
+    ]
+
+
 async def test_psca_repair_decision_routes_practitionerrole_relationship_identity_failures_to_resource_construction() -> None:
     report = await _build_validation_report(mutator=_remove_practitionerrole_relationship_identity)
 
@@ -180,6 +224,50 @@ async def test_psca_repair_decision_routes_practitionerrole_relationship_identit
     assert decision.recommended_target == "resource_construction"
     assert any(
         route.finding_code == "bundle.practitionerrole_relationship_identity_present"
+        and route.route_target == "resource_construction"
+        and route.actionable is True
+        for route in decision.finding_routes
+    )
+    assert decision.recommended_resource_construction_repair_directive is not None
+    assert decision.recommended_resource_construction_repair_directive.target_step_ids == [
+        "build-practitionerrole-1"
+    ]
+    assert decision.recommended_resource_construction_repair_directive.target_placeholder_ids == [
+        "practitionerrole-1"
+    ]
+
+
+async def test_psca_repair_decision_routes_practitionerrole_relationship_identity_alignment_failures_to_resource_construction() -> None:
+    report = await _build_validation_report(mutator=_misalign_practitionerrole_relationship_identity)
+
+    decision = build_psca_repair_decision(report)
+
+    assert decision.overall_decision == "repair_recommended"
+    assert decision.recommended_target == "resource_construction"
+    assert any(
+        route.finding_code == "bundle.practitionerrole_relationship_identity_aligned_to_context"
+        and route.route_target == "resource_construction"
+        and route.actionable is True
+        for route in decision.finding_routes
+    )
+    assert decision.recommended_resource_construction_repair_directive is not None
+    assert decision.recommended_resource_construction_repair_directive.target_step_ids == [
+        "build-practitionerrole-1"
+    ]
+    assert decision.recommended_resource_construction_repair_directive.target_placeholder_ids == [
+        "practitionerrole-1"
+    ]
+
+
+async def test_psca_repair_decision_routes_practitionerrole_author_context_alignment_failures_to_resource_construction() -> None:
+    report = await _build_validation_report(mutator=_misalign_practitionerrole_author_context)
+
+    decision = build_psca_repair_decision(report)
+
+    assert decision.overall_decision == "repair_recommended"
+    assert decision.recommended_target == "resource_construction"
+    assert any(
+        route.finding_code == "bundle.practitionerrole_author_context_aligned_to_context"
         and route.route_target == "resource_construction"
         and route.actionable is True
         for route in decision.finding_routes
@@ -963,6 +1051,14 @@ def _remove_practitioner_identity(candidate_bundle):
     return broken_bundle
 
 
+def _misalign_practitioner_identity(candidate_bundle):
+    broken_bundle = deepcopy(candidate_bundle)
+    practitioner = broken_bundle.candidate_bundle.fhir_bundle["entry"][3]["resource"]
+    practitioner["identifier"][0]["value"] = "wrong-provider-id"
+    practitioner["name"][0]["text"] = "Wrong Provider"
+    return broken_bundle
+
+
 def _remove_organization_identity(candidate_bundle):
     broken_bundle = deepcopy(candidate_bundle)
     organization = broken_bundle.candidate_bundle.fhir_bundle["entry"][4]["resource"]
@@ -970,10 +1066,32 @@ def _remove_organization_identity(candidate_bundle):
     return broken_bundle
 
 
+def _misalign_organization_identity(candidate_bundle):
+    broken_bundle = deepcopy(candidate_bundle)
+    organization = broken_bundle.candidate_bundle.fhir_bundle["entry"][4]["resource"]
+    organization["identifier"][0]["value"] = "wrong-org-id"
+    organization["name"] = "Wrong Organization"
+    return broken_bundle
+
+
 def _remove_practitionerrole_relationship_identity(candidate_bundle):
     broken_bundle = deepcopy(candidate_bundle)
     practitioner_role = broken_bundle.candidate_bundle.fhir_bundle["entry"][2]["resource"]
     practitioner_role.pop("identifier", None)
+    return broken_bundle
+
+
+def _misalign_practitionerrole_relationship_identity(candidate_bundle):
+    broken_bundle = deepcopy(candidate_bundle)
+    practitioner_role = broken_bundle.candidate_bundle.fhir_bundle["entry"][2]["resource"]
+    practitioner_role["identifier"][0]["value"] = "wrong-relationship-id"
+    return broken_bundle
+
+
+def _misalign_practitionerrole_author_context(candidate_bundle):
+    broken_bundle = deepcopy(candidate_bundle)
+    practitioner_role = broken_bundle.candidate_bundle.fhir_bundle["entry"][2]["resource"]
+    practitioner_role["code"][0]["text"] = "wrong-role-label"
     return broken_bundle
 
 

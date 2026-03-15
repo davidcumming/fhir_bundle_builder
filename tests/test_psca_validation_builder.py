@@ -32,6 +32,8 @@ from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.request_normaliz
     build_psca_normalized_request,
 )
 from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.resource_construction_builder import (
+    SELECTED_PROVIDER_ORGANIZATION_IDENTIFIER_SYSTEM,
+    SELECTED_PROVIDER_ROLE_RELATIONSHIP_IDENTIFIER_SYSTEM,
     build_psca_resource_construction_result,
 )
 from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.schematic_builder import (
@@ -95,6 +97,40 @@ async def test_psca_validation_builder_happy_path_reports_split_channels() -> No
             "Type 2 diabetes mellitus",
         ),
     ]
+    assert report.evidence.provider_context_alignment.normalization_mode == (
+        "provider_context_single_relationship"
+    )
+    assert report.evidence.provider_context_alignment.provider_id == "provider-validation-test"
+    assert (
+        report.evidence.provider_context_alignment.provider_display_name
+        == "Validation Test Provider"
+    )
+    assert report.evidence.provider_context_alignment.organization_alignment_mode == (
+        "structured_provider_context"
+    )
+    assert (
+        report.evidence.provider_context_alignment.selected_organization_identifier_system_expected
+        == SELECTED_PROVIDER_ORGANIZATION_IDENTIFIER_SYSTEM
+    )
+    assert report.evidence.provider_context_alignment.selected_organization_id_expected == (
+        "org-validation-test"
+    )
+    assert (
+        report.evidence.provider_context_alignment.selected_organization_display_name_expected
+        == "Validation Test Organization"
+    )
+    assert report.evidence.provider_context_alignment.practitionerrole_alignment_mode == (
+        "structured_provider_context"
+    )
+    assert (
+        report.evidence.provider_context_alignment.selected_provider_role_relationship_identifier_system_expected
+        == SELECTED_PROVIDER_ROLE_RELATIONSHIP_IDENTIFIER_SYSTEM
+    )
+    assert (
+        report.evidence.provider_context_alignment.selected_provider_role_relationship_id_expected
+        == "provider-role-validation-1"
+    )
+    assert report.evidence.provider_context_alignment.expected_role_label == "attending-physician"
     assert any(
         finding.code == "external_profile_validation_deferred"
         for finding in report.standards_validation.findings
@@ -125,6 +161,24 @@ async def test_psca_validation_builder_happy_path_reports_split_channels() -> No
     )
     assert not any(
         finding.code == "bundle.practitionerrole_relationship_identity_present" and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.practitioner_identity_aligned_to_context" and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.organization_identity_aligned_to_context" and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.practitionerrole_relationship_identity_aligned_to_context"
+        and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.practitionerrole_author_context_aligned_to_context"
+        and finding.severity == "error"
         for finding in report.workflow_validation.findings
     )
     assert not any(
@@ -370,6 +424,14 @@ async def test_psca_validation_builder_fails_when_practitioner_or_practitionerro
         finding.code == "bundle.practitionerrole_author_context_present" and finding.severity == "error"
         for finding in report.workflow_validation.findings
     )
+    assert not any(
+        finding.code == "bundle.practitioner_identity_aligned_to_context"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.practitionerrole_author_context_aligned_to_context"
+        for finding in report.workflow_validation.findings
+    )
 
 
 async def test_psca_validation_builder_fails_when_selected_organization_content_is_missing() -> None:
@@ -388,6 +450,10 @@ async def test_psca_validation_builder_fails_when_selected_organization_content_
     assert report.workflow_validation.status == "failed"
     assert any(
         finding.code == "bundle.organization_identity_content_present" and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.organization_identity_aligned_to_context"
         for finding in report.workflow_validation.findings
     )
 
@@ -414,6 +480,10 @@ async def test_psca_validation_builder_fails_when_practitionerrole_relationship_
         finding.code == "bundle.practitionerrole_author_context_present"
         for finding in report.workflow_validation.findings
     )
+    assert not any(
+        finding.code == "bundle.practitionerrole_relationship_identity_aligned_to_context"
+        for finding in report.workflow_validation.findings
+    )
 
 
 async def test_psca_validation_builder_does_not_require_organization_identity_in_legacy_mode() -> None:
@@ -436,6 +506,118 @@ async def test_psca_validation_builder_does_not_require_organization_identity_in
     )
     assert not any(
         finding.code == "bundle.practitionerrole_relationship_identity_present"
+        for finding in report.workflow_validation.findings
+    )
+    assert report.evidence.provider_context_alignment.normalization_mode == "legacy_provider_profile"
+    assert report.evidence.provider_context_alignment.organization_alignment_mode == "not_applicable"
+    assert report.evidence.provider_context_alignment.practitionerrole_alignment_mode == (
+        "fallback_placeholder"
+    )
+    assert report.evidence.provider_context_alignment.expected_role_label == "document-author"
+    assert not any(
+        finding.code == "bundle.organization_identity_aligned_to_context"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.practitionerrole_relationship_identity_aligned_to_context"
+        for finding in report.workflow_validation.findings
+    )
+
+
+async def test_psca_validation_builder_fails_when_practitioner_identity_is_not_aligned_to_context() -> None:
+    normalized_request, schematic, candidate_bundle = _build_validation_inputs()
+    broken_bundle = deepcopy(candidate_bundle)
+    practitioner = broken_bundle.candidate_bundle.fhir_bundle["entry"][3]["resource"]
+    practitioner["identifier"][0]["value"] = "wrong-provider-id"
+    practitioner["name"][0]["text"] = "Wrong Provider"
+
+    report = await build_psca_validation_report(
+        broken_bundle,
+        schematic,
+        normalized_request,
+        LocalCandidateBundleScaffoldStandardsValidator(),
+    )
+
+    assert any(
+        finding.code == "bundle.practitioner_identity_aligned_to_context"
+        and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.practitioner_identity_content_present"
+        for finding in report.workflow_validation.findings
+    )
+
+
+async def test_psca_validation_builder_fails_when_selected_organization_identity_is_not_aligned_to_context() -> None:
+    normalized_request, schematic, candidate_bundle = _build_validation_inputs()
+    broken_bundle = deepcopy(candidate_bundle)
+    organization = broken_bundle.candidate_bundle.fhir_bundle["entry"][4]["resource"]
+    organization["identifier"][0]["value"] = "wrong-org-id"
+    organization["name"] = "Wrong Organization"
+
+    report = await build_psca_validation_report(
+        broken_bundle,
+        schematic,
+        normalized_request,
+        LocalCandidateBundleScaffoldStandardsValidator(),
+    )
+
+    assert any(
+        finding.code == "bundle.organization_identity_aligned_to_context"
+        and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.organization_identity_content_present"
+        for finding in report.workflow_validation.findings
+    )
+
+
+async def test_psca_validation_builder_fails_when_practitionerrole_relationship_identity_is_not_aligned_to_context() -> None:
+    normalized_request, schematic, candidate_bundle = _build_validation_inputs()
+    broken_bundle = deepcopy(candidate_bundle)
+    practitioner_role = broken_bundle.candidate_bundle.fhir_bundle["entry"][2]["resource"]
+    practitioner_role["identifier"][0]["value"] = "wrong-relationship-id"
+
+    report = await build_psca_validation_report(
+        broken_bundle,
+        schematic,
+        normalized_request,
+        LocalCandidateBundleScaffoldStandardsValidator(),
+    )
+
+    assert any(
+        finding.code == "bundle.practitionerrole_relationship_identity_aligned_to_context"
+        and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.practitionerrole_relationship_identity_present"
+        for finding in report.workflow_validation.findings
+    )
+
+
+async def test_psca_validation_builder_fails_when_practitionerrole_author_context_is_not_aligned_to_context() -> None:
+    normalized_request, schematic, candidate_bundle = _build_validation_inputs()
+    broken_bundle = deepcopy(candidate_bundle)
+    practitioner_role = broken_bundle.candidate_bundle.fhir_bundle["entry"][2]["resource"]
+    practitioner_role["code"][0]["text"] = "wrong-role-label"
+
+    report = await build_psca_validation_report(
+        broken_bundle,
+        schematic,
+        normalized_request,
+        LocalCandidateBundleScaffoldStandardsValidator(),
+    )
+
+    assert any(
+        finding.code == "bundle.practitionerrole_author_context_aligned_to_context"
+        and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.practitionerrole_author_context_present"
         for finding in report.workflow_validation.findings
     )
 

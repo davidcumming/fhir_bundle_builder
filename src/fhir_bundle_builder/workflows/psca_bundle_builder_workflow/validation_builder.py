@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from fhir_bundle_builder.validation import (
     PatientContextAlignmentEvidence,
+    ProviderContextAlignmentEvidence,
     SectionEntryTextAlignmentExpectation,
     StandardsValidationRequest,
     StandardsValidator,
@@ -80,6 +81,9 @@ async def build_psca_validation_report(
                 normalized_request,
                 schematic,
             ),
+            provider_context_alignment=_provider_context_alignment_evidence(
+                normalized_request,
+            ),
             source_refs=candidate_bundle.source_refs,
         ),
     )
@@ -110,9 +114,13 @@ def _build_workflow_validation_result(
         "bundle.patient_identity_content_present",
         "bundle.patient_identity_aligned_to_context",
         "bundle.practitioner_identity_content_present",
+        "bundle.practitioner_identity_aligned_to_context",
         "bundle.organization_identity_content_present",
+        "bundle.organization_identity_aligned_to_context",
         "bundle.practitionerrole_relationship_identity_present",
+        "bundle.practitionerrole_relationship_identity_aligned_to_context",
         "bundle.practitionerrole_author_context_present",
+        "bundle.practitionerrole_author_context_aligned_to_context",
         "bundle.medicationrequest_placeholder_content_present",
         "bundle.medicationrequest_placeholder_text_aligned_to_context",
         *(
@@ -339,12 +347,31 @@ def _build_workflow_validation_result(
         if isinstance(practitioner_name, list) and practitioner_name and isinstance(practitioner_name[0], dict)
         else None
     )
-    if practitioner.get("active") is not True or not practitioner_identifier_value or not practitioner_name_text:
+    practitioner_identity_content_present = (
+        practitioner.get("active") is True
+        and isinstance(practitioner_identifier_value, str)
+        and bool(practitioner_identifier_value)
+        and isinstance(practitioner_name_text, str)
+        and bool(practitioner_name_text)
+    )
+    if not practitioner_identity_content_present:
         findings.append(
             _workflow_error(
                 "bundle.practitioner_identity_content_present",
                 "Bundle.entry[3].resource",
                 "Expected Practitioner enriched content to include active=true, identifier[0].value, and name[0].text.",
+            )
+        )
+    elif not _practitioner_identity_aligned_to_context(
+        practitioner_identifier_value,
+        practitioner_name_text,
+        normalized_request,
+    ):
+        findings.append(
+            _workflow_error(
+                "bundle.practitioner_identity_aligned_to_context",
+                "Bundle.entry[3].resource",
+                "Expected Practitioner identity content to align exactly to normalized provider context for identifier and display name.",
             )
         )
 
@@ -366,16 +393,36 @@ def _build_workflow_validation_result(
         else None
     )
     organization_name = organization.get("name") if isinstance(organization, dict) else None
-    if selected_organization is not None and (
-        organization_identifier_system != SELECTED_PROVIDER_ORGANIZATION_IDENTIFIER_SYSTEM
-        or organization_identifier_value != selected_organization.organization_id
-        or organization_name != selected_organization.display_name
-    ):
+    organization_identity_content_present = (
+        selected_organization is None
+        or (
+            isinstance(organization_identifier_system, str)
+            and bool(organization_identifier_system)
+            and isinstance(organization_identifier_value, str)
+            and bool(organization_identifier_value)
+            and isinstance(organization_name, str)
+            and bool(organization_name)
+        )
+    )
+    if not organization_identity_content_present:
         findings.append(
             _workflow_error(
                 "bundle.organization_identity_content_present",
                 "Bundle.entry[4].resource",
-                "Expected Organization enriched content to include identifier[0].system, identifier[0].value, and name from the selected provider organization context.",
+                "Expected Organization enriched content to include non-empty identifier[0].system, identifier[0].value, and name when normalized provider context supplies a selected organization.",
+            )
+        )
+    elif selected_organization is not None and not _organization_identity_aligned_to_context(
+        organization_identifier_system,
+        organization_identifier_value,
+        organization_name,
+        normalized_request,
+    ):
+        findings.append(
+            _workflow_error(
+                "bundle.organization_identity_aligned_to_context",
+                "Bundle.entry[4].resource",
+                "Expected Organization identity content to align exactly to the selected normalized provider organization context.",
             )
         )
 
@@ -396,15 +443,33 @@ def _build_workflow_validation_result(
         else None
     )
     selected_relationship = normalized_request.provider_context.selected_provider_role_relationship
-    if selected_relationship is not None and (
-        practitioner_role_identifier_system != SELECTED_PROVIDER_ROLE_RELATIONSHIP_IDENTIFIER_SYSTEM
-        or practitioner_role_identifier_value != selected_relationship.relationship_id
-    ):
+    practitionerrole_relationship_identity_present = (
+        selected_relationship is None
+        or (
+            isinstance(practitioner_role_identifier_system, str)
+            and bool(practitioner_role_identifier_system)
+            and isinstance(practitioner_role_identifier_value, str)
+            and bool(practitioner_role_identifier_value)
+        )
+    )
+    if not practitionerrole_relationship_identity_present:
         findings.append(
             _workflow_error(
                 "bundle.practitionerrole_relationship_identity_present",
                 "Bundle.entry[2].resource.identifier[0]",
-                "Expected PractitionerRole to include identifier[0].system and identifier[0].value from the selected provider-role relationship context.",
+                "Expected PractitionerRole to include non-empty identifier[0].system and identifier[0].value when normalized provider context supplies a selected provider-role relationship.",
+            )
+        )
+    elif selected_relationship is not None and not _practitionerrole_relationship_identity_aligned_to_context(
+        practitioner_role_identifier_system,
+        practitioner_role_identifier_value,
+        normalized_request,
+    ):
+        findings.append(
+            _workflow_error(
+                "bundle.practitionerrole_relationship_identity_aligned_to_context",
+                "Bundle.entry[2].resource.identifier[0]",
+                "Expected PractitionerRole relationship identity content to align exactly to the selected normalized provider-role relationship context.",
             )
         )
 
@@ -415,12 +480,21 @@ def _build_workflow_validation_result(
         else None
     )
     expected_role_text = _expected_practitioner_role_text(normalized_request)
-    if role_text != expected_role_text:
+    practitionerrole_author_context_present = isinstance(role_text, str) and bool(role_text)
+    if not practitionerrole_author_context_present:
         findings.append(
             _workflow_error(
                 "bundle.practitionerrole_author_context_present",
                 "Bundle.entry[2].resource.code[0].text",
-                f"Expected PractitionerRole to include the deterministic author-context label '{expected_role_text}'.",
+                "Expected PractitionerRole to include a non-empty deterministic author-context label in code[0].text.",
+            )
+        )
+    elif role_text != expected_role_text:
+        findings.append(
+            _workflow_error(
+                "bundle.practitionerrole_author_context_aligned_to_context",
+                "Bundle.entry[2].resource.code[0].text",
+                f"Expected PractitionerRole author-context label to align exactly to the deterministic provider-context expectation '{expected_role_text}'.",
             )
         )
 
@@ -1299,6 +1373,91 @@ def _patient_context_alignment_evidence(
                 "Condition",
             ),
         ],
+    )
+
+
+def _provider_context_alignment_evidence(
+    normalized_request: NormalizedBuildRequest,
+) -> ProviderContextAlignmentEvidence:
+    provider_context = normalized_request.provider_context
+    selected_organization = provider_context.selected_organization
+    selected_relationship = provider_context.selected_provider_role_relationship
+    return ProviderContextAlignmentEvidence(
+        normalization_mode=provider_context.normalization_mode,
+        provider_id=provider_context.provider.provider_id,
+        provider_display_name=provider_context.provider.display_name,
+        organization_alignment_mode=(
+            "structured_provider_context"
+            if selected_organization is not None
+            else "not_applicable"
+        ),
+        selected_organization_identifier_system_expected=(
+            SELECTED_PROVIDER_ORGANIZATION_IDENTIFIER_SYSTEM
+            if selected_organization is not None
+            else None
+        ),
+        selected_organization_id_expected=(
+            selected_organization.organization_id if selected_organization is not None else None
+        ),
+        selected_organization_display_name_expected=(
+            selected_organization.display_name if selected_organization is not None else None
+        ),
+        practitionerrole_alignment_mode=(
+            "structured_provider_context"
+            if selected_relationship is not None
+            else "fallback_placeholder"
+        ),
+        selected_provider_role_relationship_identifier_system_expected=(
+            SELECTED_PROVIDER_ROLE_RELATIONSHIP_IDENTIFIER_SYSTEM
+            if selected_relationship is not None
+            else None
+        ),
+        selected_provider_role_relationship_id_expected=(
+            selected_relationship.relationship_id if selected_relationship is not None else None
+        ),
+        expected_role_label=_expected_practitioner_role_text(normalized_request),
+    )
+
+
+def _practitioner_identity_aligned_to_context(
+    identifier_value: str | None,
+    name_text: str | None,
+    normalized_request: NormalizedBuildRequest,
+) -> bool:
+    provider = normalized_request.provider_context.provider
+    return (
+        identifier_value == provider.provider_id
+        and name_text == provider.display_name
+    )
+
+
+def _organization_identity_aligned_to_context(
+    identifier_system: str | None,
+    identifier_value: str | None,
+    name: str | None,
+    normalized_request: NormalizedBuildRequest,
+) -> bool:
+    selected_organization = normalized_request.provider_context.selected_organization
+    if selected_organization is None:
+        return True
+    return (
+        identifier_system == SELECTED_PROVIDER_ORGANIZATION_IDENTIFIER_SYSTEM
+        and identifier_value == selected_organization.organization_id
+        and name == selected_organization.display_name
+    )
+
+
+def _practitionerrole_relationship_identity_aligned_to_context(
+    identifier_system: str | None,
+    identifier_value: str | None,
+    normalized_request: NormalizedBuildRequest,
+) -> bool:
+    selected_relationship = normalized_request.provider_context.selected_provider_role_relationship
+    if selected_relationship is None:
+        return True
+    return (
+        identifier_system == SELECTED_PROVIDER_ROLE_RELATIONSHIP_IDENTIFIER_SYSTEM
+        and identifier_value == selected_relationship.relationship_id
     )
 
 
