@@ -505,8 +505,6 @@ async def test_psca_repair_decision_keeps_combined_non_composition_reference_ali
 async def _build_validation_report(mutator=None):
     repository = PscaAssetRepository()
     normalized_assets = repository.load_foundation_context(PscaAssetQuery())
-    schematic = build_psca_bundle_schematic(normalized_assets)
-    plan = build_psca_build_plan(schematic)
     normalized_request = build_psca_normalized_request(
         WorkflowBuildInput(
             specification=SpecificationSelection(),
@@ -544,6 +542,8 @@ async def _build_validation_report(mutator=None):
             ),
         )
     )
+    schematic = build_psca_bundle_schematic(normalized_assets, normalized_request)
+    plan = build_psca_build_plan(schematic)
     construction = build_psca_resource_construction_result(plan, schematic, normalized_request)
     candidate_bundle = build_psca_candidate_bundle_result(construction, schematic, normalized_request)
     if mutator is not None:

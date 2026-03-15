@@ -124,7 +124,8 @@ async def bundle_schematic(
     message: SpecificationAssetContext,
     ctx: WorkflowContext[BundleSchematic],
 ) -> None:
-    schematic = build_psca_bundle_schematic(message.normalized_assets)
+    normalized_request = _get_artifact(ctx, "normalized_request")
+    schematic = build_psca_bundle_schematic(message.normalized_assets, normalized_request)
     _store_artifact(ctx, "bundle_schematic", schematic)
     await ctx.send_message(schematic)
 

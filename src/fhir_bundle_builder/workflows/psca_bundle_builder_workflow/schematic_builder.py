@@ -12,8 +12,10 @@ from .models import (
     BundleScaffold,
     BundleSchematic,
     CompositionScaffold,
+    NormalizedBuildRequest,
     ResourcePlaceholder,
     SchematicEvidence,
+    SchematicProviderContextEvidence,
     SchematicRelationship,
     SectionScaffold,
 )
@@ -39,7 +41,10 @@ _RESOURCE_PROFILE_METADATA: dict[str, tuple[str, str]] = {
 }
 
 
-def build_psca_bundle_schematic(normalized_assets: PscaNormalizedAssetContext) -> BundleSchematic:
+def build_psca_bundle_schematic(
+    normalized_assets: PscaNormalizedAssetContext,
+    normalized_request: NormalizedBuildRequest,
+) -> BundleSchematic:
     """Build the first real PS-CA schematic artifact from normalized assets."""
 
     section_definitions = {section.section_key: section for section in normalized_assets.composition_section_definitions}
@@ -68,6 +73,10 @@ def build_psca_bundle_schematic(normalized_assets: PscaNormalizedAssetContext) -
     practitioner_profile = normalized_assets.selected_profiles.practitioner
     practitioner_role_profile = normalized_assets.selected_profiles.practitioner_role
     organization_profile = normalized_assets.selected_profiles.organization
+    provider_context_evidence = _provider_context_evidence(normalized_request)
+    provider_context_summary = _provider_context_summary(provider_context_evidence.normalization_mode)
+    provider_context_note = _provider_context_note(provider_context_evidence.normalization_mode)
+    practitioner_role_label = provider_context_evidence.selected_provider_role_label or "document-author"
 
     section_resource_placeholders: list[ResourcePlaceholder] = []
     section_scaffolds: list[SectionScaffold] = []
@@ -137,7 +146,7 @@ def build_psca_bundle_schematic(normalized_assets: PscaNormalizedAssetContext) -
         ResourcePlaceholder(
             placeholder_id="practitionerrole-1",
             resource_type="PractitionerRole",
-            role="document-author",
+            role=practitioner_role_label,
             profile_url=practitioner_role_profile.url,
             required=True,
             required_later_fields=["practitioner", "organization"],
@@ -253,8 +262,14 @@ def build_psca_bundle_schematic(normalized_assets: PscaNormalizedAssetContext) -
     return BundleSchematic(
         stage_id="bundle_schematic",
         status="placeholder_complete",
-        summary="Generated the first deterministic PS-CA bundle schematic from normalized assets, required section definitions, and selected example evidence.",
-        placeholder_note="This slice builds a real schematic scaffold only; build ordering, resource population, and optional PS-CA sections remain deferred.",
+        summary=(
+            "Generated the first deterministic PS-CA bundle schematic from normalized assets, "
+            f"required section definitions, selected example evidence, and {provider_context_summary}."
+        ),
+        placeholder_note=(
+            "This slice builds a real schematic scaffold only; build ordering, resource population, "
+            f"and optional PS-CA sections remain deferred. {provider_context_note}"
+        ),
         source_refs=normalized_assets.source_refs,
         generation_basis="deterministic_psca_foundation_rules",
         bundle_scaffold=BundleScaffold(
@@ -280,6 +295,7 @@ def build_psca_bundle_schematic(normalized_assets: PscaNormalizedAssetContext) -
             selected_example_entry_resource_types=normalized_assets.selected_bundle_example.entry_resource_types,
             used_profile_ids=used_profile_ids,
             used_section_slice_names=[section.slice_name for section in section_scaffolds],
+            provider_context=provider_context_evidence,
             source_refs=normalized_assets.source_refs,
         ),
         omitted_optional_sections=omitted_optional_sections,
@@ -322,3 +338,54 @@ def _select_section_title(
     if example_section and example_section.title:
         return example_section.title
     return section_definition.title
+
+
+def _provider_context_evidence(
+    normalized_request: NormalizedBuildRequest,
+) -> SchematicProviderContextEvidence:
+    provider_context = normalized_request.provider_context
+    selected_organization = provider_context.selected_organization
+    selected_relationship = provider_context.selected_provider_role_relationship
+    return SchematicProviderContextEvidence(
+        normalization_mode=provider_context.normalization_mode,
+        provider_id=provider_context.provider.provider_id,
+        provider_display_name=provider_context.provider.display_name,
+        provider_source_type=provider_context.provider.source_type,
+        selected_organization_id=(
+            selected_organization.organization_id if selected_organization is not None else None
+        ),
+        selected_organization_display_name=(
+            selected_organization.display_name if selected_organization is not None else None
+        ),
+        selected_provider_role_relationship_id=(
+            selected_relationship.relationship_id if selected_relationship is not None else None
+        ),
+        selected_provider_role_label=(
+            selected_relationship.role_label if selected_relationship is not None else None
+        ),
+    )
+
+
+def _provider_context_summary(normalization_mode: str) -> str:
+    if normalization_mode == "provider_context_explicit_selection":
+        return "an explicitly selected provider-role relationship context"
+    if normalization_mode == "provider_context_single_relationship":
+        return "a deterministically selected single provider-role relationship context"
+    return "legacy provider-profile fallback context"
+
+
+def _provider_context_note(normalization_mode: str) -> str:
+    if normalization_mode == "provider_context_explicit_selection":
+        return (
+            "The schematic records the explicitly selected provider-role relationship "
+            "and organization context for inspectability."
+        )
+    if normalization_mode == "provider_context_single_relationship":
+        return (
+            "The schematic records the deterministically selected single provider-role "
+            "relationship and organization context for inspectability."
+        )
+    return (
+        "The schematic records legacy provider-profile fallback only; richer selected "
+        "organization and provider-role context remains unavailable in this run."
+    )

@@ -459,8 +459,6 @@ async def test_psca_repair_execution_marks_build_plan_retry_as_unsupported() -> 
 async def _build_repair_inputs(mutator=None):
     repository = PscaAssetRepository()
     normalized_assets = repository.load_foundation_context(PscaAssetQuery())
-    schematic = build_psca_bundle_schematic(normalized_assets)
-    plan = build_psca_build_plan(schematic)
     normalized_request = build_psca_normalized_request(
         WorkflowBuildInput(
             specification=SpecificationSelection(),
@@ -498,6 +496,8 @@ async def _build_repair_inputs(mutator=None):
             ),
         )
     )
+    schematic = build_psca_bundle_schematic(normalized_assets, normalized_request)
+    plan = build_psca_build_plan(schematic)
     resource_construction = build_psca_resource_construction_result(plan, schematic, normalized_request)
     candidate_bundle = build_psca_candidate_bundle_result(resource_construction, schematic, normalized_request)
     if mutator is not None:

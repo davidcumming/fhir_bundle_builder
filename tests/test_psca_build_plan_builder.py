@@ -3,6 +3,15 @@
 from __future__ import annotations
 
 from fhir_bundle_builder.specifications.psca import PscaAssetQuery, PscaAssetRepository
+from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.models import (
+    BundleRequestInput,
+    ProfileReferenceInput,
+    SpecificationSelection,
+    WorkflowBuildInput,
+)
+from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.request_normalization_builder import (
+    build_psca_normalized_request,
+)
 from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.build_plan_builder import (
     build_psca_build_plan,
 )
@@ -14,7 +23,24 @@ from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.schematic_builde
 def test_psca_build_plan_builder_generates_expected_order_and_dependencies() -> None:
     repository = PscaAssetRepository()
     normalized_assets = repository.load_foundation_context(PscaAssetQuery())
-    schematic = build_psca_bundle_schematic(normalized_assets)
+    normalized_request = build_psca_normalized_request(
+        WorkflowBuildInput(
+            specification=SpecificationSelection(),
+            patient_profile=ProfileReferenceInput(
+                profile_id="patient-plan-test",
+                display_name="Plan Test Patient",
+            ),
+            provider_profile=ProfileReferenceInput(
+                profile_id="provider-plan-test",
+                display_name="Plan Test Provider",
+            ),
+            request=BundleRequestInput(
+                request_text="Create a deterministic build plan for testing.",
+                scenario_label="pytest-build-plan",
+            ),
+        )
+    )
+    schematic = build_psca_bundle_schematic(normalized_assets, normalized_request)
 
     plan = build_psca_build_plan(schematic)
 

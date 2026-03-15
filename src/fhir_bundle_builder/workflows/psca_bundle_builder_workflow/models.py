@@ -277,6 +277,23 @@ class SchematicRelationship(BaseModel):
     description: str
 
 
+class SchematicProviderContextEvidence(BaseModel):
+    """Selected provider/org/role context copied into schematic provenance."""
+
+    normalization_mode: Literal[
+        "legacy_provider_profile",
+        "provider_context_single_relationship",
+        "provider_context_explicit_selection",
+    ]
+    provider_id: str
+    provider_display_name: str
+    provider_source_type: Literal["stub", "provider_management"]
+    selected_organization_id: str | None = None
+    selected_organization_display_name: str | None = None
+    selected_provider_role_relationship_id: str | None = None
+    selected_provider_role_label: str | None = None
+
+
 class SchematicEvidence(BaseModel):
     """Provenance captured for the generated schematic."""
 
@@ -285,6 +302,7 @@ class SchematicEvidence(BaseModel):
     selected_example_entry_resource_types: list[str] = Field(default_factory=list)
     used_profile_ids: list[str] = Field(default_factory=list)
     used_section_slice_names: list[str] = Field(default_factory=list)
+    provider_context: SchematicProviderContextEvidence
     source_refs: list[str] = Field(default_factory=list)
 
 

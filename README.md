@@ -12,6 +12,7 @@ The implemented slice is intentionally narrow:
 - optional Matchbox-backed standards validation behind the existing validator boundary
 - structured repair decision and bounded retry execution artifacts
 - structured provider/org/role request normalization for richer support-resource realism
+- provider-context-aware schematic provenance before resource construction begins
 - inspectable structured artifacts emitted at each stage
 - no product UI
 - no full bundle population yet
@@ -105,7 +106,7 @@ The `specification_asset_retrieval` stage now emits the first normalized PS-CA a
 
 ## Current slice boundaries
 
-This slice is for workflow shape, PS-CA normalized asset retrieval, the first real schematic artifact, the first real build plan, the first meaningful content-enriched resource-construction path for core clinical resources, the first support-resource enrichment for the selected provider-facing author path, the first structured provider/org/role input-normalization path, the first candidate-bundle finalization foundation, the first validation foundation, the first optional Matchbox-backed external standards-validation path, the first repair-decision foundation, and the first bounded repair-execution foundation with narrow step-subset repair directives for resource construction plus narrower bundle-finalization-owned reference-alignment findings.
+This slice is for workflow shape, PS-CA normalized asset retrieval, the first real schematic artifact, the first real build plan, the first meaningful content-enriched resource-construction path for core clinical resources, the first support-resource enrichment for the selected provider-facing author path, the first structured provider/org/role input-normalization path, the first provider-context-aware schematic provenance path, the first candidate-bundle finalization foundation, the first validation foundation, the first optional Matchbox-backed external standards-validation path, the first repair-decision foundation, and the first bounded repair-execution foundation with narrow step-subset repair directives for resource construction plus narrower bundle-finalization-owned reference-alignment findings.
 
 - The workflow reads existing PS-CA package files deterministically from the repo.
 - The spec retrieval stage exposes a normalized PS-CA asset context with foundational profiles, Composition section definitions, and selected example evidence.
@@ -114,7 +115,7 @@ This slice is for workflow shape, PS-CA normalized asset retrieval, the first re
   - a Composition scaffold
   - required section scaffolds for medications, allergies, and problems
   - explicit resource placeholders
-  - explicit schematic relationships and provenance
+  - explicit schematic relationships and provider-context-aware provenance
 - The build-plan stage emits a structured deterministic build plan with explicit steps, dependencies, expected inputs, and expected outputs.
 - The resource-construction stage emits deterministic content-enriched FHIR-shaped resource scaffolds, per-step construction results, and a registry of the latest scaffold state per placeholder.
 - The bundle-finalization stage emits a real candidate `Bundle` scaffold assembled deterministically from the registry and schematic bundle-entry expectations.
@@ -138,12 +139,17 @@ The `bundle_schematic` stage now emits the first real PS-CA schematic artifact f
 - a Composition scaffold fixed to LOINC `60591-5`
 - required section scaffolds for medications, allergies, and problems
 - placeholders for `Composition`, `Patient`, `PractitionerRole`, `Practitioner`, `Organization`, `MedicationRequest`, `AllergyIntolerance`, and `Condition`
+- `PractitionerRole` placeholder role reflecting the selected provider-role label when normalized provider context supplies one
 - explicit relationships for:
   - bundle entries
   - Composition subject and author
   - PractitionerRole support links
   - section-entry wiring
-- provenance showing which normalized assets and example evidence were used
+- provenance showing which normalized assets, example evidence, and selected normalized provider/org/role context were used
+- summary and placeholder-note text showing whether the run used:
+  - legacy provider-profile fallback
+  - deterministic single-relationship provider-context selection
+  - explicit provider-role relationship selection
 
 ## Build-plan-stage output
 

@@ -32,9 +32,9 @@ from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.schematic_builde
 def test_psca_resource_construction_builder_generates_scaffolds_and_registry() -> None:
     repository = PscaAssetRepository()
     normalized_assets = repository.load_foundation_context(PscaAssetQuery())
-    schematic = build_psca_bundle_schematic(normalized_assets)
-    plan = build_psca_build_plan(schematic)
     normalized_request = _build_normalized_request("pytest-resource")
+    schematic = build_psca_bundle_schematic(normalized_assets, normalized_request)
+    plan = build_psca_build_plan(schematic)
 
     construction = build_psca_resource_construction_result(plan, schematic, normalized_request)
 
@@ -159,9 +159,9 @@ def test_psca_resource_construction_builder_generates_scaffolds_and_registry() -
 def test_psca_resource_construction_builder_keeps_organization_thin_in_legacy_provider_profile_mode() -> None:
     repository = PscaAssetRepository()
     normalized_assets = repository.load_foundation_context(PscaAssetQuery())
-    schematic = build_psca_bundle_schematic(normalized_assets)
-    plan = build_psca_build_plan(schematic)
     normalized_request = _build_legacy_normalized_request("pytest-resource-legacy")
+    schematic = build_psca_bundle_schematic(normalized_assets, normalized_request)
+    plan = build_psca_build_plan(schematic)
 
     construction = build_psca_resource_construction_result(plan, schematic, normalized_request)
     registry = {entry.placeholder_id: entry for entry in construction.resource_registry}
@@ -177,9 +177,9 @@ def test_psca_resource_construction_builder_keeps_organization_thin_in_legacy_pr
 def test_psca_resource_construction_builder_supports_targeted_patient_repair() -> None:
     repository = PscaAssetRepository()
     normalized_assets = repository.load_foundation_context(PscaAssetQuery())
-    schematic = build_psca_bundle_schematic(normalized_assets)
-    plan = build_psca_build_plan(schematic)
     normalized_request = _build_normalized_request("pytest-targeted-patient")
+    schematic = build_psca_bundle_schematic(normalized_assets, normalized_request)
+    plan = build_psca_build_plan(schematic)
     full_result = build_psca_resource_construction_result(plan, schematic, normalized_request)
     repair_directive = ResourceConstructionRepairDirective(
         directive_basis="validation_finding_code_map",
@@ -236,9 +236,9 @@ def test_psca_resource_construction_builder_supports_targeted_patient_repair() -
 def test_psca_resource_construction_builder_supports_targeted_composition_section_repair() -> None:
     repository = PscaAssetRepository()
     normalized_assets = repository.load_foundation_context(PscaAssetQuery())
-    schematic = build_psca_bundle_schematic(normalized_assets)
-    plan = build_psca_build_plan(schematic)
     normalized_request = _build_normalized_request("pytest-targeted-composition")
+    schematic = build_psca_bundle_schematic(normalized_assets, normalized_request)
+    plan = build_psca_build_plan(schematic)
     full_result = build_psca_resource_construction_result(plan, schematic, normalized_request)
     repair_directive = ResourceConstructionRepairDirective(
         directive_basis="validation_finding_code_map",

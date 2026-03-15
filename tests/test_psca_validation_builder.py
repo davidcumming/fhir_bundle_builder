@@ -767,8 +767,6 @@ def _build_validation_inputs(
 ) -> tuple[NormalizedBuildRequest, object, object]:
     repository = PscaAssetRepository()
     normalized_assets = repository.load_foundation_context(PscaAssetQuery())
-    schematic = build_psca_bundle_schematic(normalized_assets)
-    plan = build_psca_build_plan(schematic)
     normalized_request = build_psca_normalized_request(
         WorkflowBuildInput(
             specification=SpecificationSelection(),
@@ -810,6 +808,8 @@ def _build_validation_inputs(
             ),
         )
     )
+    schematic = build_psca_bundle_schematic(normalized_assets, normalized_request)
+    plan = build_psca_build_plan(schematic)
     construction = build_psca_resource_construction_result(plan, schematic, normalized_request)
     candidate_bundle = build_psca_candidate_bundle_result(construction, schematic, normalized_request)
     return normalized_request, schematic, candidate_bundle

@@ -114,8 +114,6 @@ def test_psca_bundle_finalization_builder_fails_when_composition_not_finalized()
 def _build_construction_inputs() -> tuple[NormalizedBuildRequest, object, object]:
     repository = PscaAssetRepository()
     normalized_assets = repository.load_foundation_context(PscaAssetQuery())
-    schematic = build_psca_bundle_schematic(normalized_assets)
-    plan = build_psca_build_plan(schematic)
     normalized_request = build_psca_normalized_request(
         WorkflowBuildInput(
             specification=SpecificationSelection(),
@@ -153,5 +151,7 @@ def _build_construction_inputs() -> tuple[NormalizedBuildRequest, object, object
             ),
         )
     )
+    schematic = build_psca_bundle_schematic(normalized_assets, normalized_request)
+    plan = build_psca_build_plan(schematic)
     construction = build_psca_resource_construction_result(plan, schematic, normalized_request)
     return normalized_request, schematic, construction

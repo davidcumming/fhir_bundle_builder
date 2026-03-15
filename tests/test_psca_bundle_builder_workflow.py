@@ -93,6 +93,20 @@ async def test_psca_bundle_builder_workflow_smoke() -> None:
     assert len(final_output.specification_asset_context.normalized_assets.composition_section_definitions) >= 3
     assert final_output.bundle_schematic.bundle_scaffold.bundle_type == "document"
     assert final_output.bundle_schematic.composition_scaffold.expected_type_code == "60591-5"
+    assert (
+        final_output.bundle_schematic.evidence.provider_context.normalization_mode
+        == "provider_context_explicit_selection"
+    )
+    assert (
+        final_output.bundle_schematic.evidence.provider_context.selected_provider_role_relationship_id
+        == "provider-role-smoke-2"
+    )
+    assert (
+        final_output.bundle_schematic.evidence.provider_context.selected_organization_id
+        == "org-smoke-test-2"
+    )
+    assert "explicitly selected provider-role relationship context" in final_output.bundle_schematic.summary
+    assert "explicitly selected provider-role relationship" in final_output.bundle_schematic.placeholder_note
     assert [section.section_key for section in final_output.bundle_schematic.section_scaffolds] == [
         "medications",
         "allergies",
@@ -111,6 +125,10 @@ async def test_psca_bundle_builder_workflow_smoke() -> None:
     assert any(
         relationship.relationship_id == "composition-subject" and relationship.target_id == "patient-1"
         for relationship in final_output.bundle_schematic.relationships
+    )
+    assert any(
+        placeholder.placeholder_id == "practitionerrole-1" and placeholder.role == "attending-physician"
+        for placeholder in final_output.bundle_schematic.resource_placeholders
     )
     assert final_output.build_plan.plan_basis == "deterministic_schematic_dependency_plan"
     assert final_output.build_plan.composition_strategy == "scaffold_then_incremental_section_finalize"
