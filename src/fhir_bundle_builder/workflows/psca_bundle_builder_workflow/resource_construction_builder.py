@@ -644,9 +644,7 @@ def _build_section_entry_result(
         reference_contributions=[_reference_contribution(reference_path, "patient-1", reference_value)],
         deterministic_value_evidence=deterministic_value_evidence,
         assumptions=[
-            (
-                "Section-entry resources use deterministic structured clinical profile text when exactly one matching item is available; otherwise they fall back to section-scaffold placeholder text."
-            ),
+            _section_entry_assumption(step.resource_type, normalized_request, placeholder.placeholder_id),
         ],
         warnings=[],
         unresolved_fields=resource_scaffold.deferred_paths,
@@ -987,9 +985,9 @@ def _section_entry_text_source_artifact(
     placeholder_id: str,
 ) -> str:
     if resource_type == "MedicationRequest":
-        selected = _selected_medication_for_placeholder(normalized_request, placeholder_id)
-        if selected is not None:
-            return f"normalized_request.patient_context.medications[{_medication_placeholder_index(placeholder_id)}]"
+        planned_entry_index = _planned_medication_entry_list_index(normalized_request, placeholder_id)
+        if planned_entry_index is not None:
+            return f"normalized_request.patient_context.planned_medication_entries[{planned_entry_index}]"
     if resource_type == "AllergyIntolerance" and normalized_request.patient_context.selected_allergy_for_single_entry is not None:
         return "normalized_request.patient_context.selected_allergy_for_single_entry"
     if resource_type == "Condition" and normalized_request.patient_context.selected_condition_for_single_entry is not None:
@@ -1004,9 +1002,14 @@ def _section_entry_text_source_detail(
     placeholder_id: str,
 ) -> str:
     if resource_type == "MedicationRequest":
-        selected = _selected_medication_for_placeholder(normalized_request, placeholder_id)
-        if selected is not None:
-            return "display_text"
+        planned_entry = _planned_medication_entry_for_placeholder(normalized_request, placeholder_id)
+        if planned_entry is not None:
+            return (
+                "display_text"
+                f" (placeholder_id={planned_entry.placeholder_id}, "
+                f"source_medication_index={planned_entry.source_medication_index}, "
+                f"medication_id={planned_entry.medication_id})"
+            )
     if resource_type == "AllergyIntolerance" and normalized_request.patient_context.selected_allergy_for_single_entry is not None:
         return "display_text"
     if resource_type == "Condition" and normalized_request.patient_context.selected_condition_for_single_entry is not None:
@@ -1018,21 +1021,55 @@ def _selected_medication_for_placeholder(
     normalized_request: NormalizedBuildRequest,
     placeholder_id: str,
 ):
-    medication_index = _medication_placeholder_index(placeholder_id)
-    medications = normalized_request.patient_context.medications
-    if 0 <= medication_index < len(medications):
-        return medications[medication_index]
+    planned_entry = _planned_medication_entry_for_placeholder(normalized_request, placeholder_id)
+    if planned_entry is not None:
+        return normalized_request.patient_context.medications[planned_entry.source_medication_index]
     if placeholder_id == "medicationrequest-1":
         return normalized_request.patient_context.selected_medication_for_single_entry
     return None
 
 
-def _medication_placeholder_index(placeholder_id: str) -> int:
-    if placeholder_id == "medicationrequest-1":
-        return 0
-    if placeholder_id == "medicationrequest-2":
-        return 1
-    raise ValueError(f"Unsupported MedicationRequest placeholder id '{placeholder_id}'.")
+def _planned_medication_entry_for_placeholder(
+    normalized_request: NormalizedBuildRequest,
+    placeholder_id: str,
+):
+    for entry in normalized_request.patient_context.planned_medication_entries:
+        if entry.placeholder_id == placeholder_id:
+            return entry
+    return None
+
+
+def _planned_medication_entry_list_index(
+    normalized_request: NormalizedBuildRequest,
+    placeholder_id: str,
+) -> int | None:
+    for index, entry in enumerate(normalized_request.patient_context.planned_medication_entries):
+        if entry.placeholder_id == placeholder_id:
+            return index
+    return None
+
+
+def _section_entry_assumption(
+    resource_type: str,
+    normalized_request: NormalizedBuildRequest,
+    placeholder_id: str,
+) -> str:
+    if resource_type == "MedicationRequest":
+        planned_entry = _planned_medication_entry_for_placeholder(normalized_request, placeholder_id)
+        if planned_entry is not None:
+            return (
+                "MedicationRequest placeholders consume the authoritative bounded planned-medication mapping "
+                f"from request normalization; {placeholder_id} uses medication index "
+                f"{planned_entry.source_medication_index} ({planned_entry.medication_id})."
+            )
+        return (
+            "MedicationRequest placeholder text falls back to section-scaffold placeholder text when no "
+            "structured bounded planned-medication mapping exists for the placeholder."
+        )
+    return (
+        "Section-entry resources use deterministic structured clinical profile text when exactly one matching item "
+        "is available; otherwise they fall back to section-scaffold placeholder text."
+    )
 
 
 def _reference_contribution(reference_path: str, target_placeholder_id: str, reference_value: str) -> ReferenceContribution:

@@ -149,6 +149,7 @@ The `bundle_schematic` stage now emits the first real PS-CA schematic artifact f
   - section-entry wiring
 - provenance showing which normalized assets, example evidence, and selected normalized provider/org/role context were used
 - provenance showing which normalized patient identity and section-level clinical context counts were available for the run
+- medications-section provenance showing the authoritative normalized mapping from the first two structured medication items to `medicationrequest-1` and `medicationrequest-2`, plus any deferred overflow count beyond those two planned entries
 - summary and placeholder-note text showing whether the run used:
   - legacy patient-profile fallback
   - explicit patient/clinical context with fixed single-entry consumption
@@ -196,7 +197,7 @@ The `resource_construction` stage now emits the first real scaffold-oriented con
   - a Composition status and title
   - section-entry status and text content for medications, allergies, and problems, using structured patient clinical profile text for up to the first two planned medications and for single matching allergy/problem items
 - normalized patient-context inspectability showing the selected patient identity and any single-entry clinical profile items currently consumable by the fixed one-entry-per-section workflow
-- schematic-level patient-context inspectability showing available item counts for medications, allergies, and problems plus the bounded medications-only planned placeholder count
+- schematic-level patient-context inspectability showing available item counts for medications, allergies, and problems plus the bounded medications-only planned placeholder count, placeholder-specific medication provenance, and any deferred additional medication count
 - normalized provider-context inspectability showing the selected provider, selected organization, and selected provider-role relationship when available
 - a resource registry showing the latest scaffold state per placeholder
 - explicit incremental `Composition` behavior:
@@ -255,6 +256,7 @@ The `validation` stage now emits the first real structured validation artifact f
   - section-specific deterministic Composition section-presence checks for medications, allergies, and problems
   - resource-specific placeholder-content checks for `MedicationRequest`, `AllergyIntolerance`, and `Condition`
   - second-medication-specific placeholder-content and reference checks when the bounded two-medication path is planned
+  - placeholder-specific medication expectations derived from one authoritative normalized first-two-item mapping rather than repeated local selection logic
   - resource-specific non-Composition source-reference contribution checks for:
     - `PractitionerRole.practitioner`
     - `PractitionerRole.organization`

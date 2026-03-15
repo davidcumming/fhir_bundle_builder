@@ -175,6 +175,24 @@ class PatientAllergyInput(BaseModel):
     )
 
 
+class NormalizedPlannedMedicationEntry(BaseModel):
+    """Deterministic bounded medication-entry selection for the current workflow run."""
+
+    placeholder_id: Literal["medicationrequest-1", "medicationrequest-2"]
+    source_medication_index: int = Field(
+        ...,
+        description="Zero-based index into the normalized structured medication list.",
+    )
+    medication_id: str = Field(
+        ...,
+        description="Stable identifier of the structured medication item selected for this placeholder.",
+    )
+    display_text: str = Field(
+        ...,
+        description="Deterministic medication label selected for this placeholder.",
+    )
+
+
 class PatientContextInput(BaseModel):
     """Structured patient/clinical profile context supplied by an upstream layer."""
 
@@ -288,6 +306,8 @@ class NormalizedPatientContext(BaseModel):
     selected_condition_for_single_entry: PatientConditionInput | None = None
     selected_medication_for_single_entry: PatientMedicationInput | None = None
     selected_allergy_for_single_entry: PatientAllergyInput | None = None
+    planned_medication_entries: list[NormalizedPlannedMedicationEntry] = Field(default_factory=list)
+    deferred_additional_medication_count: int = 0
     normalization_mode: Literal[
         "legacy_patient_profile",
         "patient_context_explicit",
@@ -406,7 +426,9 @@ class SchematicClinicalSectionContextEvidence(BaseModel):
     available_item_count: int
     selected_single_entry_display_text: str | None = None
     planned_entry_display_texts: list[str] = Field(default_factory=list)
+    planned_medication_entries: list[NormalizedPlannedMedicationEntry] = Field(default_factory=list)
     planned_placeholder_count: int
+    deferred_additional_item_count: int = 0
     planning_disposition: Literal[
         "legacy_profile_fallback",
         "fixed_single_entry_no_structured_items",

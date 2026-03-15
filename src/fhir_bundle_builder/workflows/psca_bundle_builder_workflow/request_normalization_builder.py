@@ -6,6 +6,7 @@ from typing import TypeVar
 
 from .models import (
     NormalizedBuildRequest,
+    NormalizedPlannedMedicationEntry,
     NormalizedPatientContext,
     NormalizedProviderContext,
     PatientAllergyInput,
@@ -95,9 +96,12 @@ def _normalize_patient_context(
             selected_condition_for_single_entry=None,
             selected_medication_for_single_entry=None,
             selected_allergy_for_single_entry=None,
+            planned_medication_entries=[],
+            deferred_additional_medication_count=0,
             normalization_mode="legacy_patient_profile",
         )
 
+    planned_medication_entries = _planned_medication_entries(patient_context.medications)
     return NormalizedPatientContext(
         patient=PatientIdentityInput.model_validate(patient_context.patient.model_dump()),
         conditions=[
@@ -118,6 +122,8 @@ def _normalize_patient_context(
             PatientMedicationInput,
         ),
         selected_allergy_for_single_entry=_select_single_item(patient_context.allergies, PatientAllergyInput),
+        planned_medication_entries=planned_medication_entries,
+        deferred_additional_medication_count=max(len(patient_context.medications) - len(planned_medication_entries), 0),
         normalization_mode="patient_context_explicit",
     )
 
@@ -218,3 +224,19 @@ def _select_single_item(
     if len(values) != 1:
         return None
     return model_type.model_validate(values[0].model_dump())
+
+
+def _planned_medication_entries(
+    medications: list[PatientMedicationInput],
+) -> list[NormalizedPlannedMedicationEntry]:
+    planned_entries: list[NormalizedPlannedMedicationEntry] = []
+    for source_medication_index, medication in enumerate(medications[:2]):
+        planned_entries.append(
+            NormalizedPlannedMedicationEntry(
+                placeholder_id=f"medicationrequest-{source_medication_index + 1}",
+                source_medication_index=source_medication_index,
+                medication_id=medication.medication_id,
+                display_text=medication.display_text,
+            )
+        )
+    return planned_entries

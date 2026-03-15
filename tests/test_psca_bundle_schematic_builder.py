@@ -80,7 +80,19 @@ def test_psca_bundle_schematic_builder_generates_required_scaffold() -> None:
     assert section_contexts["medications"].available_item_count == 1
     assert section_contexts["medications"].selected_single_entry_display_text == "Atorvastatin 20 MG oral tablet"
     assert section_contexts["medications"].planned_entry_display_texts == ["Atorvastatin 20 MG oral tablet"]
+    assert [
+        (entry.placeholder_id, entry.source_medication_index, entry.medication_id, entry.display_text)
+        for entry in section_contexts["medications"].planned_medication_entries
+    ] == [
+        (
+            "medicationrequest-1",
+            0,
+            "med-schematic-1",
+            "Atorvastatin 20 MG oral tablet",
+        )
+    ]
     assert section_contexts["medications"].planned_placeholder_count == 1
+    assert section_contexts["medications"].deferred_additional_item_count == 0
     assert section_contexts["medications"].planning_disposition == "fixed_single_entry_selected_item"
     assert section_contexts["allergies"].planning_disposition == "fixed_single_entry_selected_item"
     assert section_contexts["problems"].planning_disposition == "fixed_single_entry_selected_item"
@@ -176,7 +188,15 @@ def test_psca_bundle_schematic_builder_supports_bounded_two_medication_planning(
         "Atorvastatin 20 MG oral tablet",
         "Metformin 500 MG oral tablet",
     ]
+    assert [
+        (entry.placeholder_id, entry.source_medication_index, entry.medication_id)
+        for entry in section_contexts["medications"].planned_medication_entries
+    ] == [
+        ("medicationrequest-1", 0, "med-schematic-1"),
+        ("medicationrequest-2", 1, "med-schematic-2"),
+    ]
     assert section_contexts["medications"].planned_placeholder_count == 2
+    assert section_contexts["medications"].deferred_additional_item_count == 0
     assert section_contexts["medications"].planning_disposition == "bounded_two_entry_selected_first_two"
     assert section_contexts["allergies"].planned_placeholder_count == 1
     assert {placeholder.placeholder_id for placeholder in schematic.resource_placeholders} >= {
@@ -243,6 +263,11 @@ def test_psca_bundle_schematic_builder_records_medication_overflow_beyond_two_as
         "Atorvastatin 20 MG oral tablet",
         "Metformin 500 MG oral tablet",
     ]
+    assert [entry.medication_id for entry in medications_context.planned_medication_entries] == [
+        "med-overflow-1",
+        "med-overflow-2",
+    ]
+    assert medications_context.deferred_additional_item_count == 1
     assert "additional medication items remain deferred" in schematic.summary
 
 

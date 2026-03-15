@@ -160,8 +160,13 @@ def test_psca_resource_construction_builder_generates_scaffolds_and_registry() -
     )
     assert any(
         evidence.target_path == "medicationCodeableConcept.text"
-        and evidence.source_detail == "display_text"
+        and "medication_id=med-1" in evidence.source_detail
         for evidence in steps["build-medicationrequest-1"].deterministic_value_evidence
+    )
+    assert any(
+        "MedicationRequest placeholders consume the authoritative bounded planned-medication mapping"
+        in assumption
+        for assumption in steps["build-medicationrequest-1"].assumptions
     )
     assert any(
         evidence.target_path == "code.text" and evidence.source_detail == "display_text"
@@ -253,8 +258,15 @@ def test_psca_resource_construction_builder_supports_second_medication_entry() -
         {"reference": "MedicationRequest/medicationrequest-2"},
     ]
     assert any(
-        evidence.target_path == "medicationCodeableConcept.text" and evidence.source_detail == "display_text"
+        evidence.target_path == "medicationCodeableConcept.text"
+        and evidence.source_artifact == "normalized_request.patient_context.planned_medication_entries[1]"
+        and "source_medication_index=1" in evidence.source_detail
+        and "medication_id=med-2" in evidence.source_detail
         for evidence in steps["build-medicationrequest-2"].deterministic_value_evidence
+    )
+    assert any(
+        "medicationrequest-2 uses medication index 1 (med-2)" in assumption
+        for assumption in steps["build-medicationrequest-2"].assumptions
     )
     assert any(
         contribution.reference_path == "section[0].entry[1].reference"

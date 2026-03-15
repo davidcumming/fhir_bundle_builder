@@ -1024,6 +1024,37 @@ async def test_psca_validation_builder_fails_when_second_medicationrequest_subje
     )
 
 
+async def test_psca_validation_builder_keeps_medication_sibling_content_checks_placeholder_aware() -> None:
+    normalized_request, schematic, _, candidate_bundle = _build_validation_artifacts(
+        medication_texts=[
+            "Atorvastatin 20 MG oral tablet",
+            "Metformin 500 MG oral tablet",
+        ]
+    )
+    broken_bundle = deepcopy(candidate_bundle)
+    medicationrequest_1 = _bundle_entry_resource_by_id(
+        broken_bundle.candidate_bundle.fhir_bundle,
+        "medicationrequest-1",
+    )
+    medicationrequest_2 = _bundle_entry_resource_by_id(
+        broken_bundle.candidate_bundle.fhir_bundle,
+        "medicationrequest-2",
+    )
+    medicationrequest_1["medicationCodeableConcept"]["text"] = "Metformin 500 MG oral tablet"
+    medicationrequest_2["medicationCodeableConcept"]["text"] = "Atorvastatin 20 MG oral tablet"
+
+    report = await build_psca_validation_report(
+        broken_bundle,
+        schematic,
+        normalized_request,
+        LocalCandidateBundleScaffoldStandardsValidator(),
+    )
+
+    finding_codes = {finding.code for finding in report.workflow_validation.findings}
+    assert "bundle.medicationrequest_placeholder_content_present" in finding_codes
+    assert "bundle.medicationrequest_2_placeholder_content_present" in finding_codes
+
+
 def _build_validation_inputs(
     *,
     legacy_provider_context: bool = False,
@@ -1222,3 +1253,16 @@ def _set_nested_reference_value(root: dict[str, object], path: str, value: str) 
     for segment in segments[:-1]:
         current = current[segment]
     current[segments[-1]] = value
+
+
+def _bundle_entry_resource_by_id(bundle: dict[str, object], placeholder_id: str) -> dict[str, object]:
+    entries = bundle.get("entry", [])
+    if not isinstance(entries, list):
+        raise ValueError("Expected Bundle.entry to be a list.")
+    for entry in entries:
+        if not isinstance(entry, dict):
+            continue
+        resource = entry.get("resource")
+        if isinstance(resource, dict) and resource.get("id") == placeholder_id:
+            return resource
+    raise ValueError(f"Expected bundle entry resource '{placeholder_id}' to be present.")

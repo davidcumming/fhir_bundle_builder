@@ -48,6 +48,8 @@ def test_request_normalization_supports_legacy_provider_profile_mode() -> None:
     assert normalized.patient_context.normalization_mode == "legacy_patient_profile"
     assert normalized.patient_context.patient.patient_id == "patient-normalization-test"
     assert normalized.patient_context.selected_medication_for_single_entry is None
+    assert normalized.patient_context.planned_medication_entries == []
+    assert normalized.patient_context.deferred_additional_medication_count == 0
     assert normalized.provider_context.normalization_mode == "legacy_provider_profile"
     assert normalized.provider_context.provider.provider_id == "provider-normalization-test"
     assert normalized.provider_context.selected_provider_role_relationship is None
@@ -79,6 +81,11 @@ def test_request_normalization_supports_explicit_patient_context() -> None:
     assert normalized.patient_context.patient.birth_date == "1985-02-14"
     assert normalized.patient_context.selected_medication_for_single_entry is not None
     assert normalized.patient_context.selected_medication_for_single_entry.medication_id == "med-1"
+    assert len(normalized.patient_context.planned_medication_entries) == 1
+    assert normalized.patient_context.planned_medication_entries[0].placeholder_id == "medicationrequest-1"
+    assert normalized.patient_context.planned_medication_entries[0].source_medication_index == 0
+    assert normalized.patient_context.planned_medication_entries[0].medication_id == "med-1"
+    assert normalized.patient_context.deferred_additional_medication_count == 0
     assert normalized.patient_context.selected_allergy_for_single_entry is not None
     assert normalized.patient_context.selected_allergy_for_single_entry.allergy_id == "alg-1"
     assert normalized.patient_context.selected_condition_for_single_entry is not None
@@ -220,8 +227,58 @@ def test_request_normalization_keeps_multiple_patient_items_inspectable_without_
     assert len(normalized.patient_context.allergies) == 2
     assert len(normalized.patient_context.conditions) == 2
     assert normalized.patient_context.selected_medication_for_single_entry is None
+    assert [entry.placeholder_id for entry in normalized.patient_context.planned_medication_entries] == [
+        "medicationrequest-1",
+        "medicationrequest-2",
+    ]
+    assert [entry.source_medication_index for entry in normalized.patient_context.planned_medication_entries] == [0, 1]
+    assert [entry.medication_id for entry in normalized.patient_context.planned_medication_entries] == [
+        "med-1",
+        "med-2",
+    ]
+    assert normalized.patient_context.deferred_additional_medication_count == 0
     assert normalized.patient_context.selected_allergy_for_single_entry is None
     assert normalized.patient_context.selected_condition_for_single_entry is None
+
+
+def test_request_normalization_records_bounded_medication_overflow_explicitly() -> None:
+    normalized = build_psca_normalized_request(
+        WorkflowBuildInput(
+            specification=SpecificationSelection(),
+            patient_profile=ProfileReferenceInput(
+                profile_id="patient-profile-overflow",
+                display_name="Overflow Patient",
+            ),
+            patient_context=PatientContextInput(
+                patient=PatientIdentityInput(
+                    patient_id="patient-normalization-overflow",
+                    display_name="Normalization Overflow Patient",
+                    source_type="patient_management",
+                ),
+                medications=[
+                    PatientMedicationInput(medication_id="med-1", display_text="Atorvastatin 20 MG oral tablet"),
+                    PatientMedicationInput(medication_id="med-2", display_text="Metformin 500 MG oral tablet"),
+                    PatientMedicationInput(medication_id="med-3", display_text="Lisinopril 10 MG oral tablet"),
+                ],
+                allergies=[],
+                conditions=[],
+            ),
+            provider_profile=ProfileReferenceInput(
+                profile_id="provider-normalization-test",
+                display_name="Normalization Test Provider",
+            ),
+            request=BundleRequestInput(
+                request_text="Create a deterministic normalized request for medication overflow testing.",
+                scenario_label="pytest-normalization-med-overflow",
+            ),
+        )
+    )
+
+    assert [entry.medication_id for entry in normalized.patient_context.planned_medication_entries] == [
+        "med-1",
+        "med-2",
+    ]
+    assert normalized.patient_context.deferred_additional_medication_count == 1
 
 
 def _workflow_input_with_provider_context(

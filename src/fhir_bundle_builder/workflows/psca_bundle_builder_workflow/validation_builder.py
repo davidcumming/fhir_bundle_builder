@@ -1119,14 +1119,11 @@ def _selected_medication_for_placeholder(
     normalized_request: NormalizedBuildRequest,
     placeholder_id: str,
 ):
+    planned_entry = _planned_medication_entry_for_placeholder(normalized_request, placeholder_id)
+    if planned_entry is not None:
+        return normalized_request.patient_context.medications[planned_entry.source_medication_index]
     if placeholder_id == "medicationrequest-1":
-        if normalized_request.patient_context.medications:
-            return normalized_request.patient_context.medications[0]
         return normalized_request.patient_context.selected_medication_for_single_entry
-    if placeholder_id == "medicationrequest-2":
-        if len(normalized_request.patient_context.medications) >= 2:
-            return normalized_request.patient_context.medications[1]
-        return None
     raise ValueError(f"Unsupported MedicationRequest placeholder id '{placeholder_id}'.")
 
 
@@ -1135,3 +1132,13 @@ def _medication_placeholder_ids_from_schematic(schematic: BundleSchematic) -> li
         if section.section_key == "medications":
             return list(section.entry_placeholder_ids)
     raise ValueError("Expected medications section scaffold to be present.")
+
+
+def _planned_medication_entry_for_placeholder(
+    normalized_request: NormalizedBuildRequest,
+    placeholder_id: str,
+):
+    for entry in normalized_request.patient_context.planned_medication_entries:
+        if entry.placeholder_id == placeholder_id:
+            return entry
+    return None

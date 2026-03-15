@@ -13,6 +13,7 @@ from .models import (
     BundleSchematic,
     CompositionScaffold,
     NormalizedBuildRequest,
+    NormalizedPlannedMedicationEntry,
     ResourcePlaceholder,
     SchematicClinicalSectionContextEvidence,
     SchematicEvidence,
@@ -473,13 +474,22 @@ def _clinical_section_contexts(
             section.section_key,
             normalized_request,
         )
+        planned_medication_entries = _planned_medication_entries_for_section(
+            section.section_key,
+            normalized_request,
+        )
         contexts.append(
             SchematicClinicalSectionContextEvidence(
                 section_key=section.section_key,
                 available_item_count=available_item_count,
                 selected_single_entry_display_text=selected_display_text,
                 planned_entry_display_texts=planned_entry_display_texts,
+                planned_medication_entries=planned_medication_entries,
                 planned_placeholder_count=len(section.entry_placeholder_ids),
+                deferred_additional_item_count=_deferred_additional_item_count_for_section(
+                    section.section_key,
+                    normalized_request,
+                ),
                 planning_disposition=_section_planning_disposition(
                     section.section_key,
                     normalized_request,
@@ -533,15 +543,33 @@ def _planned_section_display_texts(
 ) -> list[str]:
     patient_context = normalized_request.patient_context
     if section_key == "medications":
-        return [
-            medication.display_text
-            for medication in patient_context.medications[:2]
-        ]
+        return [entry.display_text for entry in patient_context.planned_medication_entries]
     if section_key == "allergies" and patient_context.selected_allergy_for_single_entry is not None:
         return [patient_context.selected_allergy_for_single_entry.display_text]
     if section_key == "problems" and patient_context.selected_condition_for_single_entry is not None:
         return [patient_context.selected_condition_for_single_entry.display_text]
     return []
+
+
+def _planned_medication_entries_for_section(
+    section_key: str,
+    normalized_request: NormalizedBuildRequest,
+) -> list[NormalizedPlannedMedicationEntry]:
+    if section_key != "medications":
+        return []
+    return [
+        NormalizedPlannedMedicationEntry.model_validate(entry.model_dump())
+        for entry in normalized_request.patient_context.planned_medication_entries
+    ]
+
+
+def _deferred_additional_item_count_for_section(
+    section_key: str,
+    normalized_request: NormalizedBuildRequest,
+) -> int:
+    if section_key != "medications":
+        return 0
+    return normalized_request.patient_context.deferred_additional_medication_count
 
 
 def _section_planning_disposition(
@@ -565,7 +593,7 @@ def _section_planning_disposition(
 def _planned_medication_placeholder_ids(
     normalized_request: NormalizedBuildRequest,
 ) -> list[str]:
-    if len(normalized_request.patient_context.medications) >= 2:
+    if len(normalized_request.patient_context.planned_medication_entries) >= 2:
         return ["medicationrequest-1", "medicationrequest-2"]
     return ["medicationrequest-1"]
 

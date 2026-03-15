@@ -117,6 +117,11 @@ async def test_psca_bundle_builder_workflow_smoke() -> None:
         final_output.normalized_request.patient_context.selected_medication_for_single_entry.display_text
         == "Atorvastatin 20 MG oral tablet"
     )
+    assert [
+        (entry.placeholder_id, entry.source_medication_index, entry.medication_id)
+        for entry in final_output.normalized_request.patient_context.planned_medication_entries
+    ] == [("medicationrequest-1", 0, "med-smoke-1")]
+    assert final_output.normalized_request.patient_context.deferred_additional_medication_count == 0
     assert final_output.normalized_request.provider_context.normalization_mode == "provider_context_explicit_selection"
     assert final_output.normalized_request.provider_context.selected_provider_role_relationship is not None
     assert (
@@ -167,7 +172,12 @@ async def test_psca_bundle_builder_workflow_smoke() -> None:
     assert clinical_section_contexts["medications"].planned_entry_display_texts == [
         "Atorvastatin 20 MG oral tablet"
     ]
+    assert [
+        (entry.placeholder_id, entry.source_medication_index, entry.medication_id)
+        for entry in clinical_section_contexts["medications"].planned_medication_entries
+    ] == [("medicationrequest-1", 0, "med-smoke-1")]
     assert clinical_section_contexts["medications"].planned_placeholder_count == 1
+    assert clinical_section_contexts["medications"].deferred_additional_item_count == 0
     assert clinical_section_contexts["medications"].planning_disposition == "fixed_single_entry_selected_item"
     assert clinical_section_contexts["allergies"].planned_placeholder_count == 1
     assert clinical_section_contexts["problems"].planned_placeholder_count == 1
@@ -522,6 +532,22 @@ async def test_psca_bundle_builder_workflow_supports_bounded_two_medication_path
         "Atorvastatin 20 MG oral tablet",
         "Metformin 500 MG oral tablet",
     ]
+    assert [
+        (entry.placeholder_id, entry.source_medication_index, entry.medication_id)
+        for entry in final_output.normalized_request.patient_context.planned_medication_entries
+    ] == [
+        ("medicationrequest-1", 0, "med-smoke-1"),
+        ("medicationrequest-2", 1, "med-smoke-2"),
+    ]
+    assert final_output.normalized_request.patient_context.deferred_additional_medication_count == 0
+    assert [
+        (entry.placeholder_id, entry.source_medication_index, entry.medication_id)
+        for entry in clinical_section_contexts["medications"].planned_medication_entries
+    ] == [
+        ("medicationrequest-1", 0, "med-smoke-1"),
+        ("medicationrequest-2", 1, "med-smoke-2"),
+    ]
+    assert clinical_section_contexts["medications"].deferred_additional_item_count == 0
     assert clinical_section_contexts["medications"].planning_disposition == "bounded_two_entry_selected_first_two"
     assert medication_steps == ["build-medicationrequest-1", "build-medicationrequest-2"]
     assert "medicationrequest-2" in {
