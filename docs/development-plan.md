@@ -98,11 +98,11 @@ The following status labels should be used in this plan:
 
 ## 8. Current Focus
 
-**Current Focus:** Revisit whether non-Composition exact fullUrl alignment can later narrow beyond bundle-finalization ownership, or continue the next bounded realism slice now that deeper support-resource identity enrichment is in place.
+**Current Focus:** Implement the next bounded realism or validation/repair slice after non-Composition reference ownership has been split between source-reference contribution validation and final fullUrl rewrite validation.
 
 ## 9. Next Planned Slice
 
-**Next Planned Slice:** Revisit whether non-Composition exact fullUrl alignment can later narrow beyond bundle-finalization ownership.
+**Next Planned Slice:** Implement the next bounded realism or remaining ownership/validation refinement slice now that non-Composition reference ownership is split by failure class.
 
 ## 10. Development Phases
 
@@ -280,7 +280,7 @@ Prove a narrow but real end-to-end PS-CA generation run.
 - verify that the run can be demonstrated clearly in Dev UI
 
 ### Current phase note
-The workflow now has a complete deterministic structural path, validation, repair routing, bounded retry execution for both bundle finalization and resource construction, the first targeted `resource_construction` repair-directive mode based on deterministic build-step subsets, resource-specific section-entry validation and repair for the fixed PS-CA section-entry trio, incremental section-specific Composition finalization and required-section validation/repair for medications, allergies, and problems, narrower Composition scaffold/content validation for core scaffold content plus subject/author reference alignment, section-specific Composition section-entry exact fullUrl alignment validation with section-specific finalize-step repair, resource-specific non-Composition reference-alignment validation while keeping those executable repairs bundle-finalization-owned, meaningful deterministic content for core clinical resources, a first structured provider/org/role input-normalization path that enriches Organization and PractitionerRole from an explicit selected provider-role relationship, schematic-layer provider-context provenance that records the selected normalized provider/org/role context before resource construction begins, and deeper support-resource identity realism with structured Organization identifier content plus PractitionerRole relationship identity derived from normalized provider context. The next step is to deepen end-to-end realism without widening into deployment, persistence, or generic lifecycle management.
+The workflow now has a complete deterministic structural path, validation, repair routing, bounded retry execution for both bundle finalization and resource construction, the first targeted `resource_construction` repair-directive mode based on deterministic build-step subsets, resource-specific section-entry validation and repair for the fixed PS-CA section-entry trio, incremental section-specific Composition finalization and required-section validation/repair for medications, allergies, and problems, narrower Composition scaffold/content validation for core scaffold content plus subject/author reference alignment, section-specific Composition section-entry exact fullUrl alignment validation with section-specific finalize-step repair, resource-specific non-Composition reference ownership split between source-reference contribution validation in `resource_construction` and exact fullUrl rewrite validation in `bundle_finalization`, meaningful deterministic content for core clinical resources, a first structured provider/org/role input-normalization path that enriches Organization and PractitionerRole from an explicit selected provider-role relationship, schematic-layer provider-context provenance that records the selected normalized provider/org/role context before resource construction begins, and deeper support-resource identity realism with structured Organization identifier content plus PractitionerRole relationship identity derived from normalized provider context. The next step is to deepen end-to-end realism without widening into deployment, persistence, or generic lifecycle management.
 
 ### Exit criteria
 - a minimal PS-CA workflow runs end to end
@@ -358,7 +358,7 @@ The following assumptions currently guide the plan:
 - the first resource-construction slice uses partial FHIR-shaped scaffold artifacts and deterministic placeholder-derived local references rather than fully populated valid resources
 - the first deterministic bundle identity policy uses local UUID-based candidate identifiers, synthetic timestamps, and `urn:uuid` entry fullUrls rather than persistent publication identity
 - Matchbox is optional infrastructure and the workflow must remain runnable with the local scaffold-shape standards validator alone
-- the bounded repair-execution model remains single-pass and now supports both bundle_finalization and resource_construction as internal executable targets, with section-entry narrowing operating at single-resource build-step granularity, required Composition section narrowing operating at section-specific finalize-step granularity, Composition scaffold/content findings narrowing without further splitting the existing scaffold build step, Composition section-entry exact fullUrl alignment narrowing at section-specific finalize-step granularity, and non-Composition reference-alignment findings narrowing without changing the current bundle-finalization executable boundary
+- the bounded repair-execution model remains single-pass and now supports both bundle_finalization and resource_construction as internal executable targets, with section-entry narrowing operating at single-resource build-step granularity, required Composition section narrowing operating at section-specific finalize-step granularity, Composition scaffold/content findings narrowing without further splitting the existing scaffold build step, Composition section-entry exact fullUrl alignment narrowing at section-specific finalize-step granularity, and non-Composition reference ownership now split between source-reference contribution validation in resource construction and exact fullUrl rewrite validation in bundle finalization
 - the first meaningful content slice should use deterministic placeholder content from normalized request labels and schematic section metadata rather than free-text clinical synthesis
 - the workflow now accepts explicit provider/org/role context and records selected provider/org/role context in schematic evidence; that current normalized context is sufficient for deterministic support-resource identity enrichment, but patient-scenario-specific organization/provider-role selection and broader support-resource semantics are still deferred
 - initial development should prioritize workflow shape, artifact contracts, and inspectability over feature completeness
@@ -377,7 +377,7 @@ The following risks should be monitored during development:
 - support-resource realism is now deeper, but broader Organization and PractitionerRole fields still remain deferred because current upstream provider context does not yet carry authoritative telecom, address, specialty, or availability structure
 - deterministic synthetic timestamps and local URN fullUrls may later need refinement when publication or persistence semantics are introduced
 - Matchbox availability or response-shape variance may require a small amount of adapter hardening before broader operational use
-- non-Composition exact fullUrl alignment is still bundle-finalization-owned because the current repo does not yet distinguish bad source reference contributions from bad final fullUrl rewrite there
+- non-Composition reference ownership is now intentionally hard-coded to the current fixed PS-CA reference paths and does not yet generalize to arbitrary future resource graphs
 
 ## 14. Definition of Progress
 
@@ -408,4 +408,4 @@ Codex should make targeted edits only. It should not rewrite the full document u
 
 ## 16. Immediate Next Objective
 
-The immediate next objective is to revisit whether non-Composition exact fullUrl alignment can later narrow beyond bundle-finalization ownership, or to implement the next bounded realism slice that builds on the current deeper support-resource identity path without introducing new provider-selection heuristics.
+The immediate next objective is to implement the next bounded realism or remaining ownership/validation refinement slice without introducing new provider-selection heuristics or broad generic graph infrastructure.

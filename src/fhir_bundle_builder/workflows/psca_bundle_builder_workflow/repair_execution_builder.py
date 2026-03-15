@@ -190,6 +190,7 @@ async def _build_executed_retry_result(
         schematic,
         normalized_request,
         standards_validator,
+        construction_result,
     )
     post_retry_repair_decision = build_psca_repair_decision(post_retry_validation_report)
 

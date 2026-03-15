@@ -388,6 +388,66 @@ async def test_psca_repair_execution_reruns_only_bundle_finalization_for_practit
     assert execution.post_retry_validation_report.overall_status == "passed_with_warnings"
 
 
+async def test_psca_repair_execution_reruns_only_build_practitionerrole_for_practitioner_reference_contribution_failure() -> None:
+    artifacts = await _build_repair_inputs(
+        construction_mutator=_break_practitionerrole_practitioner_reference_contribution
+    )
+
+    execution = await build_psca_repair_execution_result(
+        artifacts["repair_decision"],
+        artifacts["normalized_request"],
+        artifacts["build_plan"],
+        artifacts["schematic"],
+        artifacts["resource_construction"],
+        LocalCandidateBundleScaffoldStandardsValidator(),
+    )
+
+    assert execution.execution_outcome == "executed"
+    assert execution.requested_target == "resource_construction"
+    assert execution.executed_target == "resource_construction"
+    assert execution.applied_resource_construction_repair_directive is not None
+    assert execution.applied_resource_construction_repair_directive.target_step_ids == [
+        "build-practitionerrole-1"
+    ]
+    assert execution.rerun_stage_ids == ["resource_construction", "bundle_finalization", "validation", "repair_decision"]
+    assert execution.post_retry_resource_construction is not None
+    assert execution.post_retry_resource_construction.execution_scope == "targeted_repair"
+    assert [step.step_id for step in execution.post_retry_resource_construction.step_results] == [
+        "build-practitionerrole-1"
+    ]
+    assert execution.post_retry_validation_report is not None
+    assert execution.post_retry_validation_report.overall_status == "passed_with_warnings"
+
+
+async def test_psca_repair_execution_prefers_source_contribution_route_when_both_source_and_final_reference_are_wrong() -> None:
+    artifacts = await _build_repair_inputs(
+        mutator=_break_practitionerrole_practitioner_reference,
+        construction_mutator=_break_practitionerrole_practitioner_reference_contribution,
+    )
+
+    execution = await build_psca_repair_execution_result(
+        artifacts["repair_decision"],
+        artifacts["normalized_request"],
+        artifacts["build_plan"],
+        artifacts["schematic"],
+        artifacts["resource_construction"],
+        LocalCandidateBundleScaffoldStandardsValidator(),
+    )
+
+    assert execution.execution_outcome == "executed"
+    assert execution.requested_target == "resource_construction"
+    assert execution.applied_resource_construction_repair_directive is not None
+    assert execution.applied_resource_construction_repair_directive.target_step_ids == [
+        "build-practitionerrole-1"
+    ]
+    assert execution.post_retry_resource_construction is not None
+    assert [step.step_id for step in execution.post_retry_resource_construction.step_results] == [
+        "build-practitionerrole-1"
+    ]
+    assert execution.post_retry_validation_report is not None
+    assert execution.post_retry_validation_report.overall_status == "passed_with_warnings"
+
+
 async def test_psca_repair_execution_reruns_only_targeted_section_finalize_for_allergies_section_entry_alignment_failure() -> None:
     artifacts = await _build_repair_inputs(mutator=_break_allergies_section_entry_reference)
 
@@ -487,7 +547,7 @@ async def test_psca_repair_execution_marks_build_plan_retry_as_unsupported() -> 
     assert execution.unsupported_reason is not None
 
 
-async def _build_repair_inputs(mutator=None):
+async def _build_repair_inputs(mutator=None, construction_mutator=None):
     repository = PscaAssetRepository()
     normalized_assets = repository.load_foundation_context(PscaAssetQuery())
     normalized_request = build_psca_normalized_request(
@@ -530,6 +590,8 @@ async def _build_repair_inputs(mutator=None):
     schematic = build_psca_bundle_schematic(normalized_assets, normalized_request)
     plan = build_psca_build_plan(schematic)
     resource_construction = build_psca_resource_construction_result(plan, schematic, normalized_request)
+    if construction_mutator is not None:
+        resource_construction = construction_mutator(resource_construction)
     candidate_bundle = build_psca_candidate_bundle_result(resource_construction, schematic, normalized_request)
     if mutator is not None:
         candidate_bundle = mutator(candidate_bundle)
@@ -538,6 +600,7 @@ async def _build_repair_inputs(mutator=None):
         schematic,
         normalized_request,
         LocalCandidateBundleScaffoldStandardsValidator(),
+        resource_construction,
     )
     repair_decision = build_psca_repair_decision(validation_report)
     return {
@@ -622,6 +685,15 @@ def _break_practitionerrole_practitioner_reference(candidate_bundle):
     return broken_bundle
 
 
+def _break_practitionerrole_practitioner_reference_contribution(resource_construction):
+    return _mutate_resource_construction_reference(
+        resource_construction,
+        "practitionerrole-1",
+        "practitioner.reference",
+        "Practitioner/wrong-practitioner",
+    )
+
+
 def _break_allergies_section_entry_reference(candidate_bundle):
     broken_bundle = deepcopy(candidate_bundle)
     composition = broken_bundle.candidate_bundle.fhir_bundle["entry"][0]["resource"]
@@ -636,3 +708,35 @@ def _break_medications_and_problems_section_entry_references(candidate_bundle):
     composition["section"][0]["entry"][0]["reference"] = broken_bundle.candidate_bundle.fhir_bundle["entry"][6]["fullUrl"]
     composition["section"][2]["entry"][0]["reference"] = broken_bundle.candidate_bundle.fhir_bundle["entry"][5]["fullUrl"]
     return broken_bundle
+
+
+def _mutate_resource_construction_reference(
+    resource_construction,
+    placeholder_id: str,
+    reference_path: str,
+    new_reference: str,
+):
+    broken_construction = deepcopy(resource_construction)
+    registry_entry = next(
+        entry for entry in broken_construction.resource_registry if entry.placeholder_id == placeholder_id
+    )
+    _set_nested_reference_value(
+        registry_entry.current_scaffold.fhir_scaffold,
+        reference_path,
+        new_reference,
+    )
+    for step_result in [*broken_construction.step_results, *broken_construction.step_result_history]:
+        if step_result.target_placeholder_id != placeholder_id:
+            continue
+        for contribution in step_result.reference_contributions:
+            if contribution.reference_path == reference_path:
+                contribution.reference_value = new_reference
+    return broken_construction
+
+
+def _set_nested_reference_value(root: dict[str, object], path: str, value: str) -> None:
+    segments = path.split(".")
+    current = root
+    for segment in segments[:-1]:
+        current = current[segment]
+    current[segments[-1]] = value

@@ -151,6 +151,36 @@ _FINDING_ROUTE_MAP: dict[str, tuple[str, str, bool, str]] = {
         True,
         "The problems Composition section block is attached during resource construction.",
     ),
+    "bundle.practitionerrole_practitioner_reference_contribution_aligned": (
+        "resource_construction",
+        "resource_construction",
+        True,
+        "PractitionerRole.practitioner local reference contribution is created during resource construction before bundle fullUrl rewriting.",
+    ),
+    "bundle.practitionerrole_organization_reference_contribution_aligned": (
+        "resource_construction",
+        "resource_construction",
+        True,
+        "PractitionerRole.organization local reference contribution is created during resource construction before bundle fullUrl rewriting.",
+    ),
+    "bundle.medicationrequest_subject_reference_contribution_aligned": (
+        "resource_construction",
+        "resource_construction",
+        True,
+        "MedicationRequest.subject local reference contribution is created during resource construction before bundle fullUrl rewriting.",
+    ),
+    "bundle.allergyintolerance_patient_reference_contribution_aligned": (
+        "resource_construction",
+        "resource_construction",
+        True,
+        "AllergyIntolerance.patient local reference contribution is created during resource construction before bundle fullUrl rewriting.",
+    ),
+    "bundle.condition_subject_reference_contribution_aligned": (
+        "resource_construction",
+        "resource_construction",
+        True,
+        "Condition.subject local reference contribution is created during resource construction before bundle fullUrl rewriting.",
+    ),
     "bundle.practitionerrole_practitioner_reference_aligned": (
         "bundle_finalization",
         "bundle_finalization",
@@ -294,6 +324,31 @@ _RESOURCE_CONSTRUCTION_DIRECTIVE_MAP: dict[str, tuple[list[str], list[str], str]
         ["finalize-composition-1-medications-section"],
         ["composition-1"],
         "Rerun medications section finalization so the Composition medications section contributes the correct section-entry reference before downstream bundle fullUrl rewriting.",
+    ),
+    "bundle.practitionerrole_practitioner_reference_contribution_aligned": (
+        ["build-practitionerrole-1"],
+        ["practitionerrole-1"],
+        "Rerun the practitioner-role support step to restore the deterministic local Practitioner reference contribution before downstream fullUrl rewriting.",
+    ),
+    "bundle.practitionerrole_organization_reference_contribution_aligned": (
+        ["build-practitionerrole-1"],
+        ["practitionerrole-1"],
+        "Rerun the practitioner-role support step to restore the deterministic local Organization reference contribution before downstream fullUrl rewriting.",
+    ),
+    "bundle.medicationrequest_subject_reference_contribution_aligned": (
+        ["build-medicationrequest-1"],
+        ["medicationrequest-1"],
+        "Rerun the MedicationRequest section-entry step to restore the deterministic local Patient reference contribution before downstream fullUrl rewriting.",
+    ),
+    "bundle.allergyintolerance_patient_reference_contribution_aligned": (
+        ["build-allergyintolerance-1"],
+        ["allergyintolerance-1"],
+        "Rerun the AllergyIntolerance section-entry step to restore the deterministic local Patient reference contribution before downstream fullUrl rewriting.",
+    ),
+    "bundle.condition_subject_reference_contribution_aligned": (
+        ["build-condition-1"],
+        ["condition-1"],
+        "Rerun the Condition section-entry step to restore the deterministic local Patient reference contribution before downstream fullUrl rewriting.",
     ),
     "bundle.composition_allergies_section_entry_reference_aligned": (
         ["finalize-composition-1-allergies-section"],

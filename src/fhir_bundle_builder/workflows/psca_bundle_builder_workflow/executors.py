@@ -169,11 +169,13 @@ async def bundle_finalization(
 async def validation(message: CandidateBundleResult, ctx: WorkflowContext[ValidationReport]) -> None:
     schematic = _get_artifact(ctx, "bundle_schematic")
     normalized_request = _get_artifact(ctx, "normalized_request")
+    resource_construction = _get_artifact(ctx, "resource_construction")
     report = await build_psca_validation_report(
         message,
         schematic,
         normalized_request,
         _get_standards_validator(ctx),
+        resource_construction,
     )
     _store_artifact(ctx, "validation_report", report)
     await ctx.send_message(report)

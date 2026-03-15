@@ -14,6 +14,7 @@ from .models import (
     BundleSchematic,
     CandidateBundleResult,
     NormalizedBuildRequest,
+    ResourceConstructionStageResult,
     ValidationReport,
 )
 from .resource_construction_builder import (
@@ -27,6 +28,7 @@ async def build_psca_validation_report(
     schematic: BundleSchematic,
     normalized_request: NormalizedBuildRequest,
     standards_validator: StandardsValidator,
+    resource_construction: ResourceConstructionStageResult | None = None,
 ) -> ValidationReport:
     """Build the first real validation report from the candidate bundle scaffold."""
 
@@ -39,7 +41,12 @@ async def build_psca_validation_report(
             specification_version=normalized_request.specification.version,
         )
     )
-    workflow_result = _build_workflow_validation_result(candidate_bundle, schematic, normalized_request)
+    workflow_result = _build_workflow_validation_result(
+        candidate_bundle,
+        schematic,
+        normalized_request,
+        resource_construction,
+    )
 
     all_findings = [*standards_result.findings, *workflow_result.findings]
     error_count = sum(1 for finding in all_findings if finding.severity == "error")
@@ -76,6 +83,7 @@ def _build_workflow_validation_result(
     candidate_bundle: CandidateBundleResult,
     schematic: BundleSchematic,
     normalized_request: NormalizedBuildRequest,
+    resource_construction: ResourceConstructionStageResult | None,
 ) -> WorkflowValidationResult:
     bundle = candidate_bundle.candidate_bundle.fhir_bundle
     entry_assembly = candidate_bundle.entry_assembly
@@ -103,6 +111,11 @@ def _build_workflow_validation_result(
         "bundle.composition_medications_section_present",
         "bundle.composition_allergies_section_present",
         "bundle.composition_problems_section_present",
+        "bundle.practitionerrole_practitioner_reference_contribution_aligned",
+        "bundle.practitionerrole_organization_reference_contribution_aligned",
+        "bundle.medicationrequest_subject_reference_contribution_aligned",
+        "bundle.allergyintolerance_patient_reference_contribution_aligned",
+        "bundle.condition_subject_reference_contribution_aligned",
         "bundle.practitionerrole_practitioner_reference_aligned",
         "bundle.practitionerrole_organization_reference_aligned",
         "bundle.medicationrequest_subject_reference_aligned",
@@ -394,7 +407,21 @@ def _build_workflow_validation_result(
             )
         )
 
-    if not _practitionerrole_practitioner_reference_aligned(bundle, full_urls_by_placeholder_id):
+    practitionerrole_practitioner_source_ok = _reference_contribution_aligned(
+        resource_construction,
+        "practitionerrole-1",
+        "practitioner.reference",
+        "practitioner-1",
+    )
+    if not practitionerrole_practitioner_source_ok:
+        findings.append(
+            _workflow_error(
+                "bundle.practitionerrole_practitioner_reference_contribution_aligned",
+                "resource_construction.practitionerrole-1.practitioner.reference",
+                "Expected PractitionerRole.practitioner.reference to remain aligned to the deterministic local Practitioner placeholder reference before bundle fullUrl rewriting.",
+            )
+        )
+    elif not _practitionerrole_practitioner_reference_aligned(bundle, full_urls_by_placeholder_id):
         findings.append(
             _workflow_error(
                 "bundle.practitionerrole_practitioner_reference_aligned",
@@ -403,7 +430,21 @@ def _build_workflow_validation_result(
             )
         )
 
-    if not _practitionerrole_organization_reference_aligned(bundle, full_urls_by_placeholder_id):
+    practitionerrole_organization_source_ok = _reference_contribution_aligned(
+        resource_construction,
+        "practitionerrole-1",
+        "organization.reference",
+        "organization-1",
+    )
+    if not practitionerrole_organization_source_ok:
+        findings.append(
+            _workflow_error(
+                "bundle.practitionerrole_organization_reference_contribution_aligned",
+                "resource_construction.practitionerrole-1.organization.reference",
+                "Expected PractitionerRole.organization.reference to remain aligned to the deterministic local Organization placeholder reference before bundle fullUrl rewriting.",
+            )
+        )
+    elif not _practitionerrole_organization_reference_aligned(bundle, full_urls_by_placeholder_id):
         findings.append(
             _workflow_error(
                 "bundle.practitionerrole_organization_reference_aligned",
@@ -412,7 +453,21 @@ def _build_workflow_validation_result(
             )
         )
 
-    if not _medicationrequest_subject_reference_aligned(bundle, full_urls_by_placeholder_id):
+    medicationrequest_subject_source_ok = _reference_contribution_aligned(
+        resource_construction,
+        "medicationrequest-1",
+        "subject.reference",
+        "patient-1",
+    )
+    if not medicationrequest_subject_source_ok:
+        findings.append(
+            _workflow_error(
+                "bundle.medicationrequest_subject_reference_contribution_aligned",
+                "resource_construction.medicationrequest-1.subject.reference",
+                "Expected MedicationRequest.subject.reference to remain aligned to the deterministic local Patient placeholder reference before bundle fullUrl rewriting.",
+            )
+        )
+    elif not _medicationrequest_subject_reference_aligned(bundle, full_urls_by_placeholder_id):
         findings.append(
             _workflow_error(
                 "bundle.medicationrequest_subject_reference_aligned",
@@ -421,7 +476,21 @@ def _build_workflow_validation_result(
             )
         )
 
-    if not _allergyintolerance_patient_reference_aligned(bundle, full_urls_by_placeholder_id):
+    allergyintolerance_patient_source_ok = _reference_contribution_aligned(
+        resource_construction,
+        "allergyintolerance-1",
+        "patient.reference",
+        "patient-1",
+    )
+    if not allergyintolerance_patient_source_ok:
+        findings.append(
+            _workflow_error(
+                "bundle.allergyintolerance_patient_reference_contribution_aligned",
+                "resource_construction.allergyintolerance-1.patient.reference",
+                "Expected AllergyIntolerance.patient.reference to remain aligned to the deterministic local Patient placeholder reference before bundle fullUrl rewriting.",
+            )
+        )
+    elif not _allergyintolerance_patient_reference_aligned(bundle, full_urls_by_placeholder_id):
         findings.append(
             _workflow_error(
                 "bundle.allergyintolerance_patient_reference_aligned",
@@ -430,7 +499,21 @@ def _build_workflow_validation_result(
             )
         )
 
-    if not _condition_subject_reference_aligned(bundle, full_urls_by_placeholder_id):
+    condition_subject_source_ok = _reference_contribution_aligned(
+        resource_construction,
+        "condition-1",
+        "subject.reference",
+        "patient-1",
+    )
+    if not condition_subject_source_ok:
+        findings.append(
+            _workflow_error(
+                "bundle.condition_subject_reference_contribution_aligned",
+                "resource_construction.condition-1.subject.reference",
+                "Expected Condition.subject.reference to remain aligned to the deterministic local Patient placeholder reference before bundle fullUrl rewriting.",
+            )
+        )
+    elif not _condition_subject_reference_aligned(bundle, full_urls_by_placeholder_id):
         findings.append(
             _workflow_error(
                 "bundle.condition_subject_reference_aligned",
@@ -618,6 +701,82 @@ def _reference_target_aligned(
         isinstance(actual_reference_parent, dict)
         and actual_reference_parent.get("reference") == expected_reference
     )
+
+
+def _reference_contribution_aligned(
+    resource_construction: ResourceConstructionStageResult | None,
+    source_placeholder_id: str,
+    reference_path: str,
+    target_placeholder_id: str,
+) -> bool:
+    if resource_construction is None:
+        return True
+
+    registry_entry = next(
+        (
+            entry
+            for entry in resource_construction.resource_registry
+            if entry.placeholder_id == source_placeholder_id
+        ),
+        None,
+    )
+    if registry_entry is None:
+        return True
+
+    expected_reference = _expected_local_reference_for_placeholder(target_placeholder_id)
+    actual_scaffold_reference = _nested_reference_value(
+        registry_entry.current_scaffold.fhir_scaffold,
+        reference_path,
+    )
+    if actual_scaffold_reference != expected_reference:
+        return False
+
+    step_results = (
+        resource_construction.step_result_history
+        if resource_construction.step_result_history
+        else resource_construction.step_results
+    )
+    source_step_ids = set(registry_entry.current_scaffold.source_step_ids)
+    matching_contribution = None
+    for step_result in step_results:
+        if step_result.step_id not in source_step_ids:
+            continue
+        for contribution in step_result.reference_contributions:
+            if contribution.reference_path == reference_path:
+                matching_contribution = contribution
+
+    return (
+        matching_contribution is not None
+        and matching_contribution.target_placeholder_id == target_placeholder_id
+        and matching_contribution.reference_value == expected_reference
+    )
+
+
+def _nested_reference_value(root: object, path: str) -> str | None:
+    current = root
+    for segment in path.split("."):
+        if not isinstance(current, dict):
+            return None
+        current = current.get(segment)
+    return current if isinstance(current, str) else None
+
+
+def _expected_local_reference_for_placeholder(placeholder_id: str) -> str:
+    resource_key = placeholder_id.split("-", 1)[0]
+    resource_type_by_key = {
+        "patient": "Patient",
+        "practitioner": "Practitioner",
+        "organization": "Organization",
+        "practitionerrole": "PractitionerRole",
+        "medicationrequest": "MedicationRequest",
+        "allergyintolerance": "AllergyIntolerance",
+        "condition": "Condition",
+        "composition": "Composition",
+    }
+    resource_type = resource_type_by_key.get(resource_key)
+    if resource_type is None:
+        raise ValueError(f"Unsupported placeholder id '{placeholder_id}' for local reference expectation.")
+    return f"{resource_type}/{placeholder_id}"
 
 
 def _practitionerrole_practitioner_reference_aligned(

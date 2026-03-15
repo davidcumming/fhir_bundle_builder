@@ -504,7 +504,7 @@ async def test_psca_validation_builder_fails_when_references_do_not_align_to_ful
 
 
 async def test_psca_validation_builder_fails_when_practitionerrole_practitioner_reference_is_not_aligned() -> None:
-    normalized_request, schematic, candidate_bundle = _build_validation_inputs()
+    normalized_request, schematic, resource_construction, candidate_bundle = _build_validation_artifacts()
     broken_bundle = deepcopy(candidate_bundle)
     practitioner_role = broken_bundle.candidate_bundle.fhir_bundle["entry"][2]["resource"]
     practitioner_role["practitioner"]["reference"] = "Practitioner/practitioner-1"
@@ -514,6 +514,7 @@ async def test_psca_validation_builder_fails_when_practitionerrole_practitioner_
         schematic,
         normalized_request,
         LocalCandidateBundleScaffoldStandardsValidator(),
+        resource_construction,
     )
 
     assert report.workflow_validation.status == "failed"
@@ -529,7 +530,7 @@ async def test_psca_validation_builder_fails_when_practitionerrole_practitioner_
 
 
 async def test_psca_validation_builder_fails_when_medicationrequest_subject_reference_is_not_aligned() -> None:
-    normalized_request, schematic, candidate_bundle = _build_validation_inputs()
+    normalized_request, schematic, resource_construction, candidate_bundle = _build_validation_artifacts()
     broken_bundle = deepcopy(candidate_bundle)
     medication = broken_bundle.candidate_bundle.fhir_bundle["entry"][5]["resource"]
     medication["subject"]["reference"] = "Patient/patient-1"
@@ -539,6 +540,7 @@ async def test_psca_validation_builder_fails_when_medicationrequest_subject_refe
         schematic,
         normalized_request,
         LocalCandidateBundleScaffoldStandardsValidator(),
+        resource_construction,
     )
 
     assert report.workflow_validation.status == "failed"
@@ -558,7 +560,7 @@ async def test_psca_validation_builder_fails_when_medicationrequest_subject_refe
 
 
 async def test_psca_validation_builder_fails_when_allergyintolerance_patient_reference_is_not_aligned() -> None:
-    normalized_request, schematic, candidate_bundle = _build_validation_inputs()
+    normalized_request, schematic, resource_construction, candidate_bundle = _build_validation_artifacts()
     broken_bundle = deepcopy(candidate_bundle)
     allergy = broken_bundle.candidate_bundle.fhir_bundle["entry"][6]["resource"]
     allergy["patient"]["reference"] = "Patient/patient-1"
@@ -568,6 +570,7 @@ async def test_psca_validation_builder_fails_when_allergyintolerance_patient_ref
         schematic,
         normalized_request,
         LocalCandidateBundleScaffoldStandardsValidator(),
+        resource_construction,
     )
 
     assert report.workflow_validation.status == "failed"
@@ -587,7 +590,7 @@ async def test_psca_validation_builder_fails_when_allergyintolerance_patient_ref
 
 
 async def test_psca_validation_builder_fails_when_condition_subject_reference_is_not_aligned() -> None:
-    normalized_request, schematic, candidate_bundle = _build_validation_inputs()
+    normalized_request, schematic, resource_construction, candidate_bundle = _build_validation_artifacts()
     broken_bundle = deepcopy(candidate_bundle)
     condition = broken_bundle.candidate_bundle.fhir_bundle["entry"][7]["resource"]
     condition["subject"]["reference"] = "Patient/patient-1"
@@ -597,6 +600,7 @@ async def test_psca_validation_builder_fails_when_condition_subject_reference_is
         schematic,
         normalized_request,
         LocalCandidateBundleScaffoldStandardsValidator(),
+        resource_construction,
     )
 
     assert report.workflow_validation.status == "failed"
@@ -793,6 +797,151 @@ async def test_psca_validation_builder_does_not_spray_specific_reference_finding
     )
 
 
+async def test_psca_validation_builder_fails_when_practitionerrole_practitioner_source_contribution_is_not_aligned() -> None:
+    normalized_request, schematic, resource_construction, _ = _build_validation_artifacts()
+    broken_construction = _mutate_resource_construction_reference(
+        resource_construction,
+        "practitionerrole-1",
+        "practitioner.reference",
+        "Practitioner/wrong-practitioner",
+    )
+    broken_bundle = build_psca_candidate_bundle_result(broken_construction, schematic, normalized_request)
+
+    report = await build_psca_validation_report(
+        broken_bundle,
+        schematic,
+        normalized_request,
+        LocalCandidateBundleScaffoldStandardsValidator(),
+        broken_construction,
+    )
+
+    assert any(
+        finding.code == "bundle.practitionerrole_practitioner_reference_contribution_aligned"
+        and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.practitionerrole_practitioner_reference_aligned"
+        for finding in report.workflow_validation.findings
+    )
+
+
+async def test_psca_validation_builder_fails_when_practitionerrole_organization_source_contribution_is_not_aligned() -> None:
+    normalized_request, schematic, resource_construction, _ = _build_validation_artifacts()
+    broken_construction = _mutate_resource_construction_reference(
+        resource_construction,
+        "practitionerrole-1",
+        "organization.reference",
+        "Organization/wrong-organization",
+    )
+    broken_bundle = build_psca_candidate_bundle_result(broken_construction, schematic, normalized_request)
+
+    report = await build_psca_validation_report(
+        broken_bundle,
+        schematic,
+        normalized_request,
+        LocalCandidateBundleScaffoldStandardsValidator(),
+        broken_construction,
+    )
+
+    assert any(
+        finding.code == "bundle.practitionerrole_organization_reference_contribution_aligned"
+        and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.practitionerrole_organization_reference_aligned"
+        for finding in report.workflow_validation.findings
+    )
+
+
+async def test_psca_validation_builder_fails_when_medicationrequest_subject_source_contribution_is_not_aligned() -> None:
+    normalized_request, schematic, resource_construction, _ = _build_validation_artifacts()
+    broken_construction = _mutate_resource_construction_reference(
+        resource_construction,
+        "medicationrequest-1",
+        "subject.reference",
+        "Patient/wrong-patient",
+    )
+    broken_bundle = build_psca_candidate_bundle_result(broken_construction, schematic, normalized_request)
+
+    report = await build_psca_validation_report(
+        broken_bundle,
+        schematic,
+        normalized_request,
+        LocalCandidateBundleScaffoldStandardsValidator(),
+        broken_construction,
+    )
+
+    assert any(
+        finding.code == "bundle.medicationrequest_subject_reference_contribution_aligned"
+        and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.medicationrequest_subject_reference_aligned"
+        for finding in report.workflow_validation.findings
+    )
+
+
+async def test_psca_validation_builder_fails_when_allergyintolerance_patient_source_contribution_is_not_aligned() -> None:
+    normalized_request, schematic, resource_construction, _ = _build_validation_artifacts()
+    broken_construction = _mutate_resource_construction_reference(
+        resource_construction,
+        "allergyintolerance-1",
+        "patient.reference",
+        "Patient/wrong-patient",
+    )
+    broken_bundle = build_psca_candidate_bundle_result(broken_construction, schematic, normalized_request)
+
+    report = await build_psca_validation_report(
+        broken_bundle,
+        schematic,
+        normalized_request,
+        LocalCandidateBundleScaffoldStandardsValidator(),
+        broken_construction,
+    )
+
+    assert any(
+        finding.code == "bundle.allergyintolerance_patient_reference_contribution_aligned"
+        and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.allergyintolerance_patient_reference_aligned"
+        for finding in report.workflow_validation.findings
+    )
+
+
+async def test_psca_validation_builder_fails_when_condition_subject_source_contribution_is_not_aligned() -> None:
+    normalized_request, schematic, resource_construction, _ = _build_validation_artifacts()
+    broken_construction = _mutate_resource_construction_reference(
+        resource_construction,
+        "condition-1",
+        "subject.reference",
+        "Patient/wrong-patient",
+    )
+    broken_bundle = build_psca_candidate_bundle_result(broken_construction, schematic, normalized_request)
+
+    report = await build_psca_validation_report(
+        broken_bundle,
+        schematic,
+        normalized_request,
+        LocalCandidateBundleScaffoldStandardsValidator(),
+        broken_construction,
+    )
+
+    assert any(
+        finding.code == "bundle.condition_subject_reference_contribution_aligned"
+        and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.condition_subject_reference_aligned"
+        for finding in report.workflow_validation.findings
+    )
+
+
 def _build_validation_inputs(
     *,
     legacy_provider_context: bool = False,
@@ -845,3 +994,89 @@ def _build_validation_inputs(
     construction = build_psca_resource_construction_result(plan, schematic, normalized_request)
     candidate_bundle = build_psca_candidate_bundle_result(construction, schematic, normalized_request)
     return normalized_request, schematic, candidate_bundle
+
+
+def _build_validation_artifacts(
+    *,
+    legacy_provider_context: bool = False,
+) -> tuple[NormalizedBuildRequest, object, object, object]:
+    repository = PscaAssetRepository()
+    normalized_assets = repository.load_foundation_context(PscaAssetQuery())
+    normalized_request = build_psca_normalized_request(
+        WorkflowBuildInput(
+            specification=SpecificationSelection(),
+            patient_profile=ProfileReferenceInput(
+                profile_id="patient-validation-test",
+                display_name="Validation Test Patient",
+            ),
+            provider_profile=ProfileReferenceInput(
+                profile_id="provider-validation-test",
+                display_name="Validation Test Provider",
+            ),
+            provider_context=(
+                None
+                if legacy_provider_context
+                else ProviderContextInput(
+                    provider=ProviderIdentityInput(
+                        provider_id="provider-validation-test",
+                        display_name="Validation Test Provider",
+                        source_type="provider_management",
+                    ),
+                    organizations=[
+                        ProviderOrganizationInput(
+                            organization_id="org-validation-test",
+                            display_name="Validation Test Organization",
+                        )
+                    ],
+                    provider_role_relationships=[
+                        ProviderRoleRelationshipInput(
+                            relationship_id="provider-role-validation-1",
+                            organization_id="org-validation-test",
+                            role_label="attending-physician",
+                        )
+                    ],
+                )
+            ),
+            request=BundleRequestInput(
+                request_text="Create a deterministic validation report for testing.",
+                scenario_label="pytest-validation",
+            ),
+        )
+    )
+    schematic = build_psca_bundle_schematic(normalized_assets, normalized_request)
+    plan = build_psca_build_plan(schematic)
+    construction = build_psca_resource_construction_result(plan, schematic, normalized_request)
+    candidate_bundle = build_psca_candidate_bundle_result(construction, schematic, normalized_request)
+    return normalized_request, schematic, construction, candidate_bundle
+
+
+def _mutate_resource_construction_reference(
+    resource_construction,
+    placeholder_id: str,
+    reference_path: str,
+    new_reference: str,
+):
+    broken_construction = deepcopy(resource_construction)
+    registry_entry = next(
+        entry for entry in broken_construction.resource_registry if entry.placeholder_id == placeholder_id
+    )
+    _set_nested_reference_value(
+        registry_entry.current_scaffold.fhir_scaffold,
+        reference_path,
+        new_reference,
+    )
+    for step_result in [*broken_construction.step_results, *broken_construction.step_result_history]:
+        if step_result.target_placeholder_id != placeholder_id:
+            continue
+        for contribution in step_result.reference_contributions:
+            if contribution.reference_path == reference_path:
+                contribution.reference_value = new_reference
+    return broken_construction
+
+
+def _set_nested_reference_value(root: dict[str, object], path: str, value: str) -> None:
+    segments = path.split(".")
+    current = root
+    for segment in segments[:-1]:
+        current = current[segment]
+    current[segments[-1]] = value

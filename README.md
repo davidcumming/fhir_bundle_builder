@@ -243,7 +243,13 @@ The `validation` stage now emits the first real structured validation artifact f
     - `PractitionerRole` author-context label
   - section-specific deterministic Composition section-presence checks for medications, allergies, and problems
   - resource-specific placeholder-content checks for `MedicationRequest`, `AllergyIntolerance`, and `Condition`
-  - resource-specific non-Composition reference-alignment checks for:
+  - resource-specific non-Composition source-reference contribution checks for:
+    - `PractitionerRole.practitioner`
+    - `PractitionerRole.organization`
+    - `MedicationRequest.subject`
+    - `AllergyIntolerance.patient`
+    - `Condition.subject`
+  - resource-specific non-Composition exact fullUrl alignment checks for:
     - `PractitionerRole.practitioner`
     - `PractitionerRole.organization`
     - `MedicationRequest.subject`
@@ -285,7 +291,9 @@ The `repair_decision` stage now emits the first real structured repair-routing a
   - single-resource section-entry targeting when only one section-entry placeholder-content rule fails
   - section-specific Composition finalize targeting when one Composition section-entry exact fullUrl alignment rule fails
 - when `bundle_finalization` is recommended:
-  - narrower resource-specific reference-alignment findings for the non-Composition references that are rewritten during candidate bundle assembly
+  - narrower resource-specific exact fullUrl alignment findings for non-Composition references whose local source contribution was already correct
+- when `resource_construction` is recommended for non-Composition reference ownership:
+  - single-resource targeting for the step that owns the local reference contribution before downstream fullUrl rewriting
 - a clear distinction between repair recommendation and actual repair execution, which is still deferred
 
 ## Repair-execution-stage output

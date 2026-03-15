@@ -379,6 +379,31 @@ async def test_psca_repair_decision_routes_practitionerrole_practitioner_referen
     assert decision.recommended_resource_construction_repair_directive is None
 
 
+async def test_psca_repair_decision_routes_practitionerrole_practitioner_reference_contribution_to_resource_construction() -> None:
+    report = await _build_validation_report(
+        construction_mutator=_break_practitionerrole_practitioner_reference_contribution
+    )
+
+    decision = build_psca_repair_decision(report)
+
+    assert decision.recommended_target == "resource_construction"
+    assert any(
+        route.finding_code == "bundle.practitionerrole_practitioner_reference_contribution_aligned"
+        and route.route_target == "resource_construction"
+        and route.actionable is True
+        for route in decision.finding_routes
+    )
+    assert decision.recommended_resource_construction_repair_directive is not None
+    assert decision.recommended_resource_construction_repair_directive.target_step_ids == [
+        "build-practitionerrole-1"
+    ]
+    assert not any(
+        route.finding_code == "bundle.practitionerrole_practitioner_reference_aligned"
+        and route.route_target == "bundle_finalization"
+        for route in decision.finding_routes
+    )
+
+
 async def test_psca_repair_decision_routes_practitionerrole_organization_reference_alignment_to_bundle_finalization() -> None:
     report = await _build_validation_report(mutator=_break_practitionerrole_organization_reference)
 
@@ -392,6 +417,26 @@ async def test_psca_repair_decision_routes_practitionerrole_organization_referen
         for route in decision.finding_routes
     )
     assert decision.recommended_resource_construction_repair_directive is None
+
+
+async def test_psca_repair_decision_routes_practitionerrole_organization_reference_contribution_to_resource_construction() -> None:
+    report = await _build_validation_report(
+        construction_mutator=_break_practitionerrole_organization_reference_contribution
+    )
+
+    decision = build_psca_repair_decision(report)
+
+    assert decision.recommended_target == "resource_construction"
+    assert any(
+        route.finding_code == "bundle.practitionerrole_organization_reference_contribution_aligned"
+        and route.route_target == "resource_construction"
+        and route.actionable is True
+        for route in decision.finding_routes
+    )
+    assert decision.recommended_resource_construction_repair_directive is not None
+    assert decision.recommended_resource_construction_repair_directive.target_step_ids == [
+        "build-practitionerrole-1"
+    ]
 
 
 async def test_psca_repair_decision_routes_medicationrequest_subject_reference_alignment_to_bundle_finalization() -> None:
@@ -409,6 +454,26 @@ async def test_psca_repair_decision_routes_medicationrequest_subject_reference_a
     assert decision.recommended_resource_construction_repair_directive is None
 
 
+async def test_psca_repair_decision_routes_medicationrequest_subject_reference_contribution_to_resource_construction() -> None:
+    report = await _build_validation_report(
+        construction_mutator=_break_medicationrequest_subject_reference_contribution
+    )
+
+    decision = build_psca_repair_decision(report)
+
+    assert decision.recommended_target == "resource_construction"
+    assert any(
+        route.finding_code == "bundle.medicationrequest_subject_reference_contribution_aligned"
+        and route.route_target == "resource_construction"
+        and route.actionable is True
+        for route in decision.finding_routes
+    )
+    assert decision.recommended_resource_construction_repair_directive is not None
+    assert decision.recommended_resource_construction_repair_directive.target_step_ids == [
+        "build-medicationrequest-1"
+    ]
+
+
 async def test_psca_repair_decision_routes_allergyintolerance_patient_reference_alignment_to_bundle_finalization() -> None:
     report = await _build_validation_report(mutator=_break_allergyintolerance_patient_reference)
 
@@ -424,6 +489,26 @@ async def test_psca_repair_decision_routes_allergyintolerance_patient_reference_
     assert decision.recommended_resource_construction_repair_directive is None
 
 
+async def test_psca_repair_decision_routes_allergyintolerance_patient_reference_contribution_to_resource_construction() -> None:
+    report = await _build_validation_report(
+        construction_mutator=_break_allergyintolerance_patient_reference_contribution
+    )
+
+    decision = build_psca_repair_decision(report)
+
+    assert decision.recommended_target == "resource_construction"
+    assert any(
+        route.finding_code == "bundle.allergyintolerance_patient_reference_contribution_aligned"
+        and route.route_target == "resource_construction"
+        and route.actionable is True
+        for route in decision.finding_routes
+    )
+    assert decision.recommended_resource_construction_repair_directive is not None
+    assert decision.recommended_resource_construction_repair_directive.target_step_ids == [
+        "build-allergyintolerance-1"
+    ]
+
+
 async def test_psca_repair_decision_routes_condition_subject_reference_alignment_to_bundle_finalization() -> None:
     report = await _build_validation_report(mutator=_break_condition_subject_reference)
 
@@ -437,6 +522,26 @@ async def test_psca_repair_decision_routes_condition_subject_reference_alignment
         for route in decision.finding_routes
     )
     assert decision.recommended_resource_construction_repair_directive is None
+
+
+async def test_psca_repair_decision_routes_condition_subject_reference_contribution_to_resource_construction() -> None:
+    report = await _build_validation_report(
+        construction_mutator=_break_condition_subject_reference_contribution
+    )
+
+    decision = build_psca_repair_decision(report)
+
+    assert decision.recommended_target == "resource_construction"
+    assert any(
+        route.finding_code == "bundle.condition_subject_reference_contribution_aligned"
+        and route.route_target == "resource_construction"
+        and route.actionable is True
+        for route in decision.finding_routes
+    )
+    assert decision.recommended_resource_construction_repair_directive is not None
+    assert decision.recommended_resource_construction_repair_directive.target_step_ids == [
+        "build-condition-1"
+    ]
 
 
 async def test_psca_repair_decision_routes_medications_section_entry_reference_alignment_to_resource_construction() -> None:
@@ -524,7 +629,7 @@ async def test_psca_repair_decision_keeps_combined_non_composition_reference_ali
     assert decision.recommended_resource_construction_repair_directive is None
 
 
-async def _build_validation_report(mutator=None):
+async def _build_validation_report(mutator=None, construction_mutator=None):
     repository = PscaAssetRepository()
     normalized_assets = repository.load_foundation_context(PscaAssetQuery())
     normalized_request = build_psca_normalized_request(
@@ -567,6 +672,8 @@ async def _build_validation_report(mutator=None):
     schematic = build_psca_bundle_schematic(normalized_assets, normalized_request)
     plan = build_psca_build_plan(schematic)
     construction = build_psca_resource_construction_result(plan, schematic, normalized_request)
+    if construction_mutator is not None:
+        construction = construction_mutator(construction)
     candidate_bundle = build_psca_candidate_bundle_result(construction, schematic, normalized_request)
     if mutator is not None:
         candidate_bundle = mutator(candidate_bundle)
@@ -575,6 +682,7 @@ async def _build_validation_report(mutator=None):
         schematic,
         normalized_request,
         LocalCandidateBundleScaffoldStandardsValidator(),
+        construction,
     )
 
 
@@ -665,11 +773,29 @@ def _break_practitionerrole_practitioner_reference(candidate_bundle):
     return broken_bundle
 
 
+def _break_practitionerrole_practitioner_reference_contribution(resource_construction):
+    return _mutate_resource_construction_reference(
+        resource_construction,
+        "practitionerrole-1",
+        "practitioner.reference",
+        "Practitioner/wrong-practitioner",
+    )
+
+
 def _break_practitionerrole_organization_reference(candidate_bundle):
     broken_bundle = deepcopy(candidate_bundle)
     practitioner_role = broken_bundle.candidate_bundle.fhir_bundle["entry"][2]["resource"]
     practitioner_role["organization"]["reference"] = "Organization/organization-1"
     return broken_bundle
+
+
+def _break_practitionerrole_organization_reference_contribution(resource_construction):
+    return _mutate_resource_construction_reference(
+        resource_construction,
+        "practitionerrole-1",
+        "organization.reference",
+        "Organization/wrong-organization",
+    )
 
 
 def _break_medicationrequest_subject_reference(candidate_bundle):
@@ -679,6 +805,15 @@ def _break_medicationrequest_subject_reference(candidate_bundle):
     return broken_bundle
 
 
+def _break_medicationrequest_subject_reference_contribution(resource_construction):
+    return _mutate_resource_construction_reference(
+        resource_construction,
+        "medicationrequest-1",
+        "subject.reference",
+        "Patient/wrong-patient",
+    )
+
+
 def _break_allergyintolerance_patient_reference(candidate_bundle):
     broken_bundle = deepcopy(candidate_bundle)
     allergy = broken_bundle.candidate_bundle.fhir_bundle["entry"][6]["resource"]
@@ -686,11 +821,29 @@ def _break_allergyintolerance_patient_reference(candidate_bundle):
     return broken_bundle
 
 
+def _break_allergyintolerance_patient_reference_contribution(resource_construction):
+    return _mutate_resource_construction_reference(
+        resource_construction,
+        "allergyintolerance-1",
+        "patient.reference",
+        "Patient/wrong-patient",
+    )
+
+
 def _break_condition_subject_reference(candidate_bundle):
     broken_bundle = deepcopy(candidate_bundle)
     condition = broken_bundle.candidate_bundle.fhir_bundle["entry"][7]["resource"]
     condition["subject"]["reference"] = "Patient/patient-1"
     return broken_bundle
+
+
+def _break_condition_subject_reference_contribution(resource_construction):
+    return _mutate_resource_construction_reference(
+        resource_construction,
+        "condition-1",
+        "subject.reference",
+        "Patient/wrong-patient",
+    )
 
 
 def _break_medications_section_entry_reference(candidate_bundle):
@@ -746,3 +899,35 @@ def _remove_medicationrequest_and_condition_content(candidate_bundle):
 def _remove_patient_name_and_required_section(candidate_bundle):
     broken_bundle = _remove_patient_name(candidate_bundle)
     return _remove_required_section(broken_bundle)
+
+
+def _mutate_resource_construction_reference(
+    resource_construction,
+    placeholder_id: str,
+    reference_path: str,
+    new_reference: str,
+):
+    broken_construction = deepcopy(resource_construction)
+    registry_entry = next(
+        entry for entry in broken_construction.resource_registry if entry.placeholder_id == placeholder_id
+    )
+    _set_nested_reference_value(
+        registry_entry.current_scaffold.fhir_scaffold,
+        reference_path,
+        new_reference,
+    )
+    for step_result in [*broken_construction.step_results, *broken_construction.step_result_history]:
+        if step_result.target_placeholder_id != placeholder_id:
+            continue
+        for contribution in step_result.reference_contributions:
+            if contribution.reference_path == reference_path:
+                contribution.reference_value = new_reference
+    return broken_construction
+
+
+def _set_nested_reference_value(root: dict[str, object], path: str, value: str) -> None:
+    segments = path.split(".")
+    current = root
+    for segment in segments[:-1]:
+        current = current[segment]
+    current[segments[-1]] = value
