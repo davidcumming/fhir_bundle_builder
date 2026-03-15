@@ -10,6 +10,16 @@ from .authored_bundle_orchestration import (
     prepare_authored_bundle_build_input,
     run_authored_bundle_build,
 )
+from .authored_record_refinement import (
+    apply_patient_authored_record_review_edits,
+    apply_provider_authored_record_review_edits,
+)
+from .authored_record_refinement_models import (
+    PatientAuthoredRecordRefinementResult,
+    PatientAuthoredRecordReviewEditInput,
+    ProviderAuthoredRecordRefinementResult,
+    ProviderAuthoredRecordReviewEditInput,
+)
 from .patient_builder import build_patient_authored_record, get_patient_complexity_policy
 from .patient_mapper import map_authored_patient_to_patient_context
 from .patient_models import (
@@ -47,6 +57,8 @@ __all__ = [
     "AuthoredBundleBuildPreparation",
     "AuthoredBundleBuildRunResult",
     "AuthoredBundleWorkflowInputSummary",
+    "PatientAuthoredRecordRefinementResult",
+    "PatientAuthoredRecordReviewEditInput",
     "PatientAuthoredAllergy",
     "PatientAuthoredBackgroundFacts",
     "PatientAuthoredCondition",
@@ -60,6 +72,8 @@ __all__ = [
     "PatientComplexityLevel",
     "PatientComplexityPolicy",
     "ProviderAdministrativeGender",
+    "ProviderAuthoredRecordRefinementResult",
+    "ProviderAuthoredRecordReviewEditInput",
     "ProviderAuthoredIdentity",
     "ProviderAuthoredOrganization",
     "ProviderAuthoredProfessionalFacts",
@@ -72,6 +86,8 @@ __all__ = [
     "ProviderAuthoringMapResult",
     "prepare_authored_bundle_build_input",
     "run_authored_bundle_build",
+    "apply_patient_authored_record_review_edits",
+    "apply_provider_authored_record_review_edits",
     "build_patient_authored_record",
     "build_provider_authored_record",
     "get_patient_complexity_policy",

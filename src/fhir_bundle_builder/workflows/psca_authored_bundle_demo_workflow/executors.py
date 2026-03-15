@@ -8,6 +8,8 @@ from agent_framework import WorkflowContext, executor
 
 from fhir_bundle_builder.authoring import (
     AuthoredBundleBuildInput,
+    apply_patient_authored_record_review_edits,
+    apply_provider_authored_record_review_edits,
     build_patient_authored_record,
     build_provider_authored_record,
     prepare_authored_bundle_build_input,
@@ -22,10 +24,11 @@ from .models import (
 )
 
 WORKFLOW_NAME = "PS-CA Authored Bundle Demo Flow"
-WORKFLOW_VERSION = "0.1.0"
+WORKFLOW_VERSION = "0.2.0"
 STAGE_ORDER = [
     "patient_authoring",
     "provider_authoring",
+    "authored_record_refinement",
     "authored_bundle_preparation",
     "bundle_builder_run",
 ]
@@ -53,6 +56,7 @@ async def patient_authoring(
 ) -> None:
     patient_record = build_patient_authored_record(message.patient_authoring)
     _store_artifact(ctx, "demo_input", message)
+    _store_artifact(ctx, "original_patient_record", patient_record)
     _store_artifact(ctx, "patient_record", patient_record)
     await ctx.send_message(
         AuthoredBundleDemoStageResult(
@@ -65,6 +69,7 @@ async def patient_authoring(
             ),
             source_refs=["authoring.patient_builder"],
             demo_input=message,
+            original_patient_record=patient_record,
             patient_record=patient_record,
         )
     )
@@ -80,6 +85,7 @@ async def provider_authoring(
     ctx: WorkflowContext[AuthoredBundleDemoStageResult],
 ) -> None:
     provider_record = build_provider_authored_record(message.demo_input.provider_authoring)
+    _store_artifact(ctx, "original_provider_record", provider_record)
     _store_artifact(ctx, "provider_record", provider_record)
     await ctx.send_message(
         AuthoredBundleDemoStageResult(
@@ -92,8 +98,55 @@ async def provider_authoring(
             ),
             source_refs=["authoring.provider_builder"],
             demo_input=message.demo_input,
+            original_patient_record=_get_artifact(ctx, "original_patient_record"),
+            original_provider_record=provider_record,
             patient_record=_get_artifact(ctx, "patient_record"),
             provider_record=provider_record,
+        )
+    )
+
+
+@executor(
+    id="authored_record_refinement",
+    input=AuthoredBundleDemoStageResult,
+    output=AuthoredBundleDemoStageResult,
+)
+async def authored_record_refinement(
+    message: AuthoredBundleDemoStageResult,
+    ctx: WorkflowContext[AuthoredBundleDemoStageResult],
+) -> None:
+    patient_refinement = apply_patient_authored_record_review_edits(
+        _get_artifact(ctx, "original_patient_record"),
+        message.demo_input.patient_review_edits,
+    )
+    provider_refinement = apply_provider_authored_record_review_edits(
+        _get_artifact(ctx, "original_provider_record"),
+        message.demo_input.provider_review_edits,
+    )
+    _store_artifact(ctx, "patient_refinement", patient_refinement)
+    _store_artifact(ctx, "provider_refinement", provider_refinement)
+    _store_artifact(ctx, "patient_record", patient_refinement.refined_record)
+    _store_artifact(ctx, "provider_record", provider_refinement.refined_record)
+    await ctx.send_message(
+        AuthoredBundleDemoStageResult(
+            stage_id="authored_record_refinement",
+            status="placeholder_complete",
+            summary=(
+                "Applied bounded structured authored-record edits before workflow preparation, "
+                "while preserving the original authored records for inspection."
+            ),
+            placeholder_note=(
+                "This wrapper flow refines only authored patient/provider records, does not edit mapped contexts, "
+                "and does not widen the downstream deterministic bundle-builder workflow boundary."
+            ),
+            source_refs=["authoring.authored_record_refinement"],
+            demo_input=message.demo_input,
+            original_patient_record=_get_artifact(ctx, "original_patient_record"),
+            original_provider_record=_get_artifact(ctx, "original_provider_record"),
+            patient_record=patient_refinement.refined_record,
+            provider_record=provider_refinement.refined_record,
+            patient_refinement=patient_refinement,
+            provider_refinement=provider_refinement,
         )
     )
 
@@ -132,8 +185,12 @@ async def authored_bundle_preparation(
                 "authoring.authored_bundle_orchestration",
             ],
             demo_input=message.demo_input,
+            original_patient_record=_get_artifact(ctx, "original_patient_record"),
+            original_provider_record=_get_artifact(ctx, "original_provider_record"),
             patient_record=_get_artifact(ctx, "patient_record"),
             provider_record=_get_artifact(ctx, "provider_record"),
+            patient_refinement=_get_artifact(ctx, "patient_refinement"),
+            provider_refinement=_get_artifact(ctx, "provider_refinement"),
             preparation=preparation,
         )
     )
@@ -148,8 +205,12 @@ async def bundle_builder_run(
     message: AuthoredBundleDemoStageResult,
     ctx: WorkflowContext[Any, AuthoredBundleDemoRunResult],
 ) -> None:
+    original_patient_record = _get_artifact(ctx, "original_patient_record")
+    original_provider_record = _get_artifact(ctx, "original_provider_record")
     patient_record = _get_artifact(ctx, "patient_record")
+    patient_refinement = _get_artifact(ctx, "patient_refinement")
     provider_record = _get_artifact(ctx, "provider_record")
+    provider_refinement = _get_artifact(ctx, "provider_refinement")
     preparation = _get_artifact(ctx, "preparation")
     run_result = await bundle_builder_workflow.run(
         message=preparation.workflow_input,
@@ -174,8 +235,12 @@ async def bundle_builder_run(
             workflow_version=WORKFLOW_VERSION,
             stage_order=STAGE_ORDER,
             demo_input=message.demo_input,
+            original_patient_record=original_patient_record,
+            original_provider_record=original_provider_record,
             patient_record=patient_record,
             provider_record=provider_record,
+            patient_refinement=patient_refinement,
+            provider_refinement=provider_refinement,
             preparation=preparation,
             final_summary=final_summary,
             workflow_output=workflow_output,

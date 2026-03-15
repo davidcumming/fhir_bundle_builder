@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 
 from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.models import ProviderContextInput
 
-ProviderAuthoringItemSourceMode = Literal["direct_extraction", "scenario_template"]
+ProviderAuthoringItemSourceMode = Literal["direct_extraction", "scenario_template", "manual_review_edit"]
 ProviderAdministrativeGender = Literal["female", "male", "other", "unknown"]
 
 

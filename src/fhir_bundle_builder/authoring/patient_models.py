@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.models import PatientContextInput
 
 PatientComplexityLevel = Literal["low", "medium", "high"]
-PatientAuthoringItemSourceMode = Literal["direct_extraction", "scenario_template"]
+PatientAuthoringItemSourceMode = Literal["direct_extraction", "scenario_template", "manual_review_edit"]
 PatientAdministrativeGender = Literal["female", "male", "other", "unknown"]
 
 

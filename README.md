@@ -22,6 +22,7 @@ The implemented slice is intentionally narrow:
 - bounded upstream provider authoring foundation for workflow testing
 - thin authored-input-to-workflow orchestration harness for end-to-end testing
 - thin Dev UI-facing authored-input demo workflow
+- bounded authored-record review/edit refinement inside the Dev UI demo flow
 
 ## Current bounded capabilities
 
@@ -29,6 +30,7 @@ The workflow currently supports one narrow but real PS-CA path:
 
 - bounded natural-language patient authoring into a structured authored patient record, with deterministic mapping into the current `patient_context` input shape
 - bounded natural-language provider authoring into a structured authored provider record, with deterministic mapping into the current `provider_context` input shape
+- bounded structured review/edit refinement of authored patient/provider records before authored-input preparation and workflow run
 - a thin authored-input harness that composes one authored patient record plus one authored provider record into workflow-ready input and runs the existing deterministic workflow unchanged
 - provider identity plus selected organization and selected provider-role relationship identity only
 - patient identity and demographics plus deterministic section-entry text alignment only for fields the normalized patient context can honestly supply
@@ -51,7 +53,7 @@ The workflow does not currently claim:
 - `fhir/ca.infoway.io.psca-2.1.1-dft/` contains the PS-CA source package already present in the repo.
 - `src/fhir_bundle_builder/authoring/` contains the bounded upstream patient/provider authoring foundations plus the thin authored-input orchestration harness.
 - `src/fhir_bundle_builder/workflows/psca_bundle_builder_workflow/` contains the workflow skeleton.
-- `src/fhir_bundle_builder/workflows/psca_authored_bundle_demo_workflow/` contains the thin Dev UI wrapper workflow for authored-input demonstration.
+- `src/fhir_bundle_builder/workflows/psca_authored_bundle_demo_workflow/` contains the thin Dev UI wrapper workflow for authored-input demonstration plus bounded authored-record refinement before workflow preparation.
 - `entities/psca_bundle_builder_workflow/` exports the workflow for Dev UI discovery.
 - `entities/psca_authored_bundle_demo_workflow/` exports the thin authored-input demo flow for Dev UI discovery.
 
@@ -119,12 +121,15 @@ Then open [http://127.0.0.1:8080](http://127.0.0.1:8080).
   - for `PS-CA Authored Bundle Demo Flow`:
     - `patient_authoring`
     - `provider_authoring`
+    - `patient_review_edits`
+    - `provider_review_edits`
     - `request`
     - `specification`
     - `workflow_options`
 - Sequential executor steps for the authored demo flow:
   - `patient_authoring`
   - `provider_authoring`
+  - `authored_record_refinement`
   - `authored_bundle_preparation`
   - `bundle_builder_run`
 - Sequential executor steps for the core bundle-builder workflow remain:
@@ -155,7 +160,7 @@ This slice is for workflow shape, PS-CA normalized asset retrieval, the first re
 
 The current repo is intentionally consolidating these capabilities rather than expanding realism further in the same step.
 
-The repo now also includes bounded upstream patient and provider authoring foundations plus a thin authored-input orchestration harness. The patient path accepts natural-language patient descriptions, applies a fixed complexity policy, emits a structured authored patient record, and maps that record into the workflow's existing `patient_context` boundary without changing bundle-generation behavior. The provider path accepts bounded natural-language provider descriptions, emits a structured authored provider record, preserves unmapped professional facts explicitly, and maps only the currently supported identity/organization/relationship fields into the workflow's existing `provider_context` boundary. The orchestration harness then composes one authored patient record plus one authored provider record into a deterministic `WorkflowBuildInput` and runs the existing PS-CA workflow without changing its executor graph or downstream logic.
+The repo now also includes bounded upstream patient and provider authoring foundations plus a thin authored-input orchestration harness. The patient path accepts natural-language patient descriptions, applies a fixed complexity policy, emits a structured authored patient record, and maps that record into the workflow's existing `patient_context` boundary without changing bundle-generation behavior. The provider path accepts bounded natural-language provider descriptions, emits a structured authored provider record, preserves unmapped professional facts explicitly, and maps only the currently supported identity/organization/relationship fields into the workflow's existing `provider_context` boundary. The Dev UI wrapper flow now also supports one bounded structured review/edit step that refines those authored records before preparation while preserving original-versus-edited inspectability. The orchestration harness then composes the effective patient/provider authored records into a deterministic `WorkflowBuildInput` and runs the existing PS-CA workflow without changing its executor graph or downstream logic.
 
 - The workflow reads existing PS-CA package files deterministically from the repo.
 - The spec retrieval stage exposes a normalized PS-CA asset context with foundational profiles, Composition section definitions, and selected example evidence.

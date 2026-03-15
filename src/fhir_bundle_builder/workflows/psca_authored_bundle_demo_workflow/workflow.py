@@ -8,6 +8,7 @@ from .executors import (
     WORKFLOW_NAME,
     WORKFLOW_VERSION,
     authored_bundle_preparation,
+    authored_record_refinement,
     bundle_builder_run,
     patient_authoring,
     provider_authoring,
@@ -27,6 +28,7 @@ workflow = (
         [
             patient_authoring,
             provider_authoring,
+            authored_record_refinement,
             authored_bundle_preparation,
             bundle_builder_run,
         ]

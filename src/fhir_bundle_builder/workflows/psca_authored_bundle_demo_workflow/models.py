@@ -8,8 +8,12 @@ from fhir_bundle_builder.authoring import (
     AuthoredBundleBuildPreparation,
     PatientAuthoringInput,
     PatientAuthoredRecord,
+    PatientAuthoredRecordRefinementResult,
+    PatientAuthoredRecordReviewEditInput,
     ProviderAuthoringInput,
     ProviderAuthoredRecord,
+    ProviderAuthoredRecordRefinementResult,
+    ProviderAuthoredRecordReviewEditInput,
 )
 from fhir_bundle_builder.validation.models import ValidationStatus
 from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.models import (
@@ -26,6 +30,8 @@ class AuthoredBundleDemoInput(BaseModel):
 
     patient_authoring: PatientAuthoringInput
     provider_authoring: ProviderAuthoringInput
+    patient_review_edits: PatientAuthoredRecordReviewEditInput | None = None
+    provider_review_edits: ProviderAuthoredRecordReviewEditInput | None = None
     request: BundleRequestInput
     specification: SpecificationSelection = Field(default_factory=SpecificationSelection)
     workflow_options: WorkflowOptionsInput = Field(default_factory=WorkflowOptionsInput)
@@ -47,8 +53,12 @@ class AuthoredBundleDemoStageResult(StageArtifact):
     """Progressive wrapper-workflow stage artifact."""
 
     demo_input: AuthoredBundleDemoInput
+    original_patient_record: PatientAuthoredRecord | None = None
+    original_provider_record: ProviderAuthoredRecord | None = None
     patient_record: PatientAuthoredRecord | None = None
     provider_record: ProviderAuthoredRecord | None = None
+    patient_refinement: PatientAuthoredRecordRefinementResult | None = None
+    provider_refinement: ProviderAuthoredRecordRefinementResult | None = None
     preparation: AuthoredBundleBuildPreparation | None = None
     workflow_output: WorkflowSkeletonRunResult | None = None
     final_summary: AuthoredBundleDemoFinalSummary | None = None
@@ -61,8 +71,12 @@ class AuthoredBundleDemoRunResult(BaseModel):
     workflow_version: str
     stage_order: list[str]
     demo_input: AuthoredBundleDemoInput
+    original_patient_record: PatientAuthoredRecord
+    original_provider_record: ProviderAuthoredRecord
     patient_record: PatientAuthoredRecord
     provider_record: ProviderAuthoredRecord
+    patient_refinement: PatientAuthoredRecordRefinementResult
+    provider_refinement: ProviderAuthoredRecordRefinementResult
     preparation: AuthoredBundleBuildPreparation
     final_summary: AuthoredBundleDemoFinalSummary
     workflow_output: WorkflowSkeletonRunResult

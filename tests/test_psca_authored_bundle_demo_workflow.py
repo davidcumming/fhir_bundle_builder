@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from fhir_bundle_builder.authoring import (
     PatientAuthoringInput,
+    PatientAuthoredRecordReviewEditInput,
     ProviderAuthoringInput,
+    ProviderAuthoredRecordReviewEditInput,
 )
 from fhir_bundle_builder.workflows.psca_authored_bundle_demo_workflow.models import (
     AuthoredBundleDemoInput,
@@ -32,6 +34,14 @@ async def test_psca_authored_bundle_demo_workflow_smoke_rich_path() -> None:
                 ),
                 scenario_label="pytest-demo-provider-rich",
             ),
+            patient_review_edits=PatientAuthoredRecordReviewEditInput(
+                display_name="Nora Field Reviewed",
+                medication_display_texts=["Metformin 850 MG oral tablet"],
+            ),
+            provider_review_edits=ProviderAuthoredRecordReviewEditInput(
+                relationship_role_label="medical oncologist",
+                selected_relationship_active=True,
+            ),
             request=BundleRequestInput(
                 request_text="Create a deterministic authored-input demo bundle run.",
                 scenario_label="pytest-authored-demo-rich",
@@ -47,11 +57,16 @@ async def test_psca_authored_bundle_demo_workflow_smoke_rich_path() -> None:
     assert final_output.stage_order == [
         "patient_authoring",
         "provider_authoring",
+        "authored_record_refinement",
         "authored_bundle_preparation",
         "bundle_builder_run",
     ]
-    assert final_output.patient_record.patient.display_name == "Nora Field"
+    assert final_output.original_patient_record.patient.display_name == "Nora Field"
+    assert final_output.patient_refinement.edits_applied is True
+    assert final_output.patient_record.patient.display_name == "Nora Field Reviewed"
     assert final_output.provider_record.provider.display_name == "Maya Chen"
+    assert final_output.provider_refinement.edits_applied is True
+    assert final_output.provider_record.provider_role_relationships[0].role_label == "medical oncologist"
     assert final_output.preparation.workflow_input_summary.scenario_label == "pytest-authored-demo-rich"
     assert final_output.preparation.workflow_input_summary.mapped_condition_count == 1
     assert final_output.preparation.workflow_input_summary.mapped_medication_count == 1
@@ -83,6 +98,9 @@ async def test_psca_authored_bundle_demo_workflow_smoke_thin_provider_path() -> 
                 authoring_text="The provider is a female oncologist in BC.",
                 scenario_label="pytest-demo-provider-thin",
             ),
+            provider_review_edits=ProviderAuthoredRecordReviewEditInput(
+                display_name="Dr. Rowan Park",
+            ),
             request=BundleRequestInput(
                 request_text="Create a deterministic authored-input demo bundle run with thin provider context.",
                 scenario_label="pytest-authored-demo-thin-provider",
@@ -93,8 +111,10 @@ async def test_psca_authored_bundle_demo_workflow_smoke_thin_provider_path() -> 
     final_output = result.get_outputs()[0]
 
     assert isinstance(final_output, AuthoredBundleDemoRunResult)
+    assert final_output.original_provider_record.provider.display_name == "Authored Oncologist"
+    assert final_output.provider_refinement.edits_applied is True
+    assert final_output.provider_record.provider.display_name == "Dr. Rowan Park"
     assert sorted(gap.gap_code for gap in final_output.provider_record.unresolved_authoring_gaps) == [
-        "missing_named_provider",
         "missing_organization",
         "missing_provider_role_relationship",
     ]
