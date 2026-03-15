@@ -12,7 +12,14 @@ from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.models import (
     ProfileReferenceInput,
     ResourceConstructionRepairDirective,
     SpecificationSelection,
-    WorkflowDefaults,
+    WorkflowBuildInput,
+    ProviderContextInput,
+    ProviderIdentityInput,
+    ProviderOrganizationInput,
+    ProviderRoleRelationshipInput,
+)
+from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.request_normalization_builder import (
+    build_psca_normalized_request,
 )
 from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.resource_construction_builder import (
     build_psca_resource_construction_result,
@@ -27,33 +34,7 @@ def test_psca_resource_construction_builder_generates_scaffolds_and_registry() -
     normalized_assets = repository.load_foundation_context(PscaAssetQuery())
     schematic = build_psca_bundle_schematic(normalized_assets)
     plan = build_psca_build_plan(schematic)
-    normalized_request = NormalizedBuildRequest(
-        stage_id="request_normalization",
-        status="placeholder_complete",
-        summary="Test normalized request.",
-        placeholder_note="Test artifact.",
-        source_refs=[],
-        specification=SpecificationSelection(),
-        patient_profile=ProfileReferenceInput(
-            profile_id="patient-resource-test",
-            display_name="Resource Test Patient",
-        ),
-        provider_profile=ProfileReferenceInput(
-            profile_id="provider-resource-test",
-            display_name="Resource Test Provider",
-        ),
-        request=BundleRequestInput(
-            request_text="Create a deterministic resource construction result for testing.",
-            scenario_label="pytest-resource",
-        ),
-        workflow_defaults=WorkflowDefaults(
-            bundle_type="document",
-            specification_mode="normalized-asset-foundation",
-            validation_mode="foundational_dual_channel",
-            resource_construction_mode="deterministic_content_enriched_foundation",
-        ),
-        run_label="pytest-resource:ca.infoway.io.psca:2.1.1-DFT",
-    )
+    normalized_request = _build_normalized_request("pytest-resource")
 
     construction = build_psca_resource_construction_result(plan, schematic, normalized_request)
 
@@ -75,11 +56,12 @@ def test_psca_resource_construction_builder_generates_scaffolds_and_registry() -
     organization = registry["organization-1"].current_scaffold.fhir_scaffold
     assert practitioner_role["practitioner"]["reference"] == "Practitioner/practitioner-1"
     assert practitioner_role["organization"]["reference"] == "Organization/organization-1"
-    assert practitioner_role["code"][0]["text"] == "document-author"
+    assert practitioner_role["code"][0]["text"] == "attending-physician"
     assert practitioner["active"] is True
     assert practitioner["identifier"][0]["value"] == "provider-resource-test"
     assert practitioner["name"][0]["text"] == "Resource Test Provider"
-    assert "name" not in organization
+    assert organization["identifier"][0]["value"] == "org-resource-test"
+    assert organization["name"] == "Resource Test Organization"
 
     medication = registry["medicationrequest-1"].current_scaffold.fhir_scaffold
     allergy = registry["allergyintolerance-1"].current_scaffold.fhir_scaffold
@@ -114,7 +96,7 @@ def test_psca_resource_construction_builder_generates_scaffolds_and_registry() -
     assert composition_scaffold["section"] == []
     assert steps["build-patient-1"].resource_scaffold.deferred_paths == ["gender", "birthDate"]
     assert steps["build-practitioner-1"].resource_scaffold.deferred_paths == ["telecom", "address", "qualification"]
-    assert steps["build-organization-1"].resource_scaffold.deferred_paths == ["identifier", "name"]
+    assert steps["build-organization-1"].resource_scaffold.deferred_paths == []
     assert steps["build-practitionerrole-1"].resource_scaffold.deferred_paths == [
         "specialty",
         "telecom",
@@ -126,16 +108,20 @@ def test_psca_resource_construction_builder_generates_scaffolds_and_registry() -
         for evidence in steps["build-patient-1"].deterministic_value_evidence
     )
     assert any(
-        evidence.target_path == "identifier[0].value" and evidence.source_detail == "provider_profile.profile_id"
+        evidence.target_path == "identifier[0].value" and evidence.source_detail == "provider.provider_id"
         for evidence in steps["build-practitioner-1"].deterministic_value_evidence
     )
     assert any(
-        evidence.target_path == "name[0].text" and evidence.source_detail == "provider_profile.display_name"
+        evidence.target_path == "name[0].text" and evidence.source_detail == "provider.display_name"
         for evidence in steps["build-practitioner-1"].deterministic_value_evidence
     )
     assert any(
-        evidence.target_path == "code[0].text" and evidence.source_detail == "role"
+        evidence.target_path == "code[0].text" and evidence.source_detail == "role_label"
         for evidence in steps["build-practitionerrole-1"].deterministic_value_evidence
+    )
+    assert any(
+        evidence.target_path == "identifier[0].value" and evidence.source_detail == "organization_id"
+        for evidence in steps["build-organization-1"].deterministic_value_evidence
     )
     assert any(
         evidence.target_path == "title" and evidence.source_detail == "bundle_intent + scenario_label"
@@ -168,6 +154,24 @@ def test_psca_resource_construction_builder_generates_scaffolds_and_registry() -
         finalized_composition.fhir_scaffold["section"][0]["code"]["coding"][0]["display"]
         == schematic.section_scaffolds[0].title
     )
+
+
+def test_psca_resource_construction_builder_keeps_organization_thin_in_legacy_provider_profile_mode() -> None:
+    repository = PscaAssetRepository()
+    normalized_assets = repository.load_foundation_context(PscaAssetQuery())
+    schematic = build_psca_bundle_schematic(normalized_assets)
+    plan = build_psca_build_plan(schematic)
+    normalized_request = _build_legacy_normalized_request("pytest-resource-legacy")
+
+    construction = build_psca_resource_construction_result(plan, schematic, normalized_request)
+    registry = {entry.placeholder_id: entry for entry in construction.resource_registry}
+    organization = registry["organization-1"].current_scaffold.fhir_scaffold
+    practitioner_role = registry["practitionerrole-1"].current_scaffold.fhir_scaffold
+
+    assert "identifier" not in organization
+    assert "name" not in organization
+    assert practitioner_role["code"][0]["text"] == "document-author"
+    assert construction.step_results[2].resource_scaffold.deferred_paths == ["identifier", "name"]
 
 
 def test_psca_resource_construction_builder_supports_targeted_patient_repair() -> None:
@@ -274,30 +278,60 @@ def test_psca_resource_construction_builder_supports_targeted_composition_sectio
 
 
 def _build_normalized_request(scenario_label: str) -> NormalizedBuildRequest:
-    return NormalizedBuildRequest(
-        stage_id="request_normalization",
-        status="placeholder_complete",
-        summary="Test normalized request.",
-        placeholder_note="Test artifact.",
-        source_refs=[],
-        specification=SpecificationSelection(),
-        patient_profile=ProfileReferenceInput(
-            profile_id="patient-resource-test",
-            display_name="Resource Test Patient",
-        ),
-        provider_profile=ProfileReferenceInput(
-            profile_id="provider-resource-test",
-            display_name="Resource Test Provider",
-        ),
-        request=BundleRequestInput(
-            request_text="Create a deterministic resource construction result for testing.",
-            scenario_label=scenario_label,
-        ),
-        workflow_defaults=WorkflowDefaults(
-            bundle_type="document",
-            specification_mode="normalized-asset-foundation",
-            validation_mode="foundational_dual_channel",
-            resource_construction_mode="deterministic_content_enriched_foundation",
-        ),
-        run_label=f"{scenario_label}:ca.infoway.io.psca:2.1.1-DFT",
+    return build_psca_normalized_request(
+        WorkflowBuildInput(
+            specification=SpecificationSelection(),
+            patient_profile=ProfileReferenceInput(
+                profile_id="patient-resource-test",
+                display_name="Resource Test Patient",
+            ),
+            provider_profile=ProfileReferenceInput(
+                profile_id="provider-resource-test",
+                display_name="Resource Test Provider",
+            ),
+            provider_context=ProviderContextInput(
+                provider=ProviderIdentityInput(
+                    provider_id="provider-resource-test",
+                    display_name="Resource Test Provider",
+                    source_type="provider_management",
+                ),
+                organizations=[
+                    ProviderOrganizationInput(
+                        organization_id="org-resource-test",
+                        display_name="Resource Test Organization",
+                    )
+                ],
+                provider_role_relationships=[
+                    ProviderRoleRelationshipInput(
+                        relationship_id="provider-role-1",
+                        organization_id="org-resource-test",
+                        role_label="attending-physician",
+                    )
+                ],
+            ),
+            request=BundleRequestInput(
+                request_text="Create a deterministic resource construction result for testing.",
+                scenario_label=scenario_label,
+            ),
+        )
+    )
+
+
+def _build_legacy_normalized_request(scenario_label: str) -> NormalizedBuildRequest:
+    return build_psca_normalized_request(
+        WorkflowBuildInput(
+            specification=SpecificationSelection(),
+            patient_profile=ProfileReferenceInput(
+                profile_id="patient-resource-test",
+                display_name="Resource Test Patient",
+            ),
+            provider_profile=ProfileReferenceInput(
+                profile_id="provider-resource-test",
+                display_name="Resource Test Provider",
+            ),
+            request=BundleRequestInput(
+                request_text="Create a deterministic resource construction result for testing.",
+                scenario_label=scenario_label,
+            ),
+        )
     )

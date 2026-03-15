@@ -5,6 +5,10 @@ from __future__ import annotations
 from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.models import (
     BundleRequestInput,
     ProfileReferenceInput,
+    ProviderContextInput,
+    ProviderIdentityInput,
+    ProviderOrganizationInput,
+    ProviderRoleRelationshipInput,
     SpecificationSelection,
     WorkflowBuildInput,
     WorkflowSkeletonRunResult,
@@ -23,6 +27,36 @@ async def test_psca_bundle_builder_workflow_smoke() -> None:
             profile_id="provider-smoke-test",
             display_name="Smoke Test Provider",
         ),
+        provider_context=ProviderContextInput(
+            provider=ProviderIdentityInput(
+                provider_id="provider-smoke-test",
+                display_name="Smoke Test Provider",
+                source_type="provider_management",
+            ),
+            organizations=[
+                ProviderOrganizationInput(
+                    organization_id="org-smoke-test-1",
+                    display_name="Smoke Test Organization One",
+                ),
+                ProviderOrganizationInput(
+                    organization_id="org-smoke-test-2",
+                    display_name="Smoke Test Organization Two",
+                ),
+            ],
+            provider_role_relationships=[
+                ProviderRoleRelationshipInput(
+                    relationship_id="provider-role-smoke-1",
+                    organization_id="org-smoke-test-1",
+                    role_label="document-author",
+                ),
+                ProviderRoleRelationshipInput(
+                    relationship_id="provider-role-smoke-2",
+                    organization_id="org-smoke-test-2",
+                    role_label="attending-physician",
+                ),
+            ],
+            selected_provider_role_relationship_id="provider-role-smoke-2",
+        ),
         request=BundleRequestInput(
             request_text="Create a deterministic placeholder PS-CA workflow run for testing.",
             scenario_label="pytest-smoke",
@@ -40,6 +74,17 @@ async def test_psca_bundle_builder_workflow_smoke() -> None:
     assert final_output.workflow_name == "PS-CA Bundle Builder Skeleton"
     assert final_output.stage_order[-1] == "repair_execution"
     assert final_output.normalized_request.request.scenario_label == "pytest-smoke"
+    assert final_output.normalized_request.provider_context.normalization_mode == "provider_context_explicit_selection"
+    assert final_output.normalized_request.provider_context.selected_provider_role_relationship is not None
+    assert (
+        final_output.normalized_request.provider_context.selected_provider_role_relationship.relationship_id
+        == "provider-role-smoke-2"
+    )
+    assert final_output.normalized_request.provider_context.selected_organization is not None
+    assert (
+        final_output.normalized_request.provider_context.selected_organization.organization_id
+        == "org-smoke-test-2"
+    )
     assert final_output.specification_asset_context.normalized_assets.package_summary.package_id == "ca.infoway.io.psca"
     assert final_output.specification_asset_context.normalized_assets.package_summary.index_entry_count > 0
     assert len(final_output.specification_asset_context.normalized_assets.workflow_profile_inventory) == 6
@@ -152,8 +197,10 @@ async def test_psca_bundle_builder_workflow_smoke() -> None:
         "resourceType": "Organization",
         "id": "organization-1",
         "meta": {"profile": [final_output.bundle_schematic.resource_placeholders[2].profile_url]},
+        "identifier": [{"value": "org-smoke-test-2"}],
+        "name": "Smoke Test Organization Two",
     }
-    assert final_output.resource_construction.step_results[3].resource_scaffold.fhir_scaffold["code"][0]["text"] == "document-author"
+    assert final_output.resource_construction.step_results[3].resource_scaffold.fhir_scaffold["code"][0]["text"] == "attending-physician"
     assert final_output.resource_construction.step_results[4].resource_scaffold.fhir_scaffold["status"] == "final"
     assert final_output.resource_construction.step_results[4].resource_scaffold.fhir_scaffold["title"] == (
         "PS-CA document bundle skeleton - pytest-smoke"
@@ -222,7 +269,7 @@ async def test_psca_bundle_builder_workflow_smoke() -> None:
         == full_urls[2]
     )
     assert final_output.candidate_bundle.candidate_bundle.fhir_bundle["entry"][1]["resource"]["name"][0]["text"] == "Smoke Test Patient"
-    assert final_output.candidate_bundle.candidate_bundle.fhir_bundle["entry"][2]["resource"]["code"][0]["text"] == "document-author"
+    assert final_output.candidate_bundle.candidate_bundle.fhir_bundle["entry"][2]["resource"]["code"][0]["text"] == "attending-physician"
     assert (
         final_output.candidate_bundle.candidate_bundle.fhir_bundle["entry"][2]["resource"]["practitioner"]["reference"]
         == full_urls[3]
@@ -233,7 +280,14 @@ async def test_psca_bundle_builder_workflow_smoke() -> None:
     )
     assert final_output.candidate_bundle.candidate_bundle.fhir_bundle["entry"][3]["resource"]["identifier"][0]["value"] == "provider-smoke-test"
     assert final_output.candidate_bundle.candidate_bundle.fhir_bundle["entry"][3]["resource"]["name"][0]["text"] == "Smoke Test Provider"
-    assert "name" not in final_output.candidate_bundle.candidate_bundle.fhir_bundle["entry"][4]["resource"]
+    assert (
+        final_output.candidate_bundle.candidate_bundle.fhir_bundle["entry"][4]["resource"]["identifier"][0]["value"]
+        == "org-smoke-test-2"
+    )
+    assert (
+        final_output.candidate_bundle.candidate_bundle.fhir_bundle["entry"][4]["resource"]["name"]
+        == "Smoke Test Organization Two"
+    )
     assert final_output.candidate_bundle.candidate_bundle.fhir_bundle["entry"][5]["resource"]["status"] == "draft"
     assert (
         final_output.candidate_bundle.candidate_bundle.fhir_bundle["entry"][6]["resource"]["code"]["text"]

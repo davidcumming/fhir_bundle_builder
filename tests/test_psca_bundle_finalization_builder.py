@@ -24,8 +24,15 @@ from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.models import (
     BundleRequestInput,
     NormalizedBuildRequest,
     ProfileReferenceInput,
+    ProviderContextInput,
+    ProviderIdentityInput,
+    ProviderOrganizationInput,
+    ProviderRoleRelationshipInput,
     SpecificationSelection,
-    WorkflowDefaults,
+    WorkflowBuildInput,
+)
+from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.request_normalization_builder import (
+    build_psca_normalized_request,
 )
 
 
@@ -109,32 +116,42 @@ def _build_construction_inputs() -> tuple[NormalizedBuildRequest, object, object
     normalized_assets = repository.load_foundation_context(PscaAssetQuery())
     schematic = build_psca_bundle_schematic(normalized_assets)
     plan = build_psca_build_plan(schematic)
-    normalized_request = NormalizedBuildRequest(
-        stage_id="request_normalization",
-        status="placeholder_complete",
-        summary="Test normalized request.",
-        placeholder_note="Test artifact.",
-        source_refs=[],
-        specification=SpecificationSelection(),
-        patient_profile=ProfileReferenceInput(
-            profile_id="patient-finalization-test",
-            display_name="Finalization Test Patient",
-        ),
-        provider_profile=ProfileReferenceInput(
-            profile_id="provider-finalization-test",
-            display_name="Finalization Test Provider",
-        ),
-        request=BundleRequestInput(
-            request_text="Create a deterministic candidate bundle for testing.",
-            scenario_label="pytest-finalization",
-        ),
-        workflow_defaults=WorkflowDefaults(
-            bundle_type="document",
-            specification_mode="normalized-asset-foundation",
-            validation_mode="foundational_dual_channel",
-            resource_construction_mode="deterministic_content_enriched_foundation",
-        ),
-        run_label="pytest-finalization:ca.infoway.io.psca:2.1.1-DFT",
+    normalized_request = build_psca_normalized_request(
+        WorkflowBuildInput(
+            specification=SpecificationSelection(),
+            patient_profile=ProfileReferenceInput(
+                profile_id="patient-finalization-test",
+                display_name="Finalization Test Patient",
+            ),
+            provider_profile=ProfileReferenceInput(
+                profile_id="provider-finalization-test",
+                display_name="Finalization Test Provider",
+            ),
+            provider_context=ProviderContextInput(
+                provider=ProviderIdentityInput(
+                    provider_id="provider-finalization-test",
+                    display_name="Finalization Test Provider",
+                    source_type="provider_management",
+                ),
+                organizations=[
+                    ProviderOrganizationInput(
+                        organization_id="org-finalization-test",
+                        display_name="Finalization Test Organization",
+                    )
+                ],
+                provider_role_relationships=[
+                    ProviderRoleRelationshipInput(
+                        relationship_id="provider-role-finalization-1",
+                        organization_id="org-finalization-test",
+                        role_label="attending-physician",
+                    )
+                ],
+            ),
+            request=BundleRequestInput(
+                request_text="Create a deterministic candidate bundle for testing.",
+                scenario_label="pytest-finalization",
+            ),
+        )
     )
     construction = build_psca_resource_construction_result(plan, schematic, normalized_request)
     return normalized_request, schematic, construction

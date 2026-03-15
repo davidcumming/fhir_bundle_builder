@@ -16,16 +16,23 @@ from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.models import (
     BundleRequestInput,
     NormalizedBuildRequest,
     ProfileReferenceInput,
+    ProviderContextInput,
+    ProviderIdentityInput,
+    ProviderOrganizationInput,
+    ProviderRoleRelationshipInput,
     RepairDecisionEvidence,
     RepairDecisionResult,
     SpecificationSelection,
-    WorkflowDefaults,
+    WorkflowBuildInput,
 )
 from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.repair_decision_builder import (
     build_psca_repair_decision,
 )
 from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.repair_execution_builder import (
     build_psca_repair_execution_result,
+)
+from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.request_normalization_builder import (
+    build_psca_normalized_request,
 )
 from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.resource_construction_builder import (
     build_psca_resource_construction_result,
@@ -264,6 +271,37 @@ async def test_psca_repair_execution_reruns_one_section_entry_step_for_single_re
     assert execution.post_retry_validation_report.overall_status == "passed_with_warnings"
 
 
+async def test_psca_repair_execution_reruns_only_build_organization_for_organization_identity_failure() -> None:
+    artifacts = await _build_repair_inputs(mutator=_remove_organization_identity)
+
+    execution = await build_psca_repair_execution_result(
+        artifacts["repair_decision"],
+        artifacts["normalized_request"],
+        artifacts["build_plan"],
+        artifacts["schematic"],
+        artifacts["resource_construction"],
+        LocalCandidateBundleScaffoldStandardsValidator(),
+    )
+
+    assert execution.execution_outcome == "executed"
+    assert execution.requested_target == "resource_construction"
+    assert execution.executed_target == "resource_construction"
+    assert execution.applied_resource_construction_repair_directive is not None
+    assert execution.applied_resource_construction_repair_directive.target_step_ids == [
+        "build-organization-1"
+    ]
+    assert execution.post_retry_resource_construction is not None
+    assert execution.post_retry_resource_construction.execution_scope == "targeted_repair"
+    assert [step.step_id for step in execution.post_retry_resource_construction.step_results] == [
+        "build-organization-1"
+    ]
+    assert execution.post_retry_resource_construction.regenerated_placeholder_ids == [
+        "organization-1"
+    ]
+    assert execution.post_retry_validation_report is not None
+    assert execution.post_retry_validation_report.overall_status == "passed_with_warnings"
+
+
 async def test_psca_repair_execution_unions_multiple_section_entry_steps_when_multiple_resources_fail() -> None:
     artifacts = await _build_repair_inputs(mutator=_remove_medicationrequest_and_condition_content)
 
@@ -423,32 +461,42 @@ async def _build_repair_inputs(mutator=None):
     normalized_assets = repository.load_foundation_context(PscaAssetQuery())
     schematic = build_psca_bundle_schematic(normalized_assets)
     plan = build_psca_build_plan(schematic)
-    normalized_request = NormalizedBuildRequest(
-        stage_id="request_normalization",
-        status="placeholder_complete",
-        summary="Test normalized request.",
-        placeholder_note="Test artifact.",
-        source_refs=[],
-        specification=SpecificationSelection(),
-        patient_profile=ProfileReferenceInput(
-            profile_id="patient-retry-test",
-            display_name="Retry Test Patient",
-        ),
-        provider_profile=ProfileReferenceInput(
-            profile_id="provider-retry-test",
-            display_name="Retry Test Provider",
-        ),
-        request=BundleRequestInput(
-            request_text="Create a deterministic repair execution test run.",
-            scenario_label="pytest-retry",
-        ),
-        workflow_defaults=WorkflowDefaults(
-            bundle_type="document",
-            specification_mode="normalized-asset-foundation",
-            validation_mode="foundational_dual_channel",
-            resource_construction_mode="deterministic_content_enriched_foundation",
-        ),
-        run_label="pytest-retry:ca.infoway.io.psca:2.1.1-DFT",
+    normalized_request = build_psca_normalized_request(
+        WorkflowBuildInput(
+            specification=SpecificationSelection(),
+            patient_profile=ProfileReferenceInput(
+                profile_id="patient-retry-test",
+                display_name="Retry Test Patient",
+            ),
+            provider_profile=ProfileReferenceInput(
+                profile_id="provider-retry-test",
+                display_name="Retry Test Provider",
+            ),
+            provider_context=ProviderContextInput(
+                provider=ProviderIdentityInput(
+                    provider_id="provider-retry-test",
+                    display_name="Retry Test Provider",
+                    source_type="provider_management",
+                ),
+                organizations=[
+                    ProviderOrganizationInput(
+                        organization_id="org-retry-test",
+                        display_name="Retry Test Organization",
+                    )
+                ],
+                provider_role_relationships=[
+                    ProviderRoleRelationshipInput(
+                        relationship_id="provider-role-retry-1",
+                        organization_id="org-retry-test",
+                        role_label="attending-physician",
+                    )
+                ],
+            ),
+            request=BundleRequestInput(
+                request_text="Create a deterministic repair execution test run.",
+                scenario_label="pytest-retry",
+            ),
+        )
     )
     resource_construction = build_psca_resource_construction_result(plan, schematic, normalized_request)
     candidate_bundle = build_psca_candidate_bundle_result(resource_construction, schematic, normalized_request)
@@ -496,6 +544,13 @@ def _remove_medicationrequest_content(candidate_bundle):
     broken_bundle = deepcopy(candidate_bundle)
     medication = broken_bundle.candidate_bundle.fhir_bundle["entry"][5]["resource"]
     medication["medicationCodeableConcept"]["text"] = ""
+    return broken_bundle
+
+
+def _remove_organization_identity(candidate_bundle):
+    broken_bundle = deepcopy(candidate_bundle)
+    organization = broken_bundle.candidate_bundle.fhir_bundle["entry"][4]["resource"]
+    organization.pop("identifier", None)
     return broken_bundle
 
 

@@ -11,6 +11,7 @@ The implemented slice is intentionally narrow:
 - structured dual-channel validation over the candidate bundle scaffold
 - optional Matchbox-backed standards validation behind the existing validator boundary
 - structured repair decision and bounded retry execution artifacts
+- structured provider/org/role request normalization for richer support-resource realism
 - inspectable structured artifacts emitted at each stage
 - no product UI
 - no full bundle population yet
@@ -77,6 +78,7 @@ Then open [http://127.0.0.1:8080](http://127.0.0.1:8080).
   - `specification`
   - `patient_profile`
   - `provider_profile`
+  - `provider_context`
   - `request`
   - `workflow_options`
 - Sequential executor steps in this order:
@@ -103,7 +105,7 @@ The `specification_asset_retrieval` stage now emits the first normalized PS-CA a
 
 ## Current slice boundaries
 
-This slice is for workflow shape, PS-CA normalized asset retrieval, the first real schematic artifact, the first real build plan, the first meaningful content-enriched resource-construction path for core clinical resources, the first support-resource enrichment for the selected provider-facing author path, the first candidate-bundle finalization foundation, the first validation foundation, the first optional Matchbox-backed external standards-validation path, the first repair-decision foundation, and the first bounded repair-execution foundation with narrow step-subset repair directives for resource construction plus narrower bundle-finalization-owned reference-alignment findings.
+This slice is for workflow shape, PS-CA normalized asset retrieval, the first real schematic artifact, the first real build plan, the first meaningful content-enriched resource-construction path for core clinical resources, the first support-resource enrichment for the selected provider-facing author path, the first structured provider/org/role input-normalization path, the first candidate-bundle finalization foundation, the first validation foundation, the first optional Matchbox-backed external standards-validation path, the first repair-decision foundation, and the first bounded repair-execution foundation with narrow step-subset repair directives for resource construction plus narrower bundle-finalization-owned reference-alignment findings.
 
 - The workflow reads existing PS-CA package files deterministically from the repo.
 - The spec retrieval stage exposes a normalized PS-CA asset context with foundational profiles, Composition section definitions, and selected example evidence.
@@ -173,11 +175,12 @@ The `resource_construction` stage now emits the first real scaffold-oriented con
   - section-entry references attached to `Composition`
 - deterministic placeholder content such as:
   - a Patient identifier and display name
-  - a Practitioner identifier and display name from the selected provider stub
-  - a narrow PractitionerRole author label
+  - a Practitioner identifier and display name from normalized provider identity context
+  - an Organization identifier and name when selected provider-organization context is available
+  - a narrow PractitionerRole author label from the selected provider-role relationship when available
   - a Composition status and title
   - section-entry status and text content for medications, allergies, and problems
-- Organization remaining intentionally thin until provider inputs include organization and provider-role relationship context
+- normalized provider-context inspectability showing the selected provider, selected organization, and selected provider-role relationship when available
 - a resource registry showing the latest scaffold state per placeholder
 - explicit incremental `Composition` behavior:
   - scaffold creation
@@ -227,6 +230,10 @@ The `validation` stage now emits the first real structured validation artifact f
     - core scaffold content (`status`, `title`)
     - subject reference alignment
     - author reference alignment
+  - support-resource identity/content checks for:
+    - `Practitioner`
+    - `Organization` when selected organization context exists
+    - `PractitionerRole` author-context label
   - section-specific deterministic Composition section-presence checks for medications, allergies, and problems
   - resource-specific placeholder-content checks for `MedicationRequest`, `AllergyIntolerance`, and `Condition`
   - resource-specific non-Composition reference-alignment checks for:
@@ -265,6 +272,7 @@ The `repair_decision` stage now emits the first real structured repair-routing a
   - trigger finding codes
   - target build-step ids
   - target placeholder ids
+  - single-support-resource targeting for Practitioner, Organization, and PractitionerRole content repairs
   - scaffold-plus-finalizers targeting for Composition scaffold/content issues where replaying the scaffold step still requires replaying section-finalize steps
   - section-specific Composition finalize targeting when one or more required Composition sections are missing
   - single-resource section-entry targeting when only one section-entry placeholder-content rule fails

@@ -97,11 +97,17 @@ _FINDING_ROUTE_MAP: dict[str, tuple[str, str, bool, str]] = {
         True,
         "Practitioner identity placeholder content is populated during resource construction.",
     ),
+    "bundle.organization_identity_content_present": (
+        "resource_construction",
+        "resource_construction",
+        True,
+        "Organization identity placeholder content is populated during resource construction when normalized provider context supplies a selected organization.",
+    ),
     "bundle.practitionerrole_author_context_present": (
         "resource_construction",
         "resource_construction",
         True,
-        "PractitionerRole author-context placeholder content is populated during resource construction.",
+        "PractitionerRole author-context placeholder content is populated during resource construction from the normalized provider-role context or schematic fallback.",
     ),
     "bundle.medicationrequest_placeholder_content_present": (
         "resource_construction",
@@ -208,10 +214,15 @@ _RESOURCE_CONSTRUCTION_DIRECTIVE_MAP: dict[str, tuple[list[str], list[str], str]
         ["practitioner-1"],
         "Rerun the practitioner support step to restore deterministic practitioner identity content.",
     ),
+    "bundle.organization_identity_content_present": (
+        ["build-organization-1"],
+        ["organization-1"],
+        "Rerun the organization support step to restore deterministic organization identity content from the selected provider organization context.",
+    ),
     "bundle.practitionerrole_author_context_present": (
         ["build-practitionerrole-1"],
         ["practitionerrole-1"],
-        "Rerun the practitioner-role support step to restore the deterministic author-context label.",
+        "Rerun the practitioner-role support step to restore the deterministic author-context label from normalized provider-role context or schematic fallback.",
     ),
     "bundle.composition_type_matches_psca_summary": (
         [

@@ -89,6 +89,12 @@ def test_psca_build_plan_builder_generates_expected_order_and_dependencies() -> 
         output.output_key == "composition_scaffold_ready:composition-1"
         for output in steps["build-composition-1-scaffold"].expected_outputs
     )
+    assert [input_spec.input_key for input_spec in steps["build-practitionerrole-1"].expected_inputs] == [
+        "normalized_request",
+        "practitioner_placeholder",
+        "reference_handle:practitioner-1",
+        "reference_handle:organization-1",
+    ]
     assert any(
         output.output_key == "composition_section_attached:composition-1:medications"
         for output in steps["finalize-composition-1-medications-section"].expected_outputs

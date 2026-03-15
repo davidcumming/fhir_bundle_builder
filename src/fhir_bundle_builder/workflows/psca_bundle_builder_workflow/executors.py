@@ -25,13 +25,13 @@ from .models import (
     SpecificationAssetContext,
     ValidationReport,
     WorkflowBuildInput,
-    WorkflowDefaults,
     WorkflowSkeletonRunResult,
 )
 from .bundle_finalization_builder import build_psca_candidate_bundle_result
 from .build_plan_builder import build_psca_build_plan
 from .repair_decision_builder import build_psca_repair_decision
 from .repair_execution_builder import build_psca_repair_execution_result
+from .request_normalization_builder import build_psca_normalized_request
 from .resource_construction_builder import build_psca_resource_construction_result
 from .schematic_builder import build_psca_bundle_schematic
 from .validation_builder import build_psca_validation_report
@@ -83,24 +83,7 @@ def _get_standards_validator(ctx: WorkflowContext[Any]) -> StandardsValidator:
 @executor(id="request_normalization", input=WorkflowBuildInput, output=NormalizedBuildRequest)
 async def request_normalization(message: WorkflowBuildInput, ctx: WorkflowContext[NormalizedBuildRequest]) -> None:
     _store_artifact(ctx, "workflow_input", message)
-    normalized = NormalizedBuildRequest(
-        stage_id="request_normalization",
-        status="placeholder_complete",
-        summary="Validated the top-level workflow input and applied skeleton defaults.",
-        placeholder_note="Uses deterministic defaults only; no profile retrieval or request interpretation is implemented yet.",
-        source_refs=[],
-        specification=message.specification,
-        patient_profile=message.patient_profile,
-        provider_profile=message.provider_profile,
-        request=message.request,
-        workflow_defaults=WorkflowDefaults(
-            bundle_type="document",
-            specification_mode="normalized-asset-foundation",
-            validation_mode="foundational_dual_channel",
-            resource_construction_mode="deterministic_content_enriched_foundation",
-        ),
-        run_label=f"{message.request.scenario_label}:{message.specification.package_id}:{message.specification.version}",
-    )
+    normalized = build_psca_normalized_request(message)
     _store_artifact(ctx, "normalized_request", normalized)
     await ctx.send_message(normalized)
 

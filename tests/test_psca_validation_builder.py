@@ -16,8 +16,15 @@ from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.models import (
     BundleRequestInput,
     NormalizedBuildRequest,
     ProfileReferenceInput,
+    ProviderContextInput,
+    ProviderIdentityInput,
+    ProviderOrganizationInput,
+    ProviderRoleRelationshipInput,
     SpecificationSelection,
-    WorkflowDefaults,
+    WorkflowBuildInput,
+)
+from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.request_normalization_builder import (
+    build_psca_normalized_request,
 )
 from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.resource_construction_builder import (
     build_psca_resource_construction_result,
@@ -248,6 +255,46 @@ async def test_psca_validation_builder_fails_when_practitioner_or_practitionerro
     )
     assert any(
         finding.code == "bundle.practitionerrole_author_context_present" and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+
+
+async def test_psca_validation_builder_fails_when_selected_organization_content_is_missing() -> None:
+    normalized_request, schematic, candidate_bundle = _build_validation_inputs()
+    broken_bundle = deepcopy(candidate_bundle)
+    organization = broken_bundle.candidate_bundle.fhir_bundle["entry"][4]["resource"]
+    organization.pop("identifier", None)
+
+    report = await build_psca_validation_report(
+        broken_bundle,
+        schematic,
+        normalized_request,
+        LocalCandidateBundleScaffoldStandardsValidator(),
+    )
+
+    assert report.workflow_validation.status == "failed"
+    assert any(
+        finding.code == "bundle.organization_identity_content_present" and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+
+
+async def test_psca_validation_builder_does_not_require_organization_identity_in_legacy_mode() -> None:
+    normalized_request, schematic, candidate_bundle = _build_validation_inputs(legacy_provider_context=True)
+    broken_bundle = deepcopy(candidate_bundle)
+    organization = broken_bundle.candidate_bundle.fhir_bundle["entry"][4]["resource"]
+    organization.pop("identifier", None)
+    organization.pop("name", None)
+
+    report = await build_psca_validation_report(
+        broken_bundle,
+        schematic,
+        normalized_request,
+        LocalCandidateBundleScaffoldStandardsValidator(),
+    )
+
+    assert not any(
+        finding.code == "bundle.organization_identity_content_present"
         for finding in report.workflow_validation.findings
     )
 
@@ -714,37 +761,54 @@ async def test_psca_validation_builder_does_not_spray_specific_reference_finding
     )
 
 
-def _build_validation_inputs() -> tuple[NormalizedBuildRequest, object, object]:
+def _build_validation_inputs(
+    *,
+    legacy_provider_context: bool = False,
+) -> tuple[NormalizedBuildRequest, object, object]:
     repository = PscaAssetRepository()
     normalized_assets = repository.load_foundation_context(PscaAssetQuery())
     schematic = build_psca_bundle_schematic(normalized_assets)
     plan = build_psca_build_plan(schematic)
-    normalized_request = NormalizedBuildRequest(
-        stage_id="request_normalization",
-        status="placeholder_complete",
-        summary="Test normalized request.",
-        placeholder_note="Test artifact.",
-        source_refs=[],
-        specification=SpecificationSelection(),
-        patient_profile=ProfileReferenceInput(
-            profile_id="patient-validation-test",
-            display_name="Validation Test Patient",
-        ),
-        provider_profile=ProfileReferenceInput(
-            profile_id="provider-validation-test",
-            display_name="Validation Test Provider",
-        ),
-        request=BundleRequestInput(
-            request_text="Create a deterministic validation report for testing.",
-            scenario_label="pytest-validation",
-        ),
-        workflow_defaults=WorkflowDefaults(
-            bundle_type="document",
-            specification_mode="normalized-asset-foundation",
-            validation_mode="foundational_dual_channel",
-            resource_construction_mode="deterministic_content_enriched_foundation",
-        ),
-        run_label="pytest-validation:ca.infoway.io.psca:2.1.1-DFT",
+    normalized_request = build_psca_normalized_request(
+        WorkflowBuildInput(
+            specification=SpecificationSelection(),
+            patient_profile=ProfileReferenceInput(
+                profile_id="patient-validation-test",
+                display_name="Validation Test Patient",
+            ),
+            provider_profile=ProfileReferenceInput(
+                profile_id="provider-validation-test",
+                display_name="Validation Test Provider",
+            ),
+            provider_context=(
+                None
+                if legacy_provider_context
+                else ProviderContextInput(
+                    provider=ProviderIdentityInput(
+                        provider_id="provider-validation-test",
+                        display_name="Validation Test Provider",
+                        source_type="provider_management",
+                    ),
+                    organizations=[
+                        ProviderOrganizationInput(
+                            organization_id="org-validation-test",
+                            display_name="Validation Test Organization",
+                        )
+                    ],
+                    provider_role_relationships=[
+                        ProviderRoleRelationshipInput(
+                            relationship_id="provider-role-validation-1",
+                            organization_id="org-validation-test",
+                            role_label="attending-physician",
+                        )
+                    ],
+                )
+            ),
+            request=BundleRequestInput(
+                request_text="Create a deterministic validation report for testing.",
+                scenario_label="pytest-validation",
+            ),
+        )
     )
     construction = build_psca_resource_construction_result(plan, schematic, normalized_request)
     candidate_bundle = build_psca_candidate_bundle_result(construction, schematic, normalized_request)

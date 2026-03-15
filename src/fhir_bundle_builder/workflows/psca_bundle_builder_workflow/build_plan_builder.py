@@ -81,7 +81,7 @@ def build_psca_build_plan(schematic: BundleSchematic) -> BuildPlan:
             target_placeholder_id=organization.placeholder_id,
             resource_type=organization.resource_type,
             profile_url=organization.profile_url,
-            build_purpose="Create the supporting Organization referenced by PractitionerRole.",
+            build_purpose="Create the supporting Organization using the currently selected provider-organization context when available.",
             expected_inputs=[
                 _input("normalized_request", "NormalizedBuildRequest", True, "Scenario and request context for the run."),
                 _input("organization_placeholder", "ResourcePlaceholder", True, "Organization placeholder from the schematic."),
@@ -98,7 +98,7 @@ def build_psca_build_plan(schematic: BundleSchematic) -> BuildPlan:
             target_placeholder_id=practitioner_role.placeholder_id,
             resource_type=practitioner_role.resource_type,
             profile_url=practitioner_role.profile_url,
-            build_purpose="Create the author PractitionerRole after its Practitioner and Organization references are available.",
+            build_purpose="Create the author PractitionerRole after its Practitioner and Organization references are available, using the normalized selected provider-role context when present.",
             dependencies=[
                 _dependency(
                     "build-practitioner-1",
@@ -112,6 +112,12 @@ def build_psca_build_plan(schematic: BundleSchematic) -> BuildPlan:
                 ),
             ],
             expected_inputs=[
+                _input(
+                    "normalized_request",
+                    "NormalizedBuildRequest",
+                    True,
+                    "Normalized request context, including the selected provider/org/role context when available.",
+                ),
                 _input("practitioner_placeholder", "ResourcePlaceholder", True, "PractitionerRole placeholder from the schematic."),
                 _input("reference_handle:practitioner-1", "reference_handle", True, "Practitioner reference for PractitionerRole.practitioner."),
                 _input("reference_handle:organization-1", "reference_handle", True, "Organization reference for PractitionerRole.organization."),

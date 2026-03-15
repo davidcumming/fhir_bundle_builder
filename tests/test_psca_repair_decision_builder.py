@@ -16,11 +16,18 @@ from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.models import (
     BundleRequestInput,
     NormalizedBuildRequest,
     ProfileReferenceInput,
+    ProviderContextInput,
+    ProviderIdentityInput,
+    ProviderOrganizationInput,
+    ProviderRoleRelationshipInput,
     SpecificationSelection,
-    WorkflowDefaults,
+    WorkflowBuildInput,
 )
 from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.repair_decision_builder import (
     build_psca_repair_decision,
+)
+from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.request_normalization_builder import (
+    build_psca_normalized_request,
 )
 from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.resource_construction_builder import (
     build_psca_resource_construction_result,
@@ -114,6 +121,28 @@ async def test_psca_repair_decision_routes_support_resource_failures_to_resource
     assert decision.recommended_resource_construction_repair_directive is not None
     assert decision.recommended_resource_construction_repair_directive.target_step_ids == [
         "build-practitioner-1"
+    ]
+
+
+async def test_psca_repair_decision_routes_organization_identity_failures_to_resource_construction() -> None:
+    report = await _build_validation_report(mutator=_remove_organization_identity)
+
+    decision = build_psca_repair_decision(report)
+
+    assert decision.overall_decision == "repair_recommended"
+    assert decision.recommended_target == "resource_construction"
+    assert any(
+        route.finding_code == "bundle.organization_identity_content_present"
+        and route.route_target == "resource_construction"
+        and route.actionable is True
+        for route in decision.finding_routes
+    )
+    assert decision.recommended_resource_construction_repair_directive is not None
+    assert decision.recommended_resource_construction_repair_directive.target_step_ids == [
+        "build-organization-1"
+    ]
+    assert decision.recommended_resource_construction_repair_directive.target_placeholder_ids == [
+        "organization-1"
     ]
 
 
@@ -478,32 +507,42 @@ async def _build_validation_report(mutator=None):
     normalized_assets = repository.load_foundation_context(PscaAssetQuery())
     schematic = build_psca_bundle_schematic(normalized_assets)
     plan = build_psca_build_plan(schematic)
-    normalized_request = NormalizedBuildRequest(
-        stage_id="request_normalization",
-        status="placeholder_complete",
-        summary="Test normalized request.",
-        placeholder_note="Test artifact.",
-        source_refs=[],
-        specification=SpecificationSelection(),
-        patient_profile=ProfileReferenceInput(
-            profile_id="patient-repair-test",
-            display_name="Repair Test Patient",
-        ),
-        provider_profile=ProfileReferenceInput(
-            profile_id="provider-repair-test",
-            display_name="Repair Test Provider",
-        ),
-        request=BundleRequestInput(
-            request_text="Create a deterministic repair decision for testing.",
-            scenario_label="pytest-repair",
-        ),
-        workflow_defaults=WorkflowDefaults(
-            bundle_type="document",
-            specification_mode="normalized-asset-foundation",
-            validation_mode="foundational_dual_channel",
-            resource_construction_mode="deterministic_content_enriched_foundation",
-        ),
-        run_label="pytest-repair:ca.infoway.io.psca:2.1.1-DFT",
+    normalized_request = build_psca_normalized_request(
+        WorkflowBuildInput(
+            specification=SpecificationSelection(),
+            patient_profile=ProfileReferenceInput(
+                profile_id="patient-repair-test",
+                display_name="Repair Test Patient",
+            ),
+            provider_profile=ProfileReferenceInput(
+                profile_id="provider-repair-test",
+                display_name="Repair Test Provider",
+            ),
+            provider_context=ProviderContextInput(
+                provider=ProviderIdentityInput(
+                    provider_id="provider-repair-test",
+                    display_name="Repair Test Provider",
+                    source_type="provider_management",
+                ),
+                organizations=[
+                    ProviderOrganizationInput(
+                        organization_id="org-repair-test",
+                        display_name="Repair Test Organization",
+                    )
+                ],
+                provider_role_relationships=[
+                    ProviderRoleRelationshipInput(
+                        relationship_id="provider-role-repair-1",
+                        organization_id="org-repair-test",
+                        role_label="attending-physician",
+                    )
+                ],
+            ),
+            request=BundleRequestInput(
+                request_text="Create a deterministic repair decision for testing.",
+                scenario_label="pytest-repair",
+            ),
+        )
     )
     construction = build_psca_resource_construction_result(plan, schematic, normalized_request)
     candidate_bundle = build_psca_candidate_bundle_result(construction, schematic, normalized_request)
@@ -574,6 +613,13 @@ def _remove_practitioner_identity(candidate_bundle):
     broken_bundle = deepcopy(candidate_bundle)
     practitioner = broken_bundle.candidate_bundle.fhir_bundle["entry"][3]["resource"]
     practitioner["identifier"] = []
+    return broken_bundle
+
+
+def _remove_organization_identity(candidate_bundle):
+    broken_bundle = deepcopy(candidate_bundle)
+    organization = broken_bundle.candidate_bundle.fhir_bundle["entry"][4]["resource"]
+    organization.pop("identifier", None)
     return broken_bundle
 
 

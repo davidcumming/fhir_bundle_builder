@@ -35,7 +35,7 @@ async def build_psca_validation_report(
             specification_version=normalized_request.specification.version,
         )
     )
-    workflow_result = _build_workflow_validation_result(candidate_bundle, schematic)
+    workflow_result = _build_workflow_validation_result(candidate_bundle, schematic, normalized_request)
 
     all_findings = [*standards_result.findings, *workflow_result.findings]
     error_count = sum(1 for finding in all_findings if finding.severity == "error")
@@ -71,6 +71,7 @@ async def build_psca_validation_report(
 def _build_workflow_validation_result(
     candidate_bundle: CandidateBundleResult,
     schematic: BundleSchematic,
+    normalized_request: NormalizedBuildRequest,
 ) -> WorkflowValidationResult:
     bundle = candidate_bundle.candidate_bundle.fhir_bundle
     entry_assembly = candidate_bundle.entry_assembly
@@ -89,6 +90,7 @@ def _build_workflow_validation_result(
         "bundle.composition_author_reference_aligned",
         "bundle.patient_identity_content_present",
         "bundle.practitioner_identity_content_present",
+        "bundle.organization_identity_content_present",
         "bundle.practitionerrole_author_context_present",
         "bundle.medicationrequest_placeholder_content_present",
         "bundle.allergyintolerance_placeholder_content_present",
@@ -264,6 +266,29 @@ def _build_workflow_validation_result(
             )
         )
 
+    organization = _find_resource_by_type(bundle, "Organization")
+    selected_organization = normalized_request.provider_context.selected_organization
+    organization_identifier = organization.get("identifier") if isinstance(organization, dict) else None
+    organization_identifier_value = (
+        organization_identifier[0].get("value")
+        if isinstance(organization_identifier, list)
+        and organization_identifier
+        and isinstance(organization_identifier[0], dict)
+        else None
+    )
+    organization_name = organization.get("name") if isinstance(organization, dict) else None
+    if selected_organization is not None and (
+        organization_identifier_value != selected_organization.organization_id
+        or organization_name != selected_organization.display_name
+    ):
+        findings.append(
+            _workflow_error(
+                "bundle.organization_identity_content_present",
+                "Bundle.entry[4].resource",
+                "Expected Organization enriched content to include identifier[0].value and name from the selected provider organization context.",
+            )
+        )
+
     practitioner_role = _find_resource_by_type(bundle, "PractitionerRole")
     role_code = practitioner_role.get("code") if isinstance(practitioner_role, dict) else None
     role_text = (
@@ -271,12 +296,13 @@ def _build_workflow_validation_result(
         if isinstance(role_code, list) and role_code and isinstance(role_code[0], dict)
         else None
     )
-    if role_text != "document-author":
+    expected_role_text = _expected_practitioner_role_text(normalized_request)
+    if role_text != expected_role_text:
         findings.append(
             _workflow_error(
                 "bundle.practitionerrole_author_context_present",
                 "Bundle.entry[2].resource.code[0].text",
-                "Expected PractitionerRole to include the deterministic author-context label 'document-author'.",
+                f"Expected PractitionerRole to include the deterministic author-context label '{expected_role_text}'.",
             )
         )
 
@@ -469,6 +495,13 @@ def _composition_author_reference_aligned(
         isinstance(author, dict)
         and author.get("reference") == expected_reference
     )
+
+
+def _expected_practitioner_role_text(normalized_request: NormalizedBuildRequest) -> str:
+    selected_relationship = normalized_request.provider_context.selected_provider_role_relationship
+    if selected_relationship is not None:
+        return selected_relationship.role_label
+    return "document-author"
 
 
 def _composition_section_present(

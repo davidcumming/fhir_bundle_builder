@@ -46,9 +46,68 @@ class ProfileReferenceInput(BaseModel):
         ...,
         description="Human-readable label shown in Dev UI and traces.",
     )
-    source_type: Literal["stub"] = Field(
+    source_type: Literal["stub", "provider_management"] = Field(
         default="stub",
         description="Current profile source type for this workflow skeleton.",
+    )
+
+
+class ProviderIdentityInput(BaseModel):
+    """Structured provider identity supplied by an upstream provider-management layer."""
+
+    provider_id: str = Field(
+        ...,
+        description="Stable identifier for the selected provider.",
+    )
+    display_name: str = Field(
+        ...,
+        description="Human-readable provider label shown in Dev UI and traces.",
+    )
+    source_type: Literal["stub", "provider_management"] = Field(
+        default="stub",
+        description="Source type for the upstream provider identity context.",
+    )
+
+
+class ProviderOrganizationInput(BaseModel):
+    """Structured organization available to the selected provider."""
+
+    organization_id: str = Field(
+        ...,
+        description="Stable identifier for the organization.",
+    )
+    display_name: str = Field(
+        ...,
+        description="Human-readable organization label.",
+    )
+
+
+class ProviderRoleRelationshipInput(BaseModel):
+    """Structured relationship linking a provider to an organization and role label."""
+
+    relationship_id: str = Field(
+        ...,
+        description="Stable identifier for the provider-role relationship.",
+    )
+    organization_id: str = Field(
+        ...,
+        description="Identifier of the organization linked by this provider-role relationship.",
+    )
+    role_label: str = Field(
+        ...,
+        description="Deterministic provider-role label available to downstream support-resource construction.",
+    )
+
+
+class ProviderContextInput(BaseModel):
+    """Structured provider/org/role context supplied by an upstream provider-management layer."""
+
+    provider: ProviderIdentityInput
+    organizations: list[ProviderOrganizationInput] = Field(default_factory=list)
+    provider_role_relationships: list[ProviderRoleRelationshipInput] = Field(default_factory=list)
+    selected_provider_role_relationship_id: str | None = Field(
+        default=None,
+        description="Explicit selected provider-role relationship to use for this workflow run.",
     )
 
 
@@ -102,6 +161,7 @@ class WorkflowBuildInput(BaseModel):
             display_name="Default provider profile stub",
         )
     )
+    provider_context: ProviderContextInput | None = None
     request: BundleRequestInput = Field(
         default_factory=lambda: BundleRequestInput(
             request_text="Create a placeholder PS-CA bundle workflow run for Dev UI inspection."
@@ -129,12 +189,28 @@ class WorkflowDefaults(BaseModel):
     resource_construction_mode: Literal["deterministic_content_enriched_foundation"]
 
 
+class NormalizedProviderContext(BaseModel):
+    """Deterministically normalized provider/org/role context for workflow use."""
+
+    provider: ProviderIdentityInput
+    organizations: list[ProviderOrganizationInput] = Field(default_factory=list)
+    provider_role_relationships: list[ProviderRoleRelationshipInput] = Field(default_factory=list)
+    selected_provider_role_relationship: ProviderRoleRelationshipInput | None = None
+    selected_organization: ProviderOrganizationInput | None = None
+    normalization_mode: Literal[
+        "legacy_provider_profile",
+        "provider_context_single_relationship",
+        "provider_context_explicit_selection",
+    ]
+
+
 class NormalizedBuildRequest(StageArtifact):
     """Deterministic normalized workflow request."""
 
     specification: SpecificationSelection
     patient_profile: ProfileReferenceInput
     provider_profile: ProfileReferenceInput
+    provider_context: NormalizedProviderContext
     request: BundleRequestInput
     workflow_defaults: WorkflowDefaults
     run_label: str
