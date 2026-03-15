@@ -768,3 +768,167 @@ async def test_psca_bundle_builder_workflow_supports_bounded_two_medication_path
         {"reference": candidate_entries[5]["fullUrl"]},
         {"reference": candidate_entries[6]["fullUrl"]},
     ]
+
+
+async def test_psca_bundle_builder_workflow_preserves_current_bounded_scope_after_traceability_hardening() -> None:
+    message = WorkflowBuildInput(
+        specification=SpecificationSelection(),
+        patient_profile=ProfileReferenceInput(
+            profile_id="patient-smoke-bounded-scope",
+            display_name="Smoke Bounded Scope Patient",
+        ),
+        patient_context=PatientContextInput(
+            patient=PatientIdentityInput(
+                patient_id="patient-smoke-bounded-scope",
+                display_name="Smoke Bounded Scope Patient",
+                source_type="patient_management",
+            ),
+            medications=[
+                PatientMedicationInput(
+                    medication_id="med-bounded-1",
+                    display_text="Atorvastatin 20 MG oral tablet",
+                ),
+                PatientMedicationInput(
+                    medication_id="med-bounded-2",
+                    display_text="Metformin 500 MG oral tablet",
+                ),
+                PatientMedicationInput(
+                    medication_id="med-bounded-3",
+                    display_text="Lisinopril 10 MG oral tablet",
+                ),
+            ],
+            allergies=[
+                PatientAllergyInput(
+                    allergy_id="alg-bounded-1",
+                    display_text="Peanut allergy",
+                ),
+                PatientAllergyInput(
+                    allergy_id="alg-bounded-2",
+                    display_text="Latex allergy",
+                ),
+            ],
+            conditions=[
+                PatientConditionInput(
+                    condition_id="cond-bounded-1",
+                    display_text="Type 2 diabetes mellitus",
+                ),
+                PatientConditionInput(
+                    condition_id="cond-bounded-2",
+                    display_text="Hypertension",
+                ),
+            ],
+        ),
+        provider_profile=ProfileReferenceInput(
+            profile_id="provider-smoke-bounded-scope",
+            display_name="Smoke Bounded Scope Provider",
+        ),
+        provider_context=ProviderContextInput(
+            provider=ProviderIdentityInput(
+                provider_id="provider-smoke-bounded-scope",
+                display_name="Smoke Bounded Scope Provider",
+                source_type="provider_management",
+            ),
+            organizations=[
+                ProviderOrganizationInput(
+                    organization_id="org-bounded-1",
+                    display_name="Smoke Bounded Scope Organization",
+                )
+            ],
+            provider_role_relationships=[
+                ProviderRoleRelationshipInput(
+                    relationship_id="provider-role-bounded-1",
+                    organization_id="org-bounded-1",
+                    role_label="attending-physician",
+                )
+            ],
+            selected_provider_role_relationship_id="provider-role-bounded-1",
+        ),
+        request=BundleRequestInput(
+            request_text="Create a deterministic bounded-scope workflow run for testing.",
+            scenario_label="pytest-smoke-bounded-scope",
+        ),
+    )
+
+    result = await workflow.run(message=message, include_status_events=True)
+    final_output = result.get_outputs()[0]
+
+    clinical_section_contexts = {
+        context.section_key: context
+        for context in final_output.bundle_schematic.evidence.clinical_section_contexts
+    }
+    schematic_placeholder_ids = {
+        placeholder.placeholder_id for placeholder in final_output.bundle_schematic.resource_placeholders
+    }
+    build_step_ids = [step.step_id for step in final_output.build_plan.steps]
+    registry_ids = {entry.placeholder_id for entry in final_output.resource_construction.resource_registry}
+    candidate_entry_ids = [entry.placeholder_id for entry in final_output.candidate_bundle.entry_assembly]
+    validation_traceability = {
+        summary.placeholder_id: summary
+        for summary in final_output.validation_report.evidence.placeholder_traceability_summaries
+    }
+
+    assert final_output.normalized_request.patient_context.deferred_additional_medication_count == 1
+    assert clinical_section_contexts["medications"].planned_placeholder_count == 2
+    assert clinical_section_contexts["medications"].deferred_additional_item_count == 1
+    assert clinical_section_contexts["medications"].planning_disposition == "bounded_two_entry_selected_first_two"
+    assert clinical_section_contexts["allergies"].available_item_count == 2
+    assert clinical_section_contexts["allergies"].selected_single_entry_display_text is None
+    assert clinical_section_contexts["allergies"].planned_placeholder_count == 1
+    assert clinical_section_contexts["allergies"].planning_disposition == "fixed_single_entry_multiple_items_deferred"
+    assert clinical_section_contexts["problems"].available_item_count == 2
+    assert clinical_section_contexts["problems"].selected_single_entry_display_text is None
+    assert clinical_section_contexts["problems"].planned_placeholder_count == 1
+    assert clinical_section_contexts["problems"].planning_disposition == "fixed_single_entry_multiple_items_deferred"
+    assert schematic_placeholder_ids >= {
+        "medicationrequest-1",
+        "medicationrequest-2",
+        "allergyintolerance-1",
+        "condition-1",
+    }
+    assert "allergyintolerance-2" not in schematic_placeholder_ids
+    assert "condition-2" not in schematic_placeholder_ids
+    assert "medicationrequest-3" not in schematic_placeholder_ids
+    assert "build-medicationrequest-2" in build_step_ids
+    assert "build-allergyintolerance-2" not in build_step_ids
+    assert "build-condition-2" not in build_step_ids
+    assert "medicationrequest-3" not in registry_ids
+    assert candidate_entry_ids.count("allergyintolerance-1") == 1
+    assert candidate_entry_ids.count("condition-1") == 1
+    assert "allergyintolerance-2" not in candidate_entry_ids
+    assert "condition-2" not in candidate_entry_ids
+    assert "medicationrequest-3" not in candidate_entry_ids
+    assert final_output.candidate_bundle.evidence.planned_medication_placeholder_ids == [
+        "medicationrequest-1",
+        "medicationrequest-2",
+    ]
+    assert final_output.candidate_bundle.evidence.assembled_medication_placeholder_ids == [
+        "medicationrequest-1",
+        "medicationrequest-2",
+    ]
+    assert {
+        "telecom",
+        "address",
+        "qualification",
+    }.issubset(final_output.resource_construction.step_results[1].resource_scaffold.deferred_paths)
+    assert {
+        "specialty",
+        "telecom",
+        "period",
+        "availableTime",
+    }.issubset(final_output.resource_construction.step_results[3].resource_scaffold.deferred_paths)
+    assert (
+        final_output.validation_report.evidence.provider_context_alignment.organization_alignment_mode
+        == "structured_provider_context"
+    )
+    assert (
+        final_output.validation_report.evidence.provider_context_alignment.practitionerrole_alignment_mode
+        == "structured_provider_context"
+    )
+    assert (
+        "bundle.organization_identity_aligned_to_context"
+        in validation_traceability["organization-1"].workflow_check_codes
+    )
+    assert (
+        "bundle.practitionerrole_author_context_aligned_to_context"
+        in validation_traceability["practitionerrole-1"].workflow_check_codes
+    )

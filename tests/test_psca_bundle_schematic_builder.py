@@ -271,6 +271,81 @@ def test_psca_bundle_schematic_builder_records_medication_overflow_beyond_two_as
     assert "additional medication items remain deferred" in schematic.summary
 
 
+def test_psca_bundle_schematic_builder_keeps_allergies_and_problems_fixed_to_one_entry_when_multiple_items_exist() -> None:
+    repository = PscaAssetRepository()
+    normalized_assets = repository.load_foundation_context(PscaAssetQuery())
+    normalized_request = build_psca_normalized_request(
+        WorkflowBuildInput(
+            specification=SpecificationSelection(),
+            patient_profile=ProfileReferenceInput(
+                profile_id="patient-schematic-fixed-trio-test",
+                display_name="Schematic Fixed Trio Patient",
+            ),
+            patient_context=PatientContextInput(
+                patient=PatientIdentityInput(
+                    patient_id="patient-schematic-fixed-trio-test",
+                    display_name="Schematic Fixed Trio Patient",
+                    source_type="patient_management",
+                ),
+                medications=[
+                    PatientMedicationInput(
+                        medication_id="med-fixed-trio-1",
+                        display_text="Atorvastatin 20 MG oral tablet",
+                    )
+                ],
+                allergies=[
+                    PatientAllergyInput(
+                        allergy_id="alg-fixed-trio-1",
+                        display_text="Peanut allergy",
+                    ),
+                    PatientAllergyInput(
+                        allergy_id="alg-fixed-trio-2",
+                        display_text="Latex allergy",
+                    ),
+                ],
+                conditions=[
+                    PatientConditionInput(
+                        condition_id="cond-fixed-trio-1",
+                        display_text="Type 2 diabetes mellitus",
+                    ),
+                    PatientConditionInput(
+                        condition_id="cond-fixed-trio-2",
+                        display_text="Hypertension",
+                    ),
+                ],
+            ),
+            provider_profile=ProfileReferenceInput(
+                profile_id="provider-schematic-fixed-trio-test",
+                display_name="Schematic Fixed Trio Provider",
+            ),
+            request=BundleRequestInput(
+                request_text="Create a deterministic schematic for fixed single-entry trio testing.",
+                scenario_label="pytest-schematic-fixed-trio",
+            ),
+        )
+    )
+
+    schematic = build_psca_bundle_schematic(normalized_assets, normalized_request)
+    section_contexts = {context.section_key: context for context in schematic.evidence.clinical_section_contexts}
+    section_scaffolds = {section.section_key: section for section in schematic.section_scaffolds}
+    placeholder_ids = {placeholder.placeholder_id for placeholder in schematic.resource_placeholders}
+
+    assert section_contexts["allergies"].available_item_count == 2
+    assert section_contexts["allergies"].selected_single_entry_display_text is None
+    assert section_contexts["allergies"].planned_placeholder_count == 1
+    assert section_contexts["allergies"].deferred_additional_item_count == 0
+    assert section_contexts["allergies"].planning_disposition == "fixed_single_entry_multiple_items_deferred"
+    assert section_contexts["problems"].available_item_count == 2
+    assert section_contexts["problems"].selected_single_entry_display_text is None
+    assert section_contexts["problems"].planned_placeholder_count == 1
+    assert section_contexts["problems"].deferred_additional_item_count == 0
+    assert section_contexts["problems"].planning_disposition == "fixed_single_entry_multiple_items_deferred"
+    assert section_scaffolds["allergies"].entry_placeholder_ids == ["allergyintolerance-1"]
+    assert section_scaffolds["problems"].entry_placeholder_ids == ["condition-1"]
+    assert "allergyintolerance-2" not in placeholder_ids
+    assert "condition-2" not in placeholder_ids
+
+
 def _build_normalized_request():
     return build_psca_normalized_request(
         WorkflowBuildInput(

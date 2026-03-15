@@ -19,6 +19,25 @@ The implemented slice is intentionally narrow:
 - no full bundle population yet
 - no arbitrary-spec ingestion yet
 
+## Current bounded capabilities
+
+The workflow currently supports one narrow but real PS-CA path:
+
+- provider identity plus selected organization and selected provider-role relationship identity only
+- patient identity and demographics plus deterministic section-entry text alignment only for fields the normalized patient context can honestly supply
+- medications-only multiplicity up to two planned `MedicationRequest` entries, with explicit overflow deferral beyond those two
+- fixed single-entry allergies and problems, even when multiple upstream items exist
+- placeholder-scoped traceability carried from resource construction through candidate bundle and validation
+
+## Intentional deferrals
+
+The workflow does not currently claim:
+
+- broader `Organization` or `PractitionerRole` semantics such as telecom, address, specialty, availability, or directory-like behavior
+- multiplicity beyond the current medications-only bounded path
+- semantic clinical reasoning or broad conformance intelligence beyond the current deterministic workflow checks and standards-validator boundary
+- generic provenance infrastructure beyond the current placeholder-scoped traceability summary
+
 ## Repository shape
 
 - `docs/` contains architecture, workflow, and planning guidance.
@@ -109,6 +128,8 @@ The `specification_asset_retrieval` stage now emits the first normalized PS-CA a
 ## Current slice boundaries
 
 This slice is for workflow shape, PS-CA normalized asset retrieval, the first real schematic artifact, the first real build plan, the first meaningful content-enriched resource-construction path for core clinical resources, the first structured patient/clinical input-normalization path, the first support-resource enrichment for the selected provider-facing author path, the first structured provider/org/role input-normalization path, the first provider-context-aware schematic provenance path, the first candidate-bundle finalization foundation, the first validation foundation, the first optional Matchbox-backed external standards-validation path, the first repair-decision foundation, and the first bounded repair-execution foundation with narrow step-subset repair directives for resource construction plus narrower bundle-finalization-owned reference-alignment findings, including a bounded medications-only multiplicity expansion of up to two entries, medication-specific standards/validation hardening for that bounded path, explicit patient-context-to-bundle alignment hardening for the fields the workflow can honestly populate, explicit provider-context-to-bundle alignment hardening for the support-resource identity fields the workflow can honestly populate, and compact end-to-end placeholder-scoped traceability carried from resource construction through candidate bundle and validation.
+
+The current repo is intentionally consolidating these capabilities rather than expanding realism further in the same step.
 
 - The workflow reads existing PS-CA package files deterministically from the repo.
 - The spec retrieval stage exposes a normalized PS-CA asset context with foundational profiles, Composition section definitions, and selected example evidence.
