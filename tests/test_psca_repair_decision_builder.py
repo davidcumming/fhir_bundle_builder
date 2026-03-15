@@ -108,6 +108,28 @@ async def test_psca_repair_decision_routes_enriched_content_failures_to_resource
     ]
 
 
+async def test_psca_repair_decision_routes_patient_context_identity_alignment_failures_to_resource_construction() -> None:
+    report = await _build_validation_report(mutator=_misalign_patient_identity)
+
+    decision = build_psca_repair_decision(report)
+
+    assert decision.overall_decision == "repair_recommended"
+    assert decision.recommended_target == "resource_construction"
+    assert any(
+        route.finding_code == "bundle.patient_identity_aligned_to_context"
+        and route.route_target == "resource_construction"
+        and route.actionable is True
+        for route in decision.finding_routes
+    )
+    assert decision.recommended_resource_construction_repair_directive is not None
+    assert decision.recommended_resource_construction_repair_directive.target_step_ids == [
+        "build-patient-1"
+    ]
+    assert decision.recommended_resource_construction_repair_directive.target_placeholder_ids == [
+        "patient-1"
+    ]
+
+
 async def test_psca_repair_decision_routes_support_resource_failures_to_resource_construction() -> None:
     report = await _build_validation_report(mutator=_remove_practitioner_identity)
 
@@ -295,6 +317,43 @@ async def test_psca_repair_decision_routes_second_medicationrequest_placeholder_
     ]
     assert decision.recommended_resource_construction_repair_directive.trigger_finding_codes == [
         "bundle.medicationrequest_2_placeholder_content_present"
+    ]
+
+
+async def test_psca_repair_decision_routes_patient_context_text_alignment_failures_to_owning_steps() -> None:
+    report = await _build_validation_report(
+        mutator=_misalign_patient_context_section_entry_text,
+        medication_texts=[
+            "Atorvastatin 20 MG oral tablet",
+            "Metformin 500 MG oral tablet",
+        ],
+    )
+
+    decision = build_psca_repair_decision(report)
+
+    assert decision.recommended_target == "resource_construction"
+    assert {
+        route.finding_code
+        for route in decision.finding_routes
+        if route.route_target == "resource_construction" and route.actionable
+    } >= {
+        "bundle.medicationrequest_placeholder_text_aligned_to_context",
+        "bundle.medicationrequest_2_placeholder_text_aligned_to_context",
+        "bundle.allergyintolerance_placeholder_text_aligned_to_context",
+        "bundle.condition_placeholder_text_aligned_to_context",
+    }
+    assert decision.recommended_resource_construction_repair_directive is not None
+    assert decision.recommended_resource_construction_repair_directive.target_step_ids == [
+        "build-medicationrequest-1",
+        "build-medicationrequest-2",
+        "build-allergyintolerance-1",
+        "build-condition-1",
+    ]
+    assert decision.recommended_resource_construction_repair_directive.target_placeholder_ids == [
+        "medicationrequest-1",
+        "medicationrequest-2",
+        "allergyintolerance-1",
+        "condition-1",
     ]
 
 
@@ -863,6 +922,14 @@ def _remove_patient_name(candidate_bundle):
     return broken_bundle
 
 
+def _misalign_patient_identity(candidate_bundle):
+    broken_bundle = deepcopy(candidate_bundle)
+    patient = broken_bundle.candidate_bundle.fhir_bundle["entry"][1]["resource"]
+    patient["identifier"][0]["value"] = "wrong-patient-id"
+    patient["name"][0]["text"] = "Wrong Patient"
+    return broken_bundle
+
+
 def _remove_composition_title(candidate_bundle):
     broken_bundle = deepcopy(candidate_bundle)
     composition = broken_bundle.candidate_bundle.fhir_bundle["entry"][0]["resource"]
@@ -1043,6 +1110,19 @@ def _remove_medicationrequest_content(candidate_bundle):
     broken_bundle = deepcopy(candidate_bundle)
     medication = broken_bundle.candidate_bundle.fhir_bundle["entry"][5]["resource"]
     medication["medicationCodeableConcept"]["text"] = ""
+    return broken_bundle
+
+
+def _misalign_patient_context_section_entry_text(candidate_bundle):
+    broken_bundle = deepcopy(candidate_bundle)
+    medication_1 = broken_bundle.candidate_bundle.fhir_bundle["entry"][5]["resource"]
+    medication_2 = broken_bundle.candidate_bundle.fhir_bundle["entry"][6]["resource"]
+    allergy = broken_bundle.candidate_bundle.fhir_bundle["entry"][7]["resource"]
+    condition = broken_bundle.candidate_bundle.fhir_bundle["entry"][8]["resource"]
+    medication_1["medicationCodeableConcept"]["text"] = "Wrong medication text"
+    medication_2["medicationCodeableConcept"]["text"] = "Wrong second medication text"
+    allergy["code"]["text"] = "Wrong allergy text"
+    condition["code"]["text"] = "Wrong condition text"
     return broken_bundle
 
 

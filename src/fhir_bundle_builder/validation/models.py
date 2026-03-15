@@ -11,6 +11,7 @@ ValidationChannel = Literal["standards", "workflow"]
 ValidationSeverity = Literal["information", "warning", "error"]
 ValidationStatus = Literal["passed", "passed_with_warnings", "failed"]
 StandardsValidatorMode = Literal["local_scaffold", "matchbox"]
+PatientContextAlignmentMode = Literal["structured_patient_context", "fallback_placeholder"]
 
 
 class ValidationFinding(BaseModel):
@@ -64,6 +65,28 @@ class WorkflowValidationResult(BaseModel):
     deferred_areas: list[str] = Field(default_factory=list)
 
 
+class SectionEntryTextAlignmentExpectation(BaseModel):
+    """Expected patient-context-derived text for one section-entry placeholder."""
+
+    placeholder_id: str
+    resource_type: str
+    expected_text: str
+    alignment_mode: PatientContextAlignmentMode
+    source_artifact: str
+    source_detail: str
+
+
+class PatientContextAlignmentEvidence(BaseModel):
+    """Expected bundle content derived from normalized patient context."""
+
+    normalization_mode: str
+    patient_id: str
+    display_name: str
+    administrative_gender_expected: str | None = None
+    birth_date_expected: str | None = None
+    section_entry_expectations: list[SectionEntryTextAlignmentExpectation] = Field(default_factory=list)
+
+
 class ValidationEvidence(BaseModel):
     """Provenance for the validation stage."""
 
@@ -72,4 +95,5 @@ class ValidationEvidence(BaseModel):
     source_build_plan_stage_id: str
     source_resource_construction_stage_id: str
     validated_bundle_id: str
+    patient_context_alignment: PatientContextAlignmentEvidence
     source_refs: list[str] = Field(default_factory=list)

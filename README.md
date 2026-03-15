@@ -108,7 +108,7 @@ The `specification_asset_retrieval` stage now emits the first normalized PS-CA a
 
 ## Current slice boundaries
 
-This slice is for workflow shape, PS-CA normalized asset retrieval, the first real schematic artifact, the first real build plan, the first meaningful content-enriched resource-construction path for core clinical resources, the first structured patient/clinical input-normalization path, the first support-resource enrichment for the selected provider-facing author path, the first structured provider/org/role input-normalization path, the first provider-context-aware schematic provenance path, the first candidate-bundle finalization foundation, the first validation foundation, the first optional Matchbox-backed external standards-validation path, the first repair-decision foundation, and the first bounded repair-execution foundation with narrow step-subset repair directives for resource construction plus narrower bundle-finalization-owned reference-alignment findings, including a bounded medications-only multiplicity expansion of up to two entries and medication-specific standards/validation hardening for that bounded path.
+This slice is for workflow shape, PS-CA normalized asset retrieval, the first real schematic artifact, the first real build plan, the first meaningful content-enriched resource-construction path for core clinical resources, the first structured patient/clinical input-normalization path, the first support-resource enrichment for the selected provider-facing author path, the first structured provider/org/role input-normalization path, the first provider-context-aware schematic provenance path, the first candidate-bundle finalization foundation, the first validation foundation, the first optional Matchbox-backed external standards-validation path, the first repair-decision foundation, and the first bounded repair-execution foundation with narrow step-subset repair directives for resource construction plus narrower bundle-finalization-owned reference-alignment findings, including a bounded medications-only multiplicity expansion of up to two entries, medication-specific standards/validation hardening for that bounded path, and explicit patient-context-to-bundle alignment hardening for the fields the workflow can honestly populate.
 
 - The workflow reads existing PS-CA package files deterministically from the repo.
 - The spec retrieval stage exposes a normalized PS-CA asset context with foundational profiles, Composition section definitions, and selected example evidence.
@@ -254,6 +254,11 @@ The `validation` stage now emits the first real structured validation artifact f
     - `Organization` when selected organization context exists
     - `PractitionerRole` selected relationship identity when selected provider-role context exists
     - `PractitionerRole` author-context label
+  - explicit separation between structural content checks and exact patient-context alignment checks for:
+    - `Patient` identity and optional demographics
+    - `MedicationRequest` display text for the current bounded medication placeholders
+    - `AllergyIntolerance.code.text`
+    - `Condition.code.text`
   - section-specific deterministic Composition section-presence checks for medications, allergies, and problems
   - resource-specific placeholder-content checks for `MedicationRequest`, `AllergyIntolerance`, and `Condition`
   - second-medication-specific placeholder-content and reference checks when the bounded two-medication path is planned
@@ -279,6 +284,7 @@ The `validation` stage now emits the first real structured validation artifact f
   - explicit deferred areas
 - counts for errors, warnings, and informational findings
 - validation evidence linking back to the candidate bundle, schematic, build plan, and resource construction artifacts
+- validation evidence showing expected patient-context-driven patient identity values and per-placeholder section-entry text expectations, including whether each expectation came from structured patient context or fallback placeholder policy
 - clear standards-channel provenance showing whether validation ran locally, through Matchbox, or through local fallback after Matchbox was unavailable
 - local standards checks that now also require unique `Bundle.entry.fullUrl` values and unique `Bundle.entry.resource.id` values
 

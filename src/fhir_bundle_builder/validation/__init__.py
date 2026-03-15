@@ -1,6 +1,9 @@
 """Validation package exports."""
 
 from .models import (
+    PatientContextAlignmentEvidence,
+    PatientContextAlignmentMode,
+    SectionEntryTextAlignmentExpectation,
     StandardsValidationConfig,
     StandardsValidationRequest,
     StandardsValidationResult,
@@ -34,6 +37,9 @@ __all__ = [
     "MatchboxStandardsValidator",
     "MatchboxStandardsValidatorUnavailableError",
     "MatchboxWithLocalFallbackStandardsValidator",
+    "PatientContextAlignmentEvidence",
+    "PatientContextAlignmentMode",
+    "SectionEntryTextAlignmentExpectation",
     "StandardsValidationConfig",
     "StandardsValidationRequest",
     "StandardsValidationResult",

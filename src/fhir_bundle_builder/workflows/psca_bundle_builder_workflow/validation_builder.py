@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from fhir_bundle_builder.validation import (
+    PatientContextAlignmentEvidence,
+    SectionEntryTextAlignmentExpectation,
     StandardsValidationRequest,
     StandardsValidator,
     ValidationEvidence,
@@ -74,6 +76,10 @@ async def build_psca_validation_report(
             source_build_plan_stage_id=candidate_bundle.evidence.source_build_plan_stage_id,
             source_resource_construction_stage_id=candidate_bundle.evidence.source_resource_construction_stage_id,
             validated_bundle_id=candidate_bundle.candidate_bundle.bundle_id,
+            patient_context_alignment=_patient_context_alignment_evidence(
+                normalized_request,
+                schematic,
+            ),
             source_refs=candidate_bundle.source_refs,
         ),
     )
@@ -102,19 +108,26 @@ def _build_workflow_validation_result(
         "bundle.composition_subject_reference_aligned",
         "bundle.composition_author_reference_aligned",
         "bundle.patient_identity_content_present",
+        "bundle.patient_identity_aligned_to_context",
         "bundle.practitioner_identity_content_present",
         "bundle.organization_identity_content_present",
         "bundle.practitionerrole_relationship_identity_present",
         "bundle.practitionerrole_author_context_present",
         "bundle.medicationrequest_placeholder_content_present",
+        "bundle.medicationrequest_placeholder_text_aligned_to_context",
         *(
-            ["bundle.medicationrequest_2_placeholder_content_present"]
+            [
+                "bundle.medicationrequest_2_placeholder_content_present",
+                "bundle.medicationrequest_2_placeholder_text_aligned_to_context",
+            ]
             if len(medication_placeholder_ids) > 1
             else []
         ),
         "bundle.medications_bundle_entries_aligned_to_plan",
         "bundle.allergyintolerance_placeholder_content_present",
+        "bundle.allergyintolerance_placeholder_text_aligned_to_context",
         "bundle.condition_placeholder_content_present",
+        "bundle.condition_placeholder_text_aligned_to_context",
         "bundle.composition_medications_section_present",
         "bundle.composition_allergies_section_present",
         "bundle.composition_problems_section_present",
@@ -271,9 +284,31 @@ def _build_workflow_validation_result(
     )
     patient_gender = patient.get("gender") if isinstance(patient, dict) else None
     patient_birth_date = patient.get("birthDate") if isinstance(patient, dict) else None
-    if (
-        patient.get("active") is not True
-        or identifier_value != expected_patient.patient_id
+    patient_identity_content_present = (
+        patient.get("active") is True
+        and isinstance(identifier_value, str)
+        and bool(identifier_value)
+        and isinstance(patient_name_text, str)
+        and bool(patient_name_text)
+        and (
+            expected_patient.administrative_gender is None
+            or (isinstance(patient_gender, str) and bool(patient_gender))
+        )
+        and (
+            expected_patient.birth_date is None
+            or (isinstance(patient_birth_date, str) and bool(patient_birth_date))
+        )
+    )
+    if not patient_identity_content_present:
+        findings.append(
+            _workflow_error(
+                "bundle.patient_identity_content_present",
+                "Bundle.entry[1].resource",
+                "Expected Patient enriched content to include active=true, identifier[0].value, and name[0].text, plus gender/birthDate fields when normalized patient context supplies them.",
+            )
+        )
+    elif (
+        identifier_value != expected_patient.patient_id
         or patient_name_text != expected_patient.display_name
         or (
             expected_patient.administrative_gender is not None
@@ -283,9 +318,9 @@ def _build_workflow_validation_result(
     ):
         findings.append(
             _workflow_error(
-                "bundle.patient_identity_content_present",
+                "bundle.patient_identity_aligned_to_context",
                 "Bundle.entry[1].resource",
-                "Expected Patient enriched content to include active=true, identifier[0].value, and name[0].text from normalized patient context, plus gender/birthDate when supplied.",
+                "Expected Patient identity content to align exactly to normalized patient context for identifier, name, and optional demographic values when supplied.",
             )
         )
 
@@ -389,7 +424,21 @@ def _build_workflow_validation_result(
             )
         )
 
-    if not _medicationrequest_placeholder_content_present(
+    medicationrequest_1_content_present = _medicationrequest_placeholder_content_present(
+        bundle,
+        normalized_request,
+        schematic,
+        "medicationrequest-1",
+    )
+    if not medicationrequest_1_content_present:
+        findings.append(
+            _workflow_error(
+                "bundle.medicationrequest_placeholder_content_present",
+                "Bundle.entry.resource[id='medicationrequest-1']",
+                "Expected MedicationRequest content to include status='draft', intent='proposal', and a non-empty medicationCodeableConcept.text value.",
+            )
+        )
+    elif not _medicationrequest_placeholder_text_aligned_to_context(
         bundle,
         normalized_request,
         schematic,
@@ -397,24 +446,39 @@ def _build_workflow_validation_result(
     ):
         findings.append(
             _workflow_error(
-                "bundle.medicationrequest_placeholder_content_present",
-                "Bundle.entry.resource[id='medicationrequest-1']",
-                "Expected MedicationRequest content to include status='draft', intent='proposal', and the deterministic medication text from normalized patient context or the section-title fallback.",
+                "bundle.medicationrequest_placeholder_text_aligned_to_context",
+                "Bundle.entry.resource[id='medicationrequest-1'].medicationCodeableConcept.text",
+                "Expected MedicationRequest text content to align exactly to the deterministic normalized patient-context expectation or fallback placeholder policy.",
             )
         )
-    if len(medication_placeholder_ids) > 1 and not _medicationrequest_placeholder_content_present(
-        bundle,
-        normalized_request,
-        schematic,
-        "medicationrequest-2",
-    ):
-        findings.append(
-            _workflow_error(
-                "bundle.medicationrequest_2_placeholder_content_present",
-                "Bundle.entry.resource[id='medicationrequest-2']",
-                "Expected the second MedicationRequest content to include status='draft', intent='proposal', and the deterministic second medication text from normalized patient context.",
-            )
+    if len(medication_placeholder_ids) > 1:
+        medicationrequest_2_content_present = _medicationrequest_placeholder_content_present(
+            bundle,
+            normalized_request,
+            schematic,
+            "medicationrequest-2",
         )
+        if not medicationrequest_2_content_present:
+            findings.append(
+                _workflow_error(
+                    "bundle.medicationrequest_2_placeholder_content_present",
+                    "Bundle.entry.resource[id='medicationrequest-2']",
+                    "Expected the second MedicationRequest content to include status='draft', intent='proposal', and a non-empty medicationCodeableConcept.text value.",
+                )
+            )
+        elif not _medicationrequest_placeholder_text_aligned_to_context(
+            bundle,
+            normalized_request,
+            schematic,
+            "medicationrequest-2",
+        ):
+            findings.append(
+                _workflow_error(
+                    "bundle.medicationrequest_2_placeholder_text_aligned_to_context",
+                    "Bundle.entry.resource[id='medicationrequest-2'].medicationCodeableConcept.text",
+                    "Expected the second MedicationRequest text content to align exactly to the authoritative bounded medication mapping.",
+                )
+            )
     medications_bundle_entries_aligned = _medications_bundle_entries_aligned_to_plan(
         candidate_bundle,
         schematic,
@@ -428,21 +492,39 @@ def _build_workflow_validation_result(
             )
         )
 
-    if not _allergyintolerance_placeholder_content_present(bundle, normalized_request, schematic):
+    allergy_content_present = _allergyintolerance_placeholder_content_present(bundle, normalized_request, schematic)
+    if not allergy_content_present:
         findings.append(
             _workflow_error(
                 "bundle.allergyintolerance_placeholder_content_present",
                 "Bundle.entry[6].resource",
-                "Expected AllergyIntolerance content to include fixed clinical/verification status codes and the deterministic allergy text from normalized patient context or the section-title fallback.",
+                "Expected AllergyIntolerance content to include fixed clinical/verification status codes and a non-empty code.text value.",
+            )
+        )
+    elif not _allergyintolerance_placeholder_text_aligned_to_context(bundle, normalized_request, schematic):
+        findings.append(
+            _workflow_error(
+                "bundle.allergyintolerance_placeholder_text_aligned_to_context",
+                "Bundle.entry[6].resource.code.text",
+                "Expected AllergyIntolerance text content to align exactly to the deterministic normalized patient-context expectation or fallback placeholder policy.",
             )
         )
 
-    if not _condition_placeholder_content_present(bundle, normalized_request, schematic):
+    condition_content_present = _condition_placeholder_content_present(bundle, normalized_request, schematic)
+    if not condition_content_present:
         findings.append(
             _workflow_error(
                 "bundle.condition_placeholder_content_present",
                 "Bundle.entry[7].resource",
-                "Expected Condition content to include fixed clinical/verification status codes and the deterministic condition text from normalized patient context or the section-title fallback.",
+                "Expected Condition content to include fixed clinical/verification status codes and a non-empty code.text value.",
+            )
+        )
+    elif not _condition_placeholder_text_aligned_to_context(bundle, normalized_request, schematic):
+        findings.append(
+            _workflow_error(
+                "bundle.condition_placeholder_text_aligned_to_context",
+                "Bundle.entry[7].resource.code.text",
+                "Expected Condition text content to align exactly to the deterministic normalized patient-context expectation or fallback placeholder policy.",
             )
         )
 
@@ -1080,8 +1162,8 @@ def _medicationrequest_placeholder_content_present(
         medication.get("status") == "draft"
         and medication.get("intent") == "proposal"
         and isinstance(medication.get("medicationCodeableConcept"), dict)
-        and medication["medicationCodeableConcept"].get("text")
-        == _expected_medication_text(normalized_request, schematic, placeholder_id)
+        and isinstance(medication["medicationCodeableConcept"].get("text"), str)
+        and bool(medication["medicationCodeableConcept"].get("text"))
     )
 
 
@@ -1097,7 +1179,8 @@ def _allergyintolerance_placeholder_content_present(
         allergy_clinical.get("code") == "active"
         and allergy_verification.get("code") == "unconfirmed"
         and isinstance(allergy.get("code"), dict)
-        and allergy["code"].get("text") == _expected_allergy_text(normalized_request, schematic)
+        and isinstance(allergy["code"].get("text"), str)
+        and bool(allergy["code"].get("text"))
     )
 
 
@@ -1113,6 +1196,45 @@ def _condition_placeholder_content_present(
         condition_clinical.get("code") == "active"
         and condition_verification.get("code") == "provisional"
         and isinstance(condition.get("code"), dict)
+        and isinstance(condition["code"].get("text"), str)
+        and bool(condition["code"].get("text"))
+    )
+
+
+def _medicationrequest_placeholder_text_aligned_to_context(
+    bundle: dict[str, object],
+    normalized_request: NormalizedBuildRequest,
+    schematic: BundleSchematic,
+    placeholder_id: str = "medicationrequest-1",
+) -> bool:
+    medication = _find_resource_by_placeholder_id(bundle, placeholder_id)
+    return (
+        isinstance(medication.get("medicationCodeableConcept"), dict)
+        and medication["medicationCodeableConcept"].get("text")
+        == _expected_medication_text(normalized_request, schematic, placeholder_id)
+    )
+
+
+def _allergyintolerance_placeholder_text_aligned_to_context(
+    bundle: dict[str, object],
+    normalized_request: NormalizedBuildRequest,
+    schematic: BundleSchematic,
+) -> bool:
+    allergy = _find_resource_by_type(bundle, "AllergyIntolerance")
+    return (
+        isinstance(allergy.get("code"), dict)
+        and allergy["code"].get("text") == _expected_allergy_text(normalized_request, schematic)
+    )
+
+
+def _condition_placeholder_text_aligned_to_context(
+    bundle: dict[str, object],
+    normalized_request: NormalizedBuildRequest,
+    schematic: BundleSchematic,
+) -> bool:
+    condition = _find_resource_by_type(bundle, "Condition")
+    return (
+        isinstance(condition.get("code"), dict)
         and condition["code"].get("text") == _expected_condition_text(normalized_request, schematic)
     )
 
@@ -1149,6 +1271,35 @@ def _dedupe(values: list[str]) -> list[str]:
         if value not in ordered:
             ordered.append(value)
     return ordered
+
+
+def _patient_context_alignment_evidence(
+    normalized_request: NormalizedBuildRequest,
+    schematic: BundleSchematic,
+) -> PatientContextAlignmentEvidence:
+    patient = normalized_request.patient_context.patient
+    return PatientContextAlignmentEvidence(
+        normalization_mode=normalized_request.patient_context.normalization_mode,
+        patient_id=patient.patient_id,
+        display_name=patient.display_name,
+        administrative_gender_expected=patient.administrative_gender,
+        birth_date_expected=patient.birth_date,
+        section_entry_expectations=[
+            *_medication_alignment_expectations(normalized_request, schematic),
+            _section_entry_text_alignment_expectation(
+                normalized_request,
+                schematic,
+                "allergyintolerance-1",
+                "AllergyIntolerance",
+            ),
+            _section_entry_text_alignment_expectation(
+                normalized_request,
+                schematic,
+                "condition-1",
+                "Condition",
+            ),
+        ],
+    )
 
 
 def _expected_medication_text(
@@ -1220,3 +1371,165 @@ def _planned_medication_entry_for_placeholder(
         if entry.placeholder_id == placeholder_id:
             return entry
     return None
+
+
+def _medication_alignment_expectations(
+    normalized_request: NormalizedBuildRequest,
+    schematic: BundleSchematic,
+) -> list[SectionEntryTextAlignmentExpectation]:
+    expectations = [
+        _section_entry_text_alignment_expectation(
+            normalized_request,
+            schematic,
+            "medicationrequest-1",
+            "MedicationRequest",
+        )
+    ]
+    if any(entry.placeholder_id == "medicationrequest-2" for entry in normalized_request.patient_context.planned_medication_entries):
+        expectations.append(
+            _section_entry_text_alignment_expectation(
+                normalized_request,
+                schematic,
+                "medicationrequest-2",
+                "MedicationRequest",
+            )
+        )
+    return expectations
+
+
+def _section_entry_text_alignment_expectation(
+    normalized_request: NormalizedBuildRequest,
+    schematic: BundleSchematic,
+    placeholder_id: str,
+    resource_type: str,
+) -> SectionEntryTextAlignmentExpectation:
+    expected_text = _expected_text_for_placeholder(
+        normalized_request,
+        schematic,
+        placeholder_id,
+        resource_type,
+    )
+    source_artifact, source_detail = _expected_text_source(
+        normalized_request,
+        schematic,
+        placeholder_id,
+        resource_type,
+    )
+    return SectionEntryTextAlignmentExpectation(
+        placeholder_id=placeholder_id,
+        resource_type=resource_type,
+        expected_text=expected_text,
+        alignment_mode=_alignment_mode_for_placeholder(
+            normalized_request,
+            placeholder_id,
+            resource_type,
+        ),
+        source_artifact=source_artifact,
+        source_detail=source_detail,
+    )
+
+
+def _expected_text_for_placeholder(
+    normalized_request: NormalizedBuildRequest,
+    schematic: BundleSchematic,
+    placeholder_id: str,
+    resource_type: str,
+) -> str:
+    if resource_type == "MedicationRequest":
+        return _expected_medication_text(normalized_request, schematic, placeholder_id)
+    if resource_type == "AllergyIntolerance":
+        return _expected_allergy_text(normalized_request, schematic)
+    if resource_type == "Condition":
+        return _expected_condition_text(normalized_request, schematic)
+    raise ValueError(f"Unsupported resource type '{resource_type}' for patient-context alignment evidence.")
+
+
+def _expected_text_source(
+    normalized_request: NormalizedBuildRequest,
+    schematic: BundleSchematic,
+    placeholder_id: str,
+    resource_type: str,
+) -> tuple[str, str]:
+    if resource_type == "MedicationRequest":
+        planned_entry = _planned_medication_entry_for_placeholder(normalized_request, placeholder_id)
+        if planned_entry is not None:
+            return (
+                f"normalized_request.patient_context.planned_medication_entries[{_planned_medication_entry_list_index(normalized_request, placeholder_id)}]",
+                (
+                    "display_text"
+                    f" (placeholder_id={planned_entry.placeholder_id}, "
+                    f"source_medication_index={planned_entry.source_medication_index}, "
+                    f"medication_id={planned_entry.medication_id})"
+                ),
+            )
+    if resource_type == "AllergyIntolerance" and normalized_request.patient_context.selected_allergy_for_single_entry is not None:
+        return (
+            "normalized_request.patient_context.selected_allergy_for_single_entry",
+            "display_text",
+        )
+    if resource_type == "Condition" and normalized_request.patient_context.selected_condition_for_single_entry is not None:
+        return (
+            "normalized_request.patient_context.selected_condition_for_single_entry",
+            "display_text",
+        )
+    section_key = _section_key_for_resource_type(resource_type)
+    section_title = _section_title_for_key(schematic, section_key)
+    return (
+        f"bundle_schematic.section_scaffolds[{section_key}] + normalized_request.request",
+        f"{section_title} + scenario_label",
+    )
+
+
+def _alignment_mode_for_placeholder(
+    normalized_request: NormalizedBuildRequest,
+    placeholder_id: str,
+    resource_type: str,
+) -> str:
+    if resource_type == "MedicationRequest":
+        return (
+            "structured_patient_context"
+            if _planned_medication_entry_for_placeholder(normalized_request, placeholder_id) is not None
+            else "fallback_placeholder"
+        )
+    if resource_type == "AllergyIntolerance":
+        return (
+            "structured_patient_context"
+            if normalized_request.patient_context.selected_allergy_for_single_entry is not None
+            else "fallback_placeholder"
+        )
+    if resource_type == "Condition":
+        return (
+            "structured_patient_context"
+            if normalized_request.patient_context.selected_condition_for_single_entry is not None
+            else "fallback_placeholder"
+        )
+    raise ValueError(f"Unsupported resource type '{resource_type}' for alignment mode.")
+
+
+def _planned_medication_entry_list_index(
+    normalized_request: NormalizedBuildRequest,
+    placeholder_id: str,
+) -> int | None:
+    for index, entry in enumerate(normalized_request.patient_context.planned_medication_entries):
+        if entry.placeholder_id == placeholder_id:
+            return index
+    return None
+
+
+def _section_key_for_resource_type(resource_type: str) -> str:
+    section_key_by_resource_type = {
+        "MedicationRequest": "medications",
+        "AllergyIntolerance": "allergies",
+        "Condition": "problems",
+    }
+    section_key = section_key_by_resource_type.get(resource_type)
+    if section_key is None:
+        raise ValueError(f"Unsupported resource type '{resource_type}' for section mapping.")
+    return section_key
+
+
+def _section_title_for_key(schematic: BundleSchematic, section_key: str) -> str:
+    for section in schematic.section_scaffolds:
+        if section.section_key == section_key:
+            return section.title
+    raise ValueError(f"Expected section scaffold '{section_key}' to be present.")

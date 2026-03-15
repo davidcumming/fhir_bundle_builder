@@ -103,6 +103,12 @@ _FINDING_ROUTE_MAP: dict[str, tuple[str, str, bool, str]] = {
         True,
         "Patient identity placeholder content is populated during resource construction.",
     ),
+    "bundle.patient_identity_aligned_to_context": (
+        "resource_construction",
+        "resource_construction",
+        True,
+        "Patient identity values are derived from normalized patient context during resource construction.",
+    ),
     "bundle.practitioner_identity_content_present": (
         "resource_construction",
         "resource_construction",
@@ -133,11 +139,23 @@ _FINDING_ROUTE_MAP: dict[str, tuple[str, str, bool, str]] = {
         True,
         "MedicationRequest placeholder content is populated during resource construction.",
     ),
+    "bundle.medicationrequest_placeholder_text_aligned_to_context": (
+        "resource_construction",
+        "resource_construction",
+        True,
+        "MedicationRequest text content is derived from normalized patient context or deterministic fallback policy during resource construction.",
+    ),
     "bundle.medicationrequest_2_placeholder_content_present": (
         "resource_construction",
         "resource_construction",
         True,
         "The second MedicationRequest placeholder content is populated during resource construction.",
+    ),
+    "bundle.medicationrequest_2_placeholder_text_aligned_to_context": (
+        "resource_construction",
+        "resource_construction",
+        True,
+        "The second MedicationRequest text content is derived from the authoritative bounded medication mapping during resource construction.",
     ),
     "bundle.medications_bundle_entries_aligned_to_plan": (
         "bundle_finalization",
@@ -151,11 +169,23 @@ _FINDING_ROUTE_MAP: dict[str, tuple[str, str, bool, str]] = {
         True,
         "AllergyIntolerance placeholder content is populated during resource construction.",
     ),
+    "bundle.allergyintolerance_placeholder_text_aligned_to_context": (
+        "resource_construction",
+        "resource_construction",
+        True,
+        "AllergyIntolerance text content is derived from normalized patient context or deterministic fallback policy during resource construction.",
+    ),
     "bundle.condition_placeholder_content_present": (
         "resource_construction",
         "resource_construction",
         True,
         "Condition placeholder content is populated during resource construction.",
+    ),
+    "bundle.condition_placeholder_text_aligned_to_context": (
+        "resource_construction",
+        "resource_construction",
+        True,
+        "Condition text content is derived from normalized patient context or deterministic fallback policy during resource construction.",
     ),
     "bundle.composition_medications_section_present": (
         "resource_construction",
@@ -280,6 +310,11 @@ _RESOURCE_CONSTRUCTION_DIRECTIVE_MAP: dict[str, tuple[list[str], list[str], str]
         ["build-patient-1"],
         ["patient-1"],
         "Rerun the patient anchor step to restore deterministic patient identity content.",
+    ),
+    "bundle.patient_identity_aligned_to_context": (
+        ["build-patient-1"],
+        ["patient-1"],
+        "Rerun the patient anchor step to restore exact patient identity alignment to normalized patient context.",
     ),
     "bundle.practitioner_identity_content_present": (
         ["build-practitioner-1"],
@@ -406,20 +441,40 @@ _RESOURCE_CONSTRUCTION_DIRECTIVE_MAP: dict[str, tuple[list[str], list[str], str]
         ["medicationrequest-1"],
         "Rerun the MedicationRequest section-entry step to restore deterministic placeholder content for the medications section entry.",
     ),
+    "bundle.medicationrequest_placeholder_text_aligned_to_context": (
+        ["build-medicationrequest-1"],
+        ["medicationrequest-1"],
+        "Rerun the MedicationRequest section-entry step to restore exact medication text alignment to normalized patient context or deterministic fallback policy.",
+    ),
     "bundle.medicationrequest_2_placeholder_content_present": (
         ["build-medicationrequest-2"],
         ["medicationrequest-2"],
         "Rerun the second MedicationRequest section-entry step to restore deterministic placeholder content for the medications section entry.",
+    ),
+    "bundle.medicationrequest_2_placeholder_text_aligned_to_context": (
+        ["build-medicationrequest-2"],
+        ["medicationrequest-2"],
+        "Rerun the second MedicationRequest section-entry step to restore exact medication text alignment to the authoritative bounded medication mapping.",
     ),
     "bundle.allergyintolerance_placeholder_content_present": (
         ["build-allergyintolerance-1"],
         ["allergyintolerance-1"],
         "Rerun the AllergyIntolerance section-entry step to restore deterministic placeholder content for the allergies section entry.",
     ),
+    "bundle.allergyintolerance_placeholder_text_aligned_to_context": (
+        ["build-allergyintolerance-1"],
+        ["allergyintolerance-1"],
+        "Rerun the AllergyIntolerance section-entry step to restore exact allergy text alignment to normalized patient context or deterministic fallback policy.",
+    ),
     "bundle.condition_placeholder_content_present": (
         ["build-condition-1"],
         ["condition-1"],
         "Rerun the Condition section-entry step to restore deterministic placeholder content for the problems section entry.",
+    ),
+    "bundle.condition_placeholder_text_aligned_to_context": (
+        ["build-condition-1"],
+        ["condition-1"],
+        "Rerun the Condition section-entry step to restore exact condition text alignment to normalized patient context or deterministic fallback policy.",
     ),
 }
 

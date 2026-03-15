@@ -62,6 +62,39 @@ async def test_psca_validation_builder_happy_path_reports_split_channels() -> No
     assert report.standards_validation.fallback_used is False
     assert report.workflow_validation.status == "passed"
     assert report.overall_status == "passed_with_warnings"
+    assert report.evidence.patient_context_alignment.normalization_mode == "patient_context_explicit"
+    assert report.evidence.patient_context_alignment.patient_id == "patient-validation-test"
+    assert report.evidence.patient_context_alignment.display_name == "Validation Test Patient"
+    assert report.evidence.patient_context_alignment.administrative_gender_expected == "female"
+    assert report.evidence.patient_context_alignment.birth_date_expected == "1985-02-14"
+    assert [
+        (
+            expectation.placeholder_id,
+            expectation.resource_type,
+            expectation.alignment_mode,
+            expectation.expected_text,
+        )
+        for expectation in report.evidence.patient_context_alignment.section_entry_expectations
+    ] == [
+        (
+            "medicationrequest-1",
+            "MedicationRequest",
+            "structured_patient_context",
+            "Atorvastatin 20 MG oral tablet",
+        ),
+        (
+            "allergyintolerance-1",
+            "AllergyIntolerance",
+            "structured_patient_context",
+            "Peanut allergy",
+        ),
+        (
+            "condition-1",
+            "Condition",
+            "structured_patient_context",
+            "Type 2 diabetes mellitus",
+        ),
+    ]
     assert any(
         finding.code == "external_profile_validation_deferred"
         for finding in report.standards_validation.findings
@@ -100,6 +133,25 @@ async def test_psca_validation_builder_happy_path_reports_split_channels() -> No
     )
     assert not any(
         finding.code == "bundle.medications_bundle_entries_aligned_to_plan" and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.patient_identity_aligned_to_context" and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.medicationrequest_placeholder_text_aligned_to_context"
+        and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.allergyintolerance_placeholder_text_aligned_to_context"
+        and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.condition_placeholder_text_aligned_to_context"
+        and finding.severity == "error"
         for finding in report.workflow_validation.findings
     )
     assert not any(
@@ -214,6 +266,34 @@ async def test_psca_validation_builder_fails_when_patient_context_demographics_a
     assert report.workflow_validation.status == "failed"
     assert any(
         finding.code == "bundle.patient_identity_content_present" and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.patient_identity_aligned_to_context"
+        for finding in report.workflow_validation.findings
+    )
+
+
+async def test_psca_validation_builder_fails_when_patient_identity_values_do_not_align_to_context() -> None:
+    normalized_request, schematic, candidate_bundle = _build_validation_inputs()
+    broken_bundle = deepcopy(candidate_bundle)
+    patient = broken_bundle.candidate_bundle.fhir_bundle["entry"][1]["resource"]
+    patient["identifier"][0]["value"] = "wrong-patient-id"
+    patient["name"][0]["text"] = "Wrong Patient"
+
+    report = await build_psca_validation_report(
+        broken_bundle,
+        schematic,
+        normalized_request,
+        LocalCandidateBundleScaffoldStandardsValidator(),
+    )
+
+    assert any(
+        finding.code == "bundle.patient_identity_aligned_to_context" and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.patient_identity_content_present"
         for finding in report.workflow_validation.findings
     )
 
@@ -380,11 +460,39 @@ async def test_psca_validation_builder_fails_when_medicationrequest_placeholder_
         for finding in report.workflow_validation.findings
     )
     assert not any(
+        finding.code == "bundle.medicationrequest_placeholder_text_aligned_to_context"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
         finding.code == "bundle.allergyintolerance_placeholder_content_present"
         for finding in report.workflow_validation.findings
     )
     assert not any(
         finding.code == "bundle.condition_placeholder_content_present"
+        for finding in report.workflow_validation.findings
+    )
+
+
+async def test_psca_validation_builder_fails_when_medicationrequest_text_is_not_aligned_to_context() -> None:
+    normalized_request, schematic, candidate_bundle = _build_validation_inputs()
+    broken_bundle = deepcopy(candidate_bundle)
+    medication = broken_bundle.candidate_bundle.fhir_bundle["entry"][5]["resource"]
+    medication["medicationCodeableConcept"]["text"] = "Wrong medication text"
+
+    report = await build_psca_validation_report(
+        broken_bundle,
+        schematic,
+        normalized_request,
+        LocalCandidateBundleScaffoldStandardsValidator(),
+    )
+
+    assert any(
+        finding.code == "bundle.medicationrequest_placeholder_text_aligned_to_context"
+        and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.medicationrequest_placeholder_content_present"
         for finding in report.workflow_validation.findings
     )
 
@@ -409,11 +517,39 @@ async def test_psca_validation_builder_fails_when_allergyintolerance_placeholder
         for finding in report.workflow_validation.findings
     )
     assert not any(
+        finding.code == "bundle.allergyintolerance_placeholder_text_aligned_to_context"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
         finding.code == "bundle.medicationrequest_placeholder_content_present"
         for finding in report.workflow_validation.findings
     )
     assert not any(
         finding.code == "bundle.condition_placeholder_content_present"
+        for finding in report.workflow_validation.findings
+    )
+
+
+async def test_psca_validation_builder_fails_when_allergyintolerance_text_is_not_aligned_to_context() -> None:
+    normalized_request, schematic, candidate_bundle = _build_validation_inputs()
+    broken_bundle = deepcopy(candidate_bundle)
+    allergy = broken_bundle.candidate_bundle.fhir_bundle["entry"][6]["resource"]
+    allergy["code"]["text"] = "Wrong allergy text"
+
+    report = await build_psca_validation_report(
+        broken_bundle,
+        schematic,
+        normalized_request,
+        LocalCandidateBundleScaffoldStandardsValidator(),
+    )
+
+    assert any(
+        finding.code == "bundle.allergyintolerance_placeholder_text_aligned_to_context"
+        and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.allergyintolerance_placeholder_content_present"
         for finding in report.workflow_validation.findings
     )
 
@@ -438,11 +574,39 @@ async def test_psca_validation_builder_fails_when_condition_placeholder_content_
         for finding in report.workflow_validation.findings
     )
     assert not any(
+        finding.code == "bundle.condition_placeholder_text_aligned_to_context"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
         finding.code == "bundle.medicationrequest_placeholder_content_present"
         for finding in report.workflow_validation.findings
     )
     assert not any(
         finding.code == "bundle.allergyintolerance_placeholder_content_present"
+        for finding in report.workflow_validation.findings
+    )
+
+
+async def test_psca_validation_builder_fails_when_condition_text_is_not_aligned_to_context() -> None:
+    normalized_request, schematic, candidate_bundle = _build_validation_inputs()
+    broken_bundle = deepcopy(candidate_bundle)
+    condition = broken_bundle.candidate_bundle.fhir_bundle["entry"][7]["resource"]
+    condition["code"]["text"] = "Wrong condition text"
+
+    report = await build_psca_validation_report(
+        broken_bundle,
+        schematic,
+        normalized_request,
+        LocalCandidateBundleScaffoldStandardsValidator(),
+    )
+
+    assert any(
+        finding.code == "bundle.condition_placeholder_text_aligned_to_context"
+        and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.condition_placeholder_content_present"
         for finding in report.workflow_validation.findings
     )
 
@@ -471,6 +635,14 @@ async def test_psca_validation_builder_fails_when_multiple_section_entry_resourc
     assert any(
         finding.code == "bundle.condition_placeholder_content_present"
         and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.medicationrequest_placeholder_text_aligned_to_context"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.condition_placeholder_text_aligned_to_context"
         for finding in report.workflow_validation.findings
     )
     assert not any(
@@ -1073,6 +1245,40 @@ async def test_psca_validation_builder_fails_when_second_medicationrequest_place
         and finding.severity == "error"
         for finding in report.workflow_validation.findings
     )
+    assert not any(
+        finding.code == "bundle.medicationrequest_2_placeholder_text_aligned_to_context"
+        for finding in report.workflow_validation.findings
+    )
+
+
+async def test_psca_validation_builder_fails_when_second_medicationrequest_text_is_not_aligned_to_context() -> None:
+    normalized_request, schematic, _, candidate_bundle = _build_validation_artifacts(
+        medication_texts=[
+            "Atorvastatin 20 MG oral tablet",
+            "Metformin 500 MG oral tablet",
+        ]
+    )
+    broken_bundle = deepcopy(candidate_bundle)
+    broken_bundle.candidate_bundle.fhir_bundle["entry"][6]["resource"]["medicationCodeableConcept"]["text"] = (
+        "Wrong second medication text"
+    )
+
+    report = await build_psca_validation_report(
+        broken_bundle,
+        schematic,
+        normalized_request,
+        LocalCandidateBundleScaffoldStandardsValidator(),
+    )
+
+    assert any(
+        finding.code == "bundle.medicationrequest_2_placeholder_text_aligned_to_context"
+        and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.medicationrequest_2_placeholder_content_present"
+        for finding in report.workflow_validation.findings
+    )
 
 
 async def test_psca_validation_builder_fails_when_second_medicationrequest_subject_source_contribution_is_not_aligned() -> None:
@@ -1135,8 +1341,72 @@ async def test_psca_validation_builder_keeps_medication_sibling_content_checks_p
     )
 
     finding_codes = {finding.code for finding in report.workflow_validation.findings}
-    assert "bundle.medicationrequest_placeholder_content_present" in finding_codes
-    assert "bundle.medicationrequest_2_placeholder_content_present" in finding_codes
+    assert "bundle.medicationrequest_placeholder_text_aligned_to_context" in finding_codes
+    assert "bundle.medicationrequest_2_placeholder_text_aligned_to_context" in finding_codes
+    assert "bundle.medicationrequest_placeholder_content_present" not in finding_codes
+    assert "bundle.medicationrequest_2_placeholder_content_present" not in finding_codes
+
+
+async def test_psca_validation_builder_exposes_fallback_alignment_expectations_in_legacy_patient_mode() -> None:
+    repository = PscaAssetRepository()
+    normalized_assets = repository.load_foundation_context(PscaAssetQuery())
+    normalized_request = build_psca_normalized_request(
+        WorkflowBuildInput(
+            specification=SpecificationSelection(),
+            patient_profile=ProfileReferenceInput(
+                profile_id="patient-validation-legacy",
+                display_name="Legacy Validation Patient",
+                source_type="patient_management",
+            ),
+            provider_profile=ProfileReferenceInput(
+                profile_id="provider-validation-test",
+                display_name="Validation Test Provider",
+            ),
+            provider_context=ProviderContextInput(
+                provider=ProviderIdentityInput(
+                    provider_id="provider-validation-test",
+                    display_name="Validation Test Provider",
+                    source_type="provider_management",
+                ),
+                organizations=[
+                    ProviderOrganizationInput(
+                        organization_id="org-validation-test",
+                        display_name="Validation Test Organization",
+                    )
+                ],
+                provider_role_relationships=[
+                    ProviderRoleRelationshipInput(
+                        relationship_id="provider-role-validation-1",
+                        organization_id="org-validation-test",
+                        role_label="attending-physician",
+                    )
+                ],
+            ),
+            request=BundleRequestInput(
+                request_text="Create a deterministic validation report for legacy patient fallback testing.",
+                scenario_label="pytest-validation",
+            ),
+        )
+    )
+    schematic = build_psca_bundle_schematic(normalized_assets, normalized_request)
+    plan = build_psca_build_plan(schematic)
+    construction = build_psca_resource_construction_result(plan, schematic, normalized_request)
+    candidate_bundle = build_psca_candidate_bundle_result(construction, schematic, normalized_request)
+
+    report = await build_psca_validation_report(
+        candidate_bundle,
+        schematic,
+        normalized_request,
+        LocalCandidateBundleScaffoldStandardsValidator(),
+    )
+
+    expectations = report.evidence.patient_context_alignment.section_entry_expectations
+    assert report.evidence.patient_context_alignment.normalization_mode == "legacy_patient_profile"
+    assert all(expectation.alignment_mode == "fallback_placeholder" for expectation in expectations)
+    assert not any(
+        finding.code == "bundle.medicationrequest_placeholder_text_aligned_to_context"
+        for finding in report.workflow_validation.findings
+    )
 
 
 def _build_validation_inputs(

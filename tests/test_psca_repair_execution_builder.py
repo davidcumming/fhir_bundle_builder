@@ -192,6 +192,64 @@ async def test_psca_repair_execution_reruns_resource_construction_once() -> None
     assert execution.post_retry_repair_decision.overall_decision == "external_validation_pending"
 
 
+async def test_psca_repair_execution_reruns_patient_step_for_patient_context_identity_alignment_failure() -> None:
+    artifacts = await _build_repair_inputs(mutator=_misalign_patient_identity)
+
+    execution = await build_psca_repair_execution_result(
+        artifacts["repair_decision"],
+        artifacts["normalized_request"],
+        artifacts["build_plan"],
+        artifacts["schematic"],
+        artifacts["resource_construction"],
+        LocalCandidateBundleScaffoldStandardsValidator(),
+    )
+
+    assert execution.execution_outcome == "executed"
+    assert execution.requested_target == "resource_construction"
+    assert execution.executed_target == "resource_construction"
+    assert execution.applied_resource_construction_repair_directive is not None
+    assert execution.applied_resource_construction_repair_directive.target_step_ids == [
+        "build-patient-1"
+    ]
+    assert execution.applied_resource_construction_repair_directive.target_placeholder_ids == [
+        "patient-1"
+    ]
+    assert execution.post_retry_validation_report is not None
+    assert execution.post_retry_validation_report.overall_status == "passed_with_warnings"
+
+
+async def test_psca_repair_execution_reruns_second_medication_step_for_patient_context_text_alignment_failure() -> None:
+    artifacts = await _build_repair_inputs(
+        mutator=_misalign_second_medication_text,
+        medication_texts=[
+            "Atorvastatin 20 MG oral tablet",
+            "Metformin 500 MG oral tablet",
+        ],
+    )
+
+    execution = await build_psca_repair_execution_result(
+        artifacts["repair_decision"],
+        artifacts["normalized_request"],
+        artifacts["build_plan"],
+        artifacts["schematic"],
+        artifacts["resource_construction"],
+        LocalCandidateBundleScaffoldStandardsValidator(),
+    )
+
+    assert execution.execution_outcome == "executed"
+    assert execution.requested_target == "resource_construction"
+    assert execution.executed_target == "resource_construction"
+    assert execution.applied_resource_construction_repair_directive is not None
+    assert execution.applied_resource_construction_repair_directive.target_step_ids == [
+        "build-medicationrequest-2"
+    ]
+    assert execution.applied_resource_construction_repair_directive.target_placeholder_ids == [
+        "medicationrequest-2"
+    ]
+    assert execution.post_retry_validation_report is not None
+    assert execution.post_retry_validation_report.overall_status == "passed_with_warnings"
+
+
 async def test_psca_repair_execution_reruns_only_missing_composition_section_steps_when_multiple_sections_fail() -> None:
     artifacts = await _build_repair_inputs(mutator=_remove_allergies_and_problems_sections)
 
@@ -742,6 +800,22 @@ def _duplicate_bundle_entry_fullurl(candidate_bundle):
     broken_bundle = deepcopy(candidate_bundle)
     broken_bundle.candidate_bundle.fhir_bundle["entry"][6]["fullUrl"] = (
         broken_bundle.candidate_bundle.fhir_bundle["entry"][5]["fullUrl"]
+    )
+    return broken_bundle
+
+
+def _misalign_patient_identity(candidate_bundle):
+    broken_bundle = deepcopy(candidate_bundle)
+    patient = broken_bundle.candidate_bundle.fhir_bundle["entry"][1]["resource"]
+    patient["identifier"][0]["value"] = "wrong-patient-id"
+    patient["name"][0]["text"] = "Wrong Patient"
+    return broken_bundle
+
+
+def _misalign_second_medication_text(candidate_bundle):
+    broken_bundle = deepcopy(candidate_bundle)
+    broken_bundle.candidate_bundle.fhir_bundle["entry"][6]["resource"]["medicationCodeableConcept"]["text"] = (
+        "Wrong second medication text"
     )
     return broken_bundle
 

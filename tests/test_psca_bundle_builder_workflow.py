@@ -439,6 +439,47 @@ async def test_psca_bundle_builder_workflow_smoke() -> None:
     assert final_output.validation_report.standards_validation.external_validation_executed is False
     assert final_output.validation_report.standards_validation.fallback_used is False
     assert final_output.validation_report.workflow_validation.status == "passed"
+    assert (
+        final_output.validation_report.evidence.patient_context_alignment.normalization_mode
+        == "patient_context_explicit"
+    )
+    assert final_output.validation_report.evidence.patient_context_alignment.patient_id == "patient-smoke-test"
+    assert (
+        final_output.validation_report.evidence.patient_context_alignment.display_name
+        == "Smoke Test Patient"
+    )
+    assert (
+        final_output.validation_report.evidence.patient_context_alignment.administrative_gender_expected
+        == "female"
+    )
+    assert (
+        final_output.validation_report.evidence.patient_context_alignment.birth_date_expected
+        == "1985-02-14"
+    )
+    assert [
+        (
+            expectation.placeholder_id,
+            expectation.alignment_mode,
+            expectation.expected_text,
+        )
+        for expectation in final_output.validation_report.evidence.patient_context_alignment.section_entry_expectations
+    ] == [
+        (
+            "medicationrequest-1",
+            "structured_patient_context",
+            "Atorvastatin 20 MG oral tablet",
+        ),
+        (
+            "allergyintolerance-1",
+            "structured_patient_context",
+            "Peanut allergy",
+        ),
+        (
+            "condition-1",
+            "structured_patient_context",
+            "Type 2 diabetes mellitus",
+        ),
+    ]
     assert any(
         finding.code == "external_profile_validation_deferred"
         for finding in final_output.validation_report.standards_validation.findings
@@ -449,6 +490,14 @@ async def test_psca_bundle_builder_workflow_smoke() -> None:
     )
     assert not any(
         finding.code == "bundle.practitioner_identity_content_present"
+        for finding in final_output.validation_report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.patient_identity_aligned_to_context"
+        for finding in final_output.validation_report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.medicationrequest_placeholder_text_aligned_to_context"
         for finding in final_output.validation_report.workflow_validation.findings
     )
     assert final_output.repair_decision.overall_decision == "external_validation_pending"
@@ -571,6 +620,35 @@ async def test_psca_bundle_builder_workflow_supports_bounded_two_medication_path
     assert final_output.candidate_bundle.evidence.assembled_medication_placeholder_ids == [
         "medicationrequest-1",
         "medicationrequest-2",
+    ]
+    assert [
+        (
+            expectation.placeholder_id,
+            expectation.alignment_mode,
+            expectation.expected_text,
+        )
+        for expectation in final_output.validation_report.evidence.patient_context_alignment.section_entry_expectations
+    ] == [
+        (
+            "medicationrequest-1",
+            "structured_patient_context",
+            "Atorvastatin 20 MG oral tablet",
+        ),
+        (
+            "medicationrequest-2",
+            "structured_patient_context",
+            "Metformin 500 MG oral tablet",
+        ),
+        (
+            "allergyintolerance-1",
+            "fallback_placeholder",
+            "Allergies and Intolerances placeholder for pytest-smoke-two-meds",
+        ),
+        (
+            "condition-1",
+            "fallback_placeholder",
+            "Active Problems placeholder for pytest-smoke-two-meds",
+        ),
     ]
     assert candidate_entries[5]["resource"]["medicationCodeableConcept"]["text"] == (
         "Atorvastatin 20 MG oral tablet"
