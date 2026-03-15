@@ -20,6 +20,7 @@ The implemented slice is intentionally narrow:
 - no arbitrary-spec ingestion yet
 - bounded upstream patient authoring foundation for workflow testing
 - bounded upstream provider authoring foundation for workflow testing
+- thin authored-input-to-workflow orchestration harness for end-to-end testing
 
 ## Current bounded capabilities
 
@@ -27,6 +28,7 @@ The workflow currently supports one narrow but real PS-CA path:
 
 - bounded natural-language patient authoring into a structured authored patient record, with deterministic mapping into the current `patient_context` input shape
 - bounded natural-language provider authoring into a structured authored provider record, with deterministic mapping into the current `provider_context` input shape
+- a thin authored-input harness that composes one authored patient record plus one authored provider record into workflow-ready input and runs the existing deterministic workflow unchanged
 - provider identity plus selected organization and selected provider-role relationship identity only
 - patient identity and demographics plus deterministic section-entry text alignment only for fields the normalized patient context can honestly supply
 - medications-only multiplicity up to two planned `MedicationRequest` entries, with explicit overflow deferral beyond those two
@@ -46,7 +48,7 @@ The workflow does not currently claim:
 
 - `docs/` contains architecture, workflow, and planning guidance.
 - `fhir/ca.infoway.io.psca-2.1.1-dft/` contains the PS-CA source package already present in the repo.
-- `src/fhir_bundle_builder/authoring/` contains the bounded upstream patient and provider authoring foundations.
+- `src/fhir_bundle_builder/authoring/` contains the bounded upstream patient/provider authoring foundations plus the thin authored-input orchestration harness.
 - `src/fhir_bundle_builder/workflows/psca_bundle_builder_workflow/` contains the workflow skeleton.
 - `entities/psca_bundle_builder_workflow/` exports the workflow for Dev UI discovery.
 
@@ -136,7 +138,7 @@ This slice is for workflow shape, PS-CA normalized asset retrieval, the first re
 
 The current repo is intentionally consolidating these capabilities rather than expanding realism further in the same step.
 
-The repo now also includes bounded upstream patient and provider authoring foundations. The patient path accepts natural-language patient descriptions, applies a fixed complexity policy, emits a structured authored patient record, and maps that record into the workflow's existing `patient_context` boundary without changing bundle-generation behavior. The provider path accepts bounded natural-language provider descriptions, emits a structured authored provider record, preserves unmapped professional facts explicitly, and maps only the currently supported identity/organization/relationship fields into the workflow's existing `provider_context` boundary.
+The repo now also includes bounded upstream patient and provider authoring foundations plus a thin authored-input orchestration harness. The patient path accepts natural-language patient descriptions, applies a fixed complexity policy, emits a structured authored patient record, and maps that record into the workflow's existing `patient_context` boundary without changing bundle-generation behavior. The provider path accepts bounded natural-language provider descriptions, emits a structured authored provider record, preserves unmapped professional facts explicitly, and maps only the currently supported identity/organization/relationship fields into the workflow's existing `provider_context` boundary. The orchestration harness then composes one authored patient record plus one authored provider record into a deterministic `WorkflowBuildInput` and runs the existing PS-CA workflow without changing its executor graph or downstream logic.
 
 - The workflow reads existing PS-CA package files deterministically from the repo.
 - The spec retrieval stage exposes a normalized PS-CA asset context with foundational profiles, Composition section definitions, and selected example evidence.

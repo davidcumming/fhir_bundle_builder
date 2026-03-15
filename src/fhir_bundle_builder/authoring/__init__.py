@@ -1,5 +1,15 @@
 """Bounded upstream authoring foundations for workflow testing."""
 
+from .authored_bundle_models import (
+    AuthoredBundleBuildInput,
+    AuthoredBundleBuildPreparation,
+    AuthoredBundleBuildRunResult,
+    AuthoredBundleWorkflowInputSummary,
+)
+from .authored_bundle_orchestration import (
+    prepare_authored_bundle_build_input,
+    run_authored_bundle_build,
+)
 from .patient_builder import build_patient_authored_record, get_patient_complexity_policy
 from .patient_mapper import map_authored_patient_to_patient_context
 from .patient_models import (
@@ -33,6 +43,10 @@ from .provider_models import (
 )
 
 __all__ = [
+    "AuthoredBundleBuildInput",
+    "AuthoredBundleBuildPreparation",
+    "AuthoredBundleBuildRunResult",
+    "AuthoredBundleWorkflowInputSummary",
     "PatientAuthoredAllergy",
     "PatientAuthoredBackgroundFacts",
     "PatientAuthoredCondition",
@@ -56,6 +70,8 @@ __all__ = [
     "ProviderAuthoringInput",
     "ProviderAuthoringItemSourceMode",
     "ProviderAuthoringMapResult",
+    "prepare_authored_bundle_build_input",
+    "run_authored_bundle_build",
     "build_patient_authored_record",
     "build_provider_authored_record",
     "get_patient_complexity_policy",
