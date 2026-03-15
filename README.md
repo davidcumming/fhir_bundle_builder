@@ -21,6 +21,7 @@ The implemented slice is intentionally narrow:
 - bounded upstream patient authoring foundation for workflow testing
 - bounded upstream provider authoring foundation for workflow testing
 - thin authored-input-to-workflow orchestration harness for end-to-end testing
+- thin Dev UI-facing authored-input demo workflow
 
 ## Current bounded capabilities
 
@@ -50,7 +51,9 @@ The workflow does not currently claim:
 - `fhir/ca.infoway.io.psca-2.1.1-dft/` contains the PS-CA source package already present in the repo.
 - `src/fhir_bundle_builder/authoring/` contains the bounded upstream patient/provider authoring foundations plus the thin authored-input orchestration harness.
 - `src/fhir_bundle_builder/workflows/psca_bundle_builder_workflow/` contains the workflow skeleton.
+- `src/fhir_bundle_builder/workflows/psca_authored_bundle_demo_workflow/` contains the thin Dev UI wrapper workflow for authored-input demonstration.
 - `entities/psca_bundle_builder_workflow/` exports the workflow for Dev UI discovery.
+- `entities/psca_authored_bundle_demo_workflow/` exports the thin authored-input demo flow for Dev UI discovery.
 
 ## Setup
 
@@ -101,16 +104,30 @@ Then open [http://127.0.0.1:8080](http://127.0.0.1:8080).
 
 ## What to expect in Dev UI
 
-- One workflow entity named `PS-CA Bundle Builder Skeleton`.
+- Two workflow entities:
+  - `PS-CA Bundle Builder Skeleton`
+  - `PS-CA Authored Bundle Demo Flow`
 - A structured top-level input form with:
-  - `specification`
-  - `patient_profile`
-  - `patient_context`
-  - `provider_profile`
-  - `provider_context`
-  - `request`
-  - `workflow_options`
-- Sequential executor steps in this order:
+  - for `PS-CA Bundle Builder Skeleton`:
+    - `specification`
+    - `patient_profile`
+    - `patient_context`
+    - `provider_profile`
+    - `provider_context`
+    - `request`
+    - `workflow_options`
+  - for `PS-CA Authored Bundle Demo Flow`:
+    - `patient_authoring`
+    - `provider_authoring`
+    - `request`
+    - `specification`
+    - `workflow_options`
+- Sequential executor steps for the authored demo flow:
+  - `patient_authoring`
+  - `provider_authoring`
+  - `authored_bundle_preparation`
+  - `bundle_builder_run`
+- Sequential executor steps for the core bundle-builder workflow remain:
   - `request_normalization`
   - `specification_asset_retrieval`
   - `bundle_schematic`
