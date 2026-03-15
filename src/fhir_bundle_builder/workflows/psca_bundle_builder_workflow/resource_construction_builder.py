@@ -22,6 +22,12 @@ from .models import (
 )
 
 _REQUIRED_COMPOSITION_SECTION_KEYS = ("medications", "allergies", "problems")
+SELECTED_PROVIDER_ORGANIZATION_IDENTIFIER_SYSTEM = (
+    "urn:fhir-bundle-builder:selected-provider-organization-identifier"
+)
+SELECTED_PROVIDER_ROLE_RELATIONSHIP_IDENTIFIER_SYSTEM = (
+    "urn:fhir-bundle-builder:selected-provider-role-relationship-identifier"
+)
 
 
 def build_psca_resource_construction_result(
@@ -280,11 +286,21 @@ def _build_anchor_result(
     elif step.resource_type == "Organization":
         selected_organization = normalized_request.provider_context.selected_organization
         if selected_organization is not None:
-            scaffold_dict["identifier"] = [{"value": selected_organization.organization_id}]
+            scaffold_dict["identifier"] = [
+                {
+                    "system": SELECTED_PROVIDER_ORGANIZATION_IDENTIFIER_SYSTEM,
+                    "value": selected_organization.organization_id,
+                }
+            ]
             scaffold_dict["name"] = selected_organization.display_name
-            populated_paths += ["identifier[0].value", "name"]
+            populated_paths += ["identifier[0].system", "identifier[0].value", "name"]
             deterministic_value_evidence.extend(
                 [
+                    _value_evidence(
+                        "identifier[0].system",
+                        "deterministic_content_policy",
+                        "fixed selected provider organization identifier system",
+                    ),
                     _value_evidence(
                         "identifier[0].value",
                         "normalized_request.provider_context.selected_organization",
@@ -298,7 +314,7 @@ def _build_anchor_result(
                 ]
             )
             assumptions.append(
-                "Organization identity content is derived deterministically from the normalized selected organization context."
+                "Organization identity content is derived deterministically from the normalized selected organization context, including a fixed identifier system."
             )
         else:
             extra_deferred = ["name"]
@@ -340,13 +356,29 @@ def _build_practitioner_role_result(
     scaffold_dict["practitioner"] = {"reference": "Practitioner/practitioner-1"}
     scaffold_dict["organization"] = {"reference": "Organization/organization-1"}
     selected_relationship = normalized_request.provider_context.selected_provider_role_relationship
+    if selected_relationship is not None:
+        scaffold_dict["identifier"] = [
+            {
+                "system": SELECTED_PROVIDER_ROLE_RELATIONSHIP_IDENTIFIER_SYSTEM,
+                "value": selected_relationship.relationship_id,
+            }
+        ]
     role_text = (
         selected_relationship.role_label
         if selected_relationship is not None
         else placeholder.role
     )
     scaffold_dict["code"] = [{"text": role_text}]
-    populated_paths = _base_populated_paths(placeholder) + ["practitioner.reference", "organization.reference", "code[0].text"]
+    populated_paths = _base_populated_paths(placeholder) + [
+        "practitioner.reference",
+        "organization.reference",
+        "code[0].text",
+        *(
+            ["identifier[0].system", "identifier[0].value"]
+            if selected_relationship is not None
+            else []
+        ),
+    ]
     resource_scaffold = ResourceScaffoldArtifact(
         placeholder_id=placeholder.placeholder_id,
         resource_type=placeholder.resource_type,
@@ -374,6 +406,22 @@ def _build_practitioner_role_result(
             _reference_contribution("organization.reference", "organization-1", "Organization/organization-1"),
         ],
         deterministic_value_evidence=[
+            *(
+                [
+                    _value_evidence(
+                        "identifier[0].system",
+                        "deterministic_content_policy",
+                        "fixed selected provider-role relationship identifier system",
+                    ),
+                    _value_evidence(
+                        "identifier[0].value",
+                        "normalized_request.provider_context.selected_provider_role_relationship",
+                        "relationship_id",
+                    ),
+                ]
+                if selected_relationship is not None
+                else []
+            ),
             _value_evidence(
                 "code[0].text",
                 (
@@ -385,9 +433,13 @@ def _build_practitioner_role_result(
             ),
         ],
         assumptions=[
-            "PractitionerRole is scaffolded with deterministic local references plus a narrow author-role label.",
             (
-                "PractitionerRole author context is derived from the normalized selected provider-role relationship."
+                "PractitionerRole is scaffolded with deterministic local references, a selected relationship identifier, and a narrow author-role label."
+                if selected_relationship is not None
+                else "PractitionerRole is scaffolded with deterministic local references plus a narrow author-role label."
+            ),
+            (
+                "PractitionerRole author context and relationship identity are derived from the normalized selected provider-role relationship."
                 if selected_relationship is not None
                 else "PractitionerRole falls back to the schematic placeholder role when richer provider-role context is not available."
             ),

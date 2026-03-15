@@ -16,6 +16,10 @@ from .models import (
     NormalizedBuildRequest,
     ValidationReport,
 )
+from .resource_construction_builder import (
+    SELECTED_PROVIDER_ORGANIZATION_IDENTIFIER_SYSTEM,
+    SELECTED_PROVIDER_ROLE_RELATIONSHIP_IDENTIFIER_SYSTEM,
+)
 
 
 async def build_psca_validation_report(
@@ -91,6 +95,7 @@ def _build_workflow_validation_result(
         "bundle.patient_identity_content_present",
         "bundle.practitioner_identity_content_present",
         "bundle.organization_identity_content_present",
+        "bundle.practitionerrole_relationship_identity_present",
         "bundle.practitionerrole_author_context_present",
         "bundle.medicationrequest_placeholder_content_present",
         "bundle.allergyintolerance_placeholder_content_present",
@@ -276,20 +281,56 @@ def _build_workflow_validation_result(
         and isinstance(organization_identifier[0], dict)
         else None
     )
+    organization_identifier_system = (
+        organization_identifier[0].get("system")
+        if isinstance(organization_identifier, list)
+        and organization_identifier
+        and isinstance(organization_identifier[0], dict)
+        else None
+    )
     organization_name = organization.get("name") if isinstance(organization, dict) else None
     if selected_organization is not None and (
-        organization_identifier_value != selected_organization.organization_id
+        organization_identifier_system != SELECTED_PROVIDER_ORGANIZATION_IDENTIFIER_SYSTEM
+        or organization_identifier_value != selected_organization.organization_id
         or organization_name != selected_organization.display_name
     ):
         findings.append(
             _workflow_error(
                 "bundle.organization_identity_content_present",
                 "Bundle.entry[4].resource",
-                "Expected Organization enriched content to include identifier[0].value and name from the selected provider organization context.",
+                "Expected Organization enriched content to include identifier[0].system, identifier[0].value, and name from the selected provider organization context.",
             )
         )
 
     practitioner_role = _find_resource_by_type(bundle, "PractitionerRole")
+    practitioner_role_identifier = practitioner_role.get("identifier") if isinstance(practitioner_role, dict) else None
+    practitioner_role_identifier_value = (
+        practitioner_role_identifier[0].get("value")
+        if isinstance(practitioner_role_identifier, list)
+        and practitioner_role_identifier
+        and isinstance(practitioner_role_identifier[0], dict)
+        else None
+    )
+    practitioner_role_identifier_system = (
+        practitioner_role_identifier[0].get("system")
+        if isinstance(practitioner_role_identifier, list)
+        and practitioner_role_identifier
+        and isinstance(practitioner_role_identifier[0], dict)
+        else None
+    )
+    selected_relationship = normalized_request.provider_context.selected_provider_role_relationship
+    if selected_relationship is not None and (
+        practitioner_role_identifier_system != SELECTED_PROVIDER_ROLE_RELATIONSHIP_IDENTIFIER_SYSTEM
+        or practitioner_role_identifier_value != selected_relationship.relationship_id
+    ):
+        findings.append(
+            _workflow_error(
+                "bundle.practitionerrole_relationship_identity_present",
+                "Bundle.entry[2].resource.identifier[0]",
+                "Expected PractitionerRole to include identifier[0].system and identifier[0].value from the selected provider-role relationship context.",
+            )
+        )
+
     role_code = practitioner_role.get("code") if isinstance(practitioner_role, dict) else None
     role_text = (
         role_code[0].get("text")

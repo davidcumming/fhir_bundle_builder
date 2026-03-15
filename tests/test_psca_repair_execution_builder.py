@@ -302,6 +302,37 @@ async def test_psca_repair_execution_reruns_only_build_organization_for_organiza
     assert execution.post_retry_validation_report.overall_status == "passed_with_warnings"
 
 
+async def test_psca_repair_execution_reruns_only_build_practitionerrole_for_relationship_identity_failure() -> None:
+    artifacts = await _build_repair_inputs(mutator=_remove_practitionerrole_relationship_identity)
+
+    execution = await build_psca_repair_execution_result(
+        artifacts["repair_decision"],
+        artifacts["normalized_request"],
+        artifacts["build_plan"],
+        artifacts["schematic"],
+        artifacts["resource_construction"],
+        LocalCandidateBundleScaffoldStandardsValidator(),
+    )
+
+    assert execution.execution_outcome == "executed"
+    assert execution.requested_target == "resource_construction"
+    assert execution.executed_target == "resource_construction"
+    assert execution.applied_resource_construction_repair_directive is not None
+    assert execution.applied_resource_construction_repair_directive.target_step_ids == [
+        "build-practitionerrole-1"
+    ]
+    assert execution.post_retry_resource_construction is not None
+    assert execution.post_retry_resource_construction.execution_scope == "targeted_repair"
+    assert [step.step_id for step in execution.post_retry_resource_construction.step_results] == [
+        "build-practitionerrole-1"
+    ]
+    assert execution.post_retry_resource_construction.regenerated_placeholder_ids == [
+        "practitionerrole-1"
+    ]
+    assert execution.post_retry_validation_report is not None
+    assert execution.post_retry_validation_report.overall_status == "passed_with_warnings"
+
+
 async def test_psca_repair_execution_unions_multiple_section_entry_steps_when_multiple_resources_fail() -> None:
     artifacts = await _build_repair_inputs(mutator=_remove_medicationrequest_and_condition_content)
 
@@ -551,6 +582,13 @@ def _remove_organization_identity(candidate_bundle):
     broken_bundle = deepcopy(candidate_bundle)
     organization = broken_bundle.candidate_bundle.fhir_bundle["entry"][4]["resource"]
     organization.pop("identifier", None)
+    return broken_bundle
+
+
+def _remove_practitionerrole_relationship_identity(candidate_bundle):
+    broken_bundle = deepcopy(candidate_bundle)
+    practitioner_role = broken_bundle.candidate_bundle.fhir_bundle["entry"][2]["resource"]
+    practitioner_role.pop("identifier", None)
     return broken_bundle
 
 

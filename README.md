@@ -182,8 +182,8 @@ The `resource_construction` stage now emits the first real scaffold-oriented con
 - deterministic placeholder content such as:
   - a Patient identifier and display name
   - a Practitioner identifier and display name from normalized provider identity context
-  - an Organization identifier and name when selected provider-organization context is available
-  - a narrow PractitionerRole author label from the selected provider-role relationship when available
+  - an Organization identifier system/value and name when selected provider-organization context is available
+  - a PractitionerRole relationship identifier system/value plus a narrow author label from the selected provider-role relationship when available
   - a Composition status and title
   - section-entry status and text content for medications, allergies, and problems
 - normalized provider-context inspectability showing the selected provider, selected organization, and selected provider-role relationship when available
@@ -239,6 +239,7 @@ The `validation` stage now emits the first real structured validation artifact f
   - support-resource identity/content checks for:
     - `Practitioner`
     - `Organization` when selected organization context exists
+    - `PractitionerRole` selected relationship identity when selected provider-role context exists
     - `PractitionerRole` author-context label
   - section-specific deterministic Composition section-presence checks for medications, allergies, and problems
   - resource-specific placeholder-content checks for `MedicationRequest`, `AllergyIntolerance`, and `Condition`

@@ -13,6 +13,10 @@ from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.models import (
     WorkflowBuildInput,
     WorkflowSkeletonRunResult,
 )
+from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.resource_construction_builder import (
+    SELECTED_PROVIDER_ORGANIZATION_IDENTIFIER_SYSTEM,
+    SELECTED_PROVIDER_ROLE_RELATIONSHIP_IDENTIFIER_SYSTEM,
+)
 from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.workflow import workflow
 
 
@@ -215,9 +219,22 @@ async def test_psca_bundle_builder_workflow_smoke() -> None:
         "resourceType": "Organization",
         "id": "organization-1",
         "meta": {"profile": [final_output.bundle_schematic.resource_placeholders[2].profile_url]},
-        "identifier": [{"value": "org-smoke-test-2"}],
+        "identifier": [
+            {
+                "system": SELECTED_PROVIDER_ORGANIZATION_IDENTIFIER_SYSTEM,
+                "value": "org-smoke-test-2",
+            }
+        ],
         "name": "Smoke Test Organization Two",
     }
+    assert (
+        final_output.resource_construction.step_results[3].resource_scaffold.fhir_scaffold["identifier"][0]["system"]
+        == SELECTED_PROVIDER_ROLE_RELATIONSHIP_IDENTIFIER_SYSTEM
+    )
+    assert (
+        final_output.resource_construction.step_results[3].resource_scaffold.fhir_scaffold["identifier"][0]["value"]
+        == "provider-role-smoke-2"
+    )
     assert final_output.resource_construction.step_results[3].resource_scaffold.fhir_scaffold["code"][0]["text"] == "attending-physician"
     assert final_output.resource_construction.step_results[4].resource_scaffold.fhir_scaffold["status"] == "final"
     assert final_output.resource_construction.step_results[4].resource_scaffold.fhir_scaffold["title"] == (

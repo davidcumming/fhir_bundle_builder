@@ -146,6 +146,28 @@ async def test_psca_repair_decision_routes_organization_identity_failures_to_res
     ]
 
 
+async def test_psca_repair_decision_routes_practitionerrole_relationship_identity_failures_to_resource_construction() -> None:
+    report = await _build_validation_report(mutator=_remove_practitionerrole_relationship_identity)
+
+    decision = build_psca_repair_decision(report)
+
+    assert decision.overall_decision == "repair_recommended"
+    assert decision.recommended_target == "resource_construction"
+    assert any(
+        route.finding_code == "bundle.practitionerrole_relationship_identity_present"
+        and route.route_target == "resource_construction"
+        and route.actionable is True
+        for route in decision.finding_routes
+    )
+    assert decision.recommended_resource_construction_repair_directive is not None
+    assert decision.recommended_resource_construction_repair_directive.target_step_ids == [
+        "build-practitionerrole-1"
+    ]
+    assert decision.recommended_resource_construction_repair_directive.target_placeholder_ids == [
+        "practitionerrole-1"
+    ]
+
+
 async def test_psca_repair_decision_routes_composition_title_failure_to_scaffold_plus_finalize_subset() -> None:
     report = await _build_validation_report(mutator=_remove_composition_title)
 
@@ -620,6 +642,13 @@ def _remove_organization_identity(candidate_bundle):
     broken_bundle = deepcopy(candidate_bundle)
     organization = broken_bundle.candidate_bundle.fhir_bundle["entry"][4]["resource"]
     organization.pop("identifier", None)
+    return broken_bundle
+
+
+def _remove_practitionerrole_relationship_identity(candidate_bundle):
+    broken_bundle = deepcopy(candidate_bundle)
+    practitioner_role = broken_bundle.candidate_bundle.fhir_bundle["entry"][2]["resource"]
+    practitioner_role.pop("identifier", None)
     return broken_bundle
 
 

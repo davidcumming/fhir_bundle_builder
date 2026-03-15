@@ -86,6 +86,10 @@ async def test_psca_validation_builder_happy_path_reports_split_channels() -> No
         for finding in report.workflow_validation.findings
     )
     assert not any(
+        finding.code == "bundle.practitionerrole_relationship_identity_present" and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
         finding.code == "bundle.composition_medications_section_entry_reference_aligned" and finding.severity == "error"
         for finding in report.workflow_validation.findings
     )
@@ -263,7 +267,7 @@ async def test_psca_validation_builder_fails_when_selected_organization_content_
     normalized_request, schematic, candidate_bundle = _build_validation_inputs()
     broken_bundle = deepcopy(candidate_bundle)
     organization = broken_bundle.candidate_bundle.fhir_bundle["entry"][4]["resource"]
-    organization.pop("identifier", None)
+    organization["identifier"][0].pop("system", None)
 
     report = await build_psca_validation_report(
         broken_bundle,
@@ -275,6 +279,30 @@ async def test_psca_validation_builder_fails_when_selected_organization_content_
     assert report.workflow_validation.status == "failed"
     assert any(
         finding.code == "bundle.organization_identity_content_present" and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+
+
+async def test_psca_validation_builder_fails_when_practitionerrole_relationship_identity_is_missing() -> None:
+    normalized_request, schematic, candidate_bundle = _build_validation_inputs()
+    broken_bundle = deepcopy(candidate_bundle)
+    practitioner_role = broken_bundle.candidate_bundle.fhir_bundle["entry"][2]["resource"]
+    practitioner_role["identifier"][0].pop("value", None)
+
+    report = await build_psca_validation_report(
+        broken_bundle,
+        schematic,
+        normalized_request,
+        LocalCandidateBundleScaffoldStandardsValidator(),
+    )
+
+    assert report.workflow_validation.status == "failed"
+    assert any(
+        finding.code == "bundle.practitionerrole_relationship_identity_present" and finding.severity == "error"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.practitionerrole_author_context_present"
         for finding in report.workflow_validation.findings
     )
 
@@ -295,6 +323,10 @@ async def test_psca_validation_builder_does_not_require_organization_identity_in
 
     assert not any(
         finding.code == "bundle.organization_identity_content_present"
+        for finding in report.workflow_validation.findings
+    )
+    assert not any(
+        finding.code == "bundle.practitionerrole_relationship_identity_present"
         for finding in report.workflow_validation.findings
     )
 

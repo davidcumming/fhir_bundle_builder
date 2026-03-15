@@ -101,7 +101,13 @@ _FINDING_ROUTE_MAP: dict[str, tuple[str, str, bool, str]] = {
         "resource_construction",
         "resource_construction",
         True,
-        "Organization identity placeholder content is populated during resource construction when normalized provider context supplies a selected organization.",
+        "Organization identity placeholder content, including the structured selected-organization identifier, is populated during resource construction when normalized provider context supplies a selected organization.",
+    ),
+    "bundle.practitionerrole_relationship_identity_present": (
+        "resource_construction",
+        "resource_construction",
+        True,
+        "PractitionerRole relationship identity placeholder content is populated during resource construction when normalized provider context supplies a selected provider-role relationship.",
     ),
     "bundle.practitionerrole_author_context_present": (
         "resource_construction",
@@ -217,7 +223,12 @@ _RESOURCE_CONSTRUCTION_DIRECTIVE_MAP: dict[str, tuple[list[str], list[str], str]
     "bundle.organization_identity_content_present": (
         ["build-organization-1"],
         ["organization-1"],
-        "Rerun the organization support step to restore deterministic organization identity content from the selected provider organization context.",
+        "Rerun the organization support step to restore deterministic organization identity content, including the structured selected-organization identifier.",
+    ),
+    "bundle.practitionerrole_relationship_identity_present": (
+        ["build-practitionerrole-1"],
+        ["practitionerrole-1"],
+        "Rerun the practitioner-role support step to restore deterministic relationship-identity content from the normalized selected provider-role relationship.",
     ),
     "bundle.practitionerrole_author_context_present": (
         ["build-practitionerrole-1"],

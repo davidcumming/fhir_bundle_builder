@@ -22,6 +22,8 @@ from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.request_normaliz
     build_psca_normalized_request,
 )
 from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.resource_construction_builder import (
+    SELECTED_PROVIDER_ORGANIZATION_IDENTIFIER_SYSTEM,
+    SELECTED_PROVIDER_ROLE_RELATIONSHIP_IDENTIFIER_SYSTEM,
     build_psca_resource_construction_result,
 )
 from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.schematic_builder import (
@@ -56,10 +58,13 @@ def test_psca_resource_construction_builder_generates_scaffolds_and_registry() -
     organization = registry["organization-1"].current_scaffold.fhir_scaffold
     assert practitioner_role["practitioner"]["reference"] == "Practitioner/practitioner-1"
     assert practitioner_role["organization"]["reference"] == "Organization/organization-1"
+    assert practitioner_role["identifier"][0]["system"] == SELECTED_PROVIDER_ROLE_RELATIONSHIP_IDENTIFIER_SYSTEM
+    assert practitioner_role["identifier"][0]["value"] == "provider-role-1"
     assert practitioner_role["code"][0]["text"] == "attending-physician"
     assert practitioner["active"] is True
     assert practitioner["identifier"][0]["value"] == "provider-resource-test"
     assert practitioner["name"][0]["text"] == "Resource Test Provider"
+    assert organization["identifier"][0]["system"] == SELECTED_PROVIDER_ORGANIZATION_IDENTIFIER_SYSTEM
     assert organization["identifier"][0]["value"] == "org-resource-test"
     assert organization["name"] == "Resource Test Organization"
 
@@ -116,8 +121,22 @@ def test_psca_resource_construction_builder_generates_scaffolds_and_registry() -
         for evidence in steps["build-practitioner-1"].deterministic_value_evidence
     )
     assert any(
+        evidence.target_path == "identifier[0].system"
+        and evidence.source_detail == "fixed selected provider-role relationship identifier system"
+        for evidence in steps["build-practitionerrole-1"].deterministic_value_evidence
+    )
+    assert any(
+        evidence.target_path == "identifier[0].value" and evidence.source_detail == "relationship_id"
+        for evidence in steps["build-practitionerrole-1"].deterministic_value_evidence
+    )
+    assert any(
         evidence.target_path == "code[0].text" and evidence.source_detail == "role_label"
         for evidence in steps["build-practitionerrole-1"].deterministic_value_evidence
+    )
+    assert any(
+        evidence.target_path == "identifier[0].system"
+        and evidence.source_detail == "fixed selected provider organization identifier system"
+        for evidence in steps["build-organization-1"].deterministic_value_evidence
     )
     assert any(
         evidence.target_path == "identifier[0].value" and evidence.source_detail == "organization_id"
@@ -170,6 +189,7 @@ def test_psca_resource_construction_builder_keeps_organization_thin_in_legacy_pr
 
     assert "identifier" not in organization
     assert "name" not in organization
+    assert "identifier" not in practitioner_role
     assert practitioner_role["code"][0]["text"] == "document-author"
     assert construction.step_results[2].resource_scaffold.deferred_paths == ["identifier", "name"]
 
