@@ -16,6 +16,7 @@ What it currently guarantees:
 - explicit typed stage artifacts that can be inspected in Dev UI and tests
 - deterministic handling of the currently supported patient/provider context boundary
 - explicit validation and repair-routing artifacts, including deferred areas and bounded retry outcomes
+- preservation of original first-pass artifacts plus an additive `effective_outcome` view on the final run result so a consumer can read the canonical final artifact set after bounded retry execution
 
 What it does not currently guarantee:
 
@@ -43,6 +44,20 @@ What it does not add:
 - any blocking approval step when readiness is limited
 
 ## Current trust boundaries
+
+### Original first-pass artifacts vs effective final outcome
+
+The core workflow now exposes both:
+
+- the original first-pass `resource_construction`, `candidate_bundle`, `validation_report`, and `repair_decision` artifacts
+- an additive `effective_outcome` view on the final run result
+
+Interpret them this way:
+
+- use the original first-pass artifacts when you want to inspect what the workflow produced before bounded retry execution
+- use `effective_outcome` when you want the canonical final artifact set for the completed workflow run
+
+This does not change retry semantics. It makes the final core workflow output easier to interpret truthfully after one bounded retry pass.
 
 ### Thin provider path
 

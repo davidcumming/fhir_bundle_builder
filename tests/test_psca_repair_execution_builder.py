@@ -33,6 +33,7 @@ from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.repair_decision_
 )
 from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.repair_execution_builder import (
     build_psca_repair_execution_result,
+    build_psca_workflow_effective_outcome,
 )
 from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.request_normalization_builder import (
     build_psca_normalized_request,
@@ -66,6 +67,20 @@ async def test_psca_repair_execution_happy_path_is_deferred_external_dependency(
     assert execution.attempt_count == 0
     assert execution.rerun_stage_ids == []
     assert execution.post_retry_candidate_bundle is None
+
+    effective_outcome = build_psca_workflow_effective_outcome(
+        resource_construction=artifacts["resource_construction"],
+        candidate_bundle=artifacts["candidate_bundle"],
+        validation_report=artifacts["validation_report"],
+        repair_decision=artifacts["repair_decision"],
+        repair_execution=execution,
+    )
+
+    assert effective_outcome.artifact_source == "initial_run"
+    assert effective_outcome.resource_construction == artifacts["resource_construction"]
+    assert effective_outcome.candidate_bundle == artifacts["candidate_bundle"]
+    assert effective_outcome.validation_report == artifacts["validation_report"]
+    assert effective_outcome.repair_decision == artifacts["repair_decision"]
 
 
 async def test_psca_repair_execution_reruns_bundle_finalization_once() -> None:
@@ -190,6 +205,20 @@ async def test_psca_repair_execution_reruns_resource_construction_once() -> None
     assert execution.post_retry_validation_report.overall_status == "passed_with_warnings"
     assert execution.post_retry_repair_decision is not None
     assert execution.post_retry_repair_decision.overall_decision == "external_validation_pending"
+
+    effective_outcome = build_psca_workflow_effective_outcome(
+        resource_construction=artifacts["resource_construction"],
+        candidate_bundle=artifacts["candidate_bundle"],
+        validation_report=artifacts["validation_report"],
+        repair_decision=artifacts["repair_decision"],
+        repair_execution=execution,
+    )
+
+    assert effective_outcome.artifact_source == "post_retry"
+    assert effective_outcome.resource_construction == execution.post_retry_resource_construction
+    assert effective_outcome.candidate_bundle == execution.post_retry_candidate_bundle
+    assert effective_outcome.validation_report == execution.post_retry_validation_report
+    assert effective_outcome.repair_decision == execution.post_retry_repair_decision
 
 
 async def test_psca_repair_execution_reruns_patient_step_for_patient_context_identity_alignment_failure() -> None:

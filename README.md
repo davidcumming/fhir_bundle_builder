@@ -174,6 +174,7 @@ Use [docs/post-consolidation-checkpoint.md](/Users/davidcumming/coding_projects/
   - `repair_decision`
   - `repair_execution`
 - Structured outputs for every stage, plus a final nested run result yielded by `repair_execution`.
+- The final nested core workflow run result now preserves the original first-pass artifacts and also exposes an `effective_outcome` view that resolves the canonical final artifact set after the bounded retry pass.
 - In the authored demo flow, compact typed summaries now supplement the full artifacts so you can scan:
   - authored patient/provider counts
   - whether refinement changed anything
@@ -450,6 +451,9 @@ The `repair_execution` stage now emits the first real bounded retry artifact for
 - a clear distinction between:
   - the original first-pass artifacts
   - the bounded post-retry artifacts nested under `repair_execution`
+- an additive `effective_outcome` view on the final run result that points to:
+  - the original first-pass artifacts when no retry executes
+  - the post-retry artifacts when a bounded retry executes
 - a single-pass policy only; no recursive retry loop is implemented in this slice
 - support for only these executable internal retry targets:
   - `bundle_finalization`

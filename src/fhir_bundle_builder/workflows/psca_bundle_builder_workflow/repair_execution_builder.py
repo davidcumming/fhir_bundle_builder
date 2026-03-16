@@ -8,12 +8,15 @@ from .bundle_finalization_builder import build_psca_candidate_bundle_result
 from .models import (
     BuildPlan,
     BundleSchematic,
+    CandidateBundleResult,
     NormalizedBuildRequest,
     RepairDecisionResult,
     RepairExecutionEvidence,
     RepairExecutionResult,
     ResourceConstructionRepairDirective,
     ResourceConstructionStageResult,
+    ValidationReport,
+    WorkflowEffectiveOutcome,
 )
 from .repair_decision_builder import build_psca_repair_decision
 from .resource_construction_builder import build_psca_resource_construction_result
@@ -34,6 +37,51 @@ _RESOURCE_CONSTRUCTION_REGENERATED_ARTIFACT_KEYS = [
     "validation_report",
     "repair_decision",
 ]
+
+
+def build_psca_workflow_effective_outcome(
+    resource_construction: ResourceConstructionStageResult,
+    candidate_bundle: CandidateBundleResult,
+    validation_report: ValidationReport,
+    repair_decision: RepairDecisionResult,
+    repair_execution: RepairExecutionResult,
+) -> WorkflowEffectiveOutcome:
+    """Resolve the canonical effective final artifact set after bounded retry execution."""
+
+    if repair_execution.execution_outcome != "executed":
+        return WorkflowEffectiveOutcome(
+            artifact_source="initial_run",
+            resource_construction=resource_construction,
+            candidate_bundle=candidate_bundle,
+            validation_report=validation_report,
+            repair_decision=repair_decision,
+        )
+
+    if repair_execution.post_retry_candidate_bundle is None:
+        raise RuntimeError("Executed retry is missing post-retry candidate bundle output.")
+    if repair_execution.post_retry_validation_report is None:
+        raise RuntimeError("Executed retry is missing post-retry validation report output.")
+    if repair_execution.post_retry_repair_decision is None:
+        raise RuntimeError("Executed retry is missing post-retry repair decision output.")
+
+    if repair_execution.executed_target == "bundle_finalization":
+        effective_resource_construction = resource_construction
+    elif repair_execution.executed_target == "resource_construction":
+        if repair_execution.post_retry_resource_construction is None:
+            raise RuntimeError("Executed resource-construction retry is missing post-retry resource construction output.")
+        effective_resource_construction = repair_execution.post_retry_resource_construction
+    else:
+        raise RuntimeError(
+            f"Executed retry target '{repair_execution.executed_target}' does not have an effective-outcome resolution policy."
+        )
+
+    return WorkflowEffectiveOutcome(
+        artifact_source="post_retry",
+        resource_construction=effective_resource_construction,
+        candidate_bundle=repair_execution.post_retry_candidate_bundle,
+        validation_report=repair_execution.post_retry_validation_report,
+        repair_decision=repair_execution.post_retry_repair_decision,
+    )
 
 
 async def build_psca_repair_execution_result(

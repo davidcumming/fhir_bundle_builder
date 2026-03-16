@@ -10,6 +10,10 @@ from fhir_bundle_builder.authoring import (
     map_authored_patient_to_patient_context,
     map_authored_provider_to_provider_context,
 )
+from fhir_bundle_builder.workflows.psca_bundle_builder_workflow import executors as workflow_executors
+from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.bundle_finalization_builder import (
+    build_psca_candidate_bundle_result as build_real_candidate_bundle_result,
+)
 from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.models import (
     BundleRequestInput,
     PatientAllergyInput,
@@ -627,6 +631,11 @@ async def test_psca_bundle_builder_workflow_smoke() -> None:
     assert final_output.repair_execution.attempt_count == 0
     assert final_output.repair_execution.post_retry_resource_construction is None
     assert final_output.repair_execution.post_retry_candidate_bundle is None
+    assert final_output.effective_outcome.artifact_source == "initial_run"
+    assert final_output.effective_outcome.resource_construction == final_output.resource_construction
+    assert final_output.effective_outcome.candidate_bundle == final_output.candidate_bundle
+    assert final_output.effective_outcome.validation_report == final_output.validation_report
+    assert final_output.effective_outcome.repair_decision == final_output.repair_decision
 
     completed_executors = [
         event.executor_id
@@ -634,6 +643,115 @@ async def test_psca_bundle_builder_workflow_smoke() -> None:
         if event.type == "executor_completed" and getattr(event, "executor_id", None) is not None
     ]
     assert completed_executors == final_output.stage_order
+
+
+async def test_psca_bundle_builder_workflow_surfaces_effective_post_retry_outcome(monkeypatch) -> None:
+    def _build_broken_initial_candidate_bundle(message, schematic, normalized_request):
+        candidate = build_real_candidate_bundle_result(message, schematic, normalized_request)
+        broken_candidate = candidate.model_copy(deep=True)
+        broken_candidate.candidate_bundle.fhir_bundle["type"] = "collection"
+        return broken_candidate
+
+    monkeypatch.setattr(
+        workflow_executors,
+        "build_psca_candidate_bundle_result",
+        _build_broken_initial_candidate_bundle,
+    )
+
+    message = WorkflowBuildInput(
+        specification=SpecificationSelection(),
+        patient_profile=ProfileReferenceInput(
+            profile_id="patient-smoke-test",
+            display_name="Smoke Test Patient",
+        ),
+        patient_context=PatientContextInput(
+            patient=PatientIdentityInput(
+                patient_id="patient-smoke-test",
+                display_name="Smoke Test Patient",
+                source_type="patient_management",
+                administrative_gender="female",
+                birth_date="1985-02-14",
+            ),
+            medications=[
+                PatientMedicationInput(
+                    medication_id="med-smoke-1",
+                    display_text="Atorvastatin 20 MG oral tablet",
+                )
+            ],
+            allergies=[
+                PatientAllergyInput(
+                    allergy_id="alg-smoke-1",
+                    display_text="Peanut allergy",
+                )
+            ],
+            conditions=[
+                PatientConditionInput(
+                    condition_id="cond-smoke-1",
+                    display_text="Type 2 diabetes mellitus",
+                )
+            ],
+        ),
+        provider_profile=ProfileReferenceInput(
+            profile_id="provider-smoke-test",
+            display_name="Smoke Test Provider",
+        ),
+        provider_context=ProviderContextInput(
+            provider=ProviderIdentityInput(
+                provider_id="provider-smoke-test",
+                display_name="Smoke Test Provider",
+                source_type="provider_management",
+            ),
+            organizations=[
+                ProviderOrganizationInput(
+                    organization_id="org-smoke-test-1",
+                    display_name="Smoke Test Organization One",
+                ),
+                ProviderOrganizationInput(
+                    organization_id="org-smoke-test-2",
+                    display_name="Smoke Test Organization Two",
+                ),
+            ],
+            provider_role_relationships=[
+                ProviderRoleRelationshipInput(
+                    relationship_id="provider-role-smoke-1",
+                    organization_id="org-smoke-test-1",
+                    role_label="document-author",
+                ),
+                ProviderRoleRelationshipInput(
+                    relationship_id="provider-role-smoke-2",
+                    organization_id="org-smoke-test-2",
+                    role_label="attending-physician",
+                ),
+            ],
+            selected_provider_role_relationship_id="provider-role-smoke-2",
+        ),
+        request=BundleRequestInput(
+            request_text="Create a deterministic placeholder PS-CA workflow run for retry testing.",
+            scenario_label="pytest-smoke-retry-effective-outcome",
+        ),
+    )
+
+    result = await workflow.run(message=message, include_status_events=True)
+    final_output = result.get_outputs()[0]
+
+    assert isinstance(final_output, WorkflowSkeletonRunResult)
+    assert final_output.candidate_bundle.candidate_bundle.fhir_bundle["type"] == "collection"
+    assert final_output.validation_report.overall_status == "failed"
+    assert final_output.repair_decision.overall_decision == "repair_recommended"
+    assert final_output.repair_decision.recommended_target == "bundle_finalization"
+    assert final_output.repair_execution.execution_outcome == "executed"
+    assert final_output.repair_execution.executed_target == "bundle_finalization"
+    assert final_output.repair_execution.post_retry_candidate_bundle is not None
+    assert final_output.repair_execution.post_retry_validation_report is not None
+    assert final_output.repair_execution.post_retry_repair_decision is not None
+    assert final_output.effective_outcome.artifact_source == "post_retry"
+    assert final_output.effective_outcome.resource_construction == final_output.resource_construction
+    assert final_output.effective_outcome.candidate_bundle == final_output.repair_execution.post_retry_candidate_bundle
+    assert final_output.effective_outcome.validation_report == final_output.repair_execution.post_retry_validation_report
+    assert final_output.effective_outcome.repair_decision == final_output.repair_execution.post_retry_repair_decision
+    assert final_output.effective_outcome.candidate_bundle.candidate_bundle.fhir_bundle["type"] == "document"
+    assert final_output.effective_outcome.validation_report.overall_status == "passed_with_warnings"
+    assert final_output.effective_outcome.repair_decision.overall_decision == "external_validation_pending"
 
 
 async def test_psca_bundle_builder_workflow_supports_bounded_two_medication_path() -> None:

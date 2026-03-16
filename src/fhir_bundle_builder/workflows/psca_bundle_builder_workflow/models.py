@@ -809,6 +809,16 @@ class RepairExecutionResult(StageArtifact):
     rationale: str
 
 
+class WorkflowEffectiveOutcome(BaseModel):
+    """Canonical effective final artifact set after the bounded retry pass."""
+
+    artifact_source: Literal["initial_run", "post_retry"]
+    resource_construction: ResourceConstructionStageResult
+    candidate_bundle: CandidateBundleResult
+    validation_report: ValidationReport
+    repair_decision: RepairDecisionResult
+
+
 class WorkflowSkeletonRunResult(BaseModel):
     """Final nested output yielded by the skeleton workflow."""
 
@@ -824,3 +834,4 @@ class WorkflowSkeletonRunResult(BaseModel):
     validation_report: ValidationReport
     repair_decision: RepairDecisionResult
     repair_execution: RepairExecutionResult
+    effective_outcome: WorkflowEffectiveOutcome

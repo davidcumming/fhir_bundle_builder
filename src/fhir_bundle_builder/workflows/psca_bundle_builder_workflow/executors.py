@@ -31,6 +31,7 @@ from .bundle_finalization_builder import build_psca_candidate_bundle_result
 from .build_plan_builder import build_psca_build_plan
 from .repair_decision_builder import build_psca_repair_decision
 from .repair_execution_builder import build_psca_repair_execution_result
+from .repair_execution_builder import build_psca_workflow_effective_outcome
 from .request_normalization_builder import build_psca_normalized_request
 from .resource_construction_builder import build_psca_resource_construction_result
 from .schematic_builder import build_psca_bundle_schematic
@@ -216,6 +217,16 @@ async def repair_execution(
         resource_construction_result,
         _get_standards_validator(ctx),
     )
+    candidate_bundle = _get_artifact(ctx, "candidate_bundle")
+    validation_report = _get_artifact(ctx, "validation_report")
+    repair_decision_result = _get_artifact(ctx, "repair_decision")
+    effective_outcome = build_psca_workflow_effective_outcome(
+        resource_construction=resource_construction_result,
+        candidate_bundle=candidate_bundle,
+        validation_report=validation_report,
+        repair_decision=repair_decision_result,
+        repair_execution=execution,
+    )
     _store_artifact(ctx, "repair_execution", execution)
     await ctx.yield_output(
         WorkflowSkeletonRunResult(
@@ -226,10 +237,11 @@ async def repair_execution(
             specification_asset_context=_get_artifact(ctx, "specification_asset_context"),
             bundle_schematic=_get_artifact(ctx, "bundle_schematic"),
             build_plan=_get_artifact(ctx, "build_plan"),
-            resource_construction=_get_artifact(ctx, "resource_construction"),
-            candidate_bundle=_get_artifact(ctx, "candidate_bundle"),
-            validation_report=_get_artifact(ctx, "validation_report"),
-            repair_decision=_get_artifact(ctx, "repair_decision"),
+            resource_construction=resource_construction_result,
+            candidate_bundle=candidate_bundle,
+            validation_report=validation_report,
+            repair_decision=repair_decision_result,
             repair_execution=execution,
+            effective_outcome=effective_outcome,
         )
     )
