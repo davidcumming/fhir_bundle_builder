@@ -98,11 +98,11 @@ The following status labels should be used in this plan:
 
 ## 8. Current Focus
 
-**Current Focus:** Implement the first narrow Phase 9 core workflow-quality hardening slice by surfacing an explicit effective final outcome after bounded retry execution.
+**Current Focus:** Complete the first visible model-backed core workflow slice by making `build-medicationrequest-1` opt-in agent-backed while keeping the rest of the PS-CA workflow deterministic.
 
 ## 9. Next Planned Slice
 
-**Next Planned Slice:** After effective-final-outcome hardening, choose the next narrow core workflow-quality slice rather than returning to wrapper/demo consolidation.
+**Next Planned Slice:** After the first visible model-backed MedicationRequest slice, choose the next narrow core workflow-quality or core-agent slice rather than returning to wrapper/demo consolidation.
 
 ## 10. Development Phases
 
@@ -393,6 +393,7 @@ The following assumptions currently guide the plan:
 - the current wrapper/demo surface is sufficiently consolidated for repeatable demos and should not by itself force near-term productization work
 - the core workflow should preserve original first-pass stage artifacts for inspectability while exposing a separate effective final outcome when a bounded retry executes
 - effective final outcome surfacing is additive only and does not redefine retry semantics or introduce multi-pass repair
+- the first real model-backed workflow slice should stay opt-in, narrowly bounded to `build-medicationrequest-1`, and should preserve the existing deterministic workflow graph and validation contract
 - initial development should prioritize workflow shape, artifact contracts, and inspectability over feature completeness
 
 ## 13. Known Early Risks
@@ -433,6 +434,7 @@ The following risks should be monitored during development:
 - maturity checkpoint documents can become vague roadmap prose unless they stay anchored to current typed artifacts, tests, and documented trust boundaries
 - consumers may misread first-pass artifacts as the final workflow state unless the run result exposes an explicit effective final outcome after retry
 - additive final-outcome surfacing can become misleading if executed retries are allowed to omit required post-retry artifacts without failing loudly
+- real-model workflow slices may erode trust quickly unless they keep bounded inputs, strict workflow-boundary validation, and explicit inspectable traces instead of silent deterministic fallback
 - deterministic synthetic timestamps and local URN fullUrls may later need refinement when publication or persistence semantics are introduced
 - Matchbox availability or response-shape variance may require a small amount of adapter hardening before broader operational use
 - non-Composition reference ownership is now intentionally hard-coded to the current fixed PS-CA reference paths and does not yet generalize to arbitrary future resource graphs
@@ -466,4 +468,4 @@ Codex should make targeted edits only. It should not rewrite the full document u
 
 ## 16. Immediate Next Objective
 
-The immediate next objective is to complete the first narrow core workflow-quality hardening slice by making the final core workflow output trustworthy to interpret after bounded retry execution while preserving the original first-pass artifacts.
+The immediate next objective is to use the new opt-in MedicationRequest agent slice as the baseline for the next narrow core workflow-quality or core-agent expansion decision without broadening the workflow graph or weakening deterministic boundaries elsewhere.

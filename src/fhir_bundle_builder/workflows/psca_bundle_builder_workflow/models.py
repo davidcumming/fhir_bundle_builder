@@ -235,6 +235,13 @@ class WorkflowOptionsInput(BaseModel):
         default=True,
         description="Whether placeholder artifacts should include explicit stub warnings.",
     )
+    medication_request_generation_mode: Literal["deterministic", "agent_required"] = Field(
+        default="deterministic",
+        description=(
+            "Whether MedicationRequest placeholder generation remains deterministic or "
+            "requires a real model-backed agent invocation."
+        ),
+    )
 
 
 class WorkflowBuildInput(BaseModel):
@@ -280,6 +287,10 @@ class WorkflowDefaults(BaseModel):
     specification_mode: Literal["normalized-asset-foundation"]
     validation_mode: Literal["foundational_dual_channel"]
     resource_construction_mode: Literal["deterministic_content_enriched_foundation"]
+    medication_request_generation_mode: Literal["deterministic", "agent_required"] = Field(
+        default="deterministic",
+        description="Normalized MedicationRequest generation mode carried into downstream workflow stages.",
+    )
 
 
 class NormalizedProviderContext(BaseModel):
@@ -585,6 +596,50 @@ class ResourceConstructionRepairDirective(BaseModel):
     rationale: str
 
 
+class MedicationRequestAgentBoundedInput(BaseModel):
+    """Bounded structured input supplied to the MedicationRequest construction agent."""
+
+    placeholder_id: Literal["medicationrequest-1"]
+    medication_id: str
+    source_medication_index: int
+    medication_display_text: str
+    required_resource_id: Literal["medicationrequest-1"]
+    allowed_patient_references: list[str] = Field(default_factory=list)
+    required_status: Literal["draft"] = "draft"
+    required_intent: Literal["proposal"] = "proposal"
+    patient_id: str
+    patient_display_name: str
+    patient_administrative_gender: Literal["female", "male", "other", "unknown"] | None = None
+    patient_birth_date: str | None = None
+    provider_display_name: str
+    selected_organization_display_name: str | None = None
+    selected_role_label: str | None = None
+    request_text: str
+    bundle_intent: str
+    scenario_label: str
+
+
+class MedicationRequestAgentTrace(BaseModel):
+    """Inspectable trace for the bounded MedicationRequest agent invocation."""
+
+    provider: Literal["openai"]
+    model_name: str
+    bounded_input: MedicationRequestAgentBoundedInput
+    raw_response_text: str
+    parsed_response_json: dict[str, Any] | None = None
+    accepted_normalized_resource_json: dict[str, Any] | None = None
+    status: Literal["accepted", "rejected"]
+    rejection_reason: str | None = None
+    provider_response_id: str | None = None
+
+
+class MedicationRequestAgentAcceptedResult(BaseModel):
+    """Accepted normalized MedicationRequest payload returned by the agent path."""
+
+    normalized_resource_json: dict[str, Any]
+    trace: MedicationRequestAgentTrace
+
+
 class ResourceScaffoldArtifact(BaseModel):
     """Partial FHIR-shaped scaffold for a constructed placeholder resource."""
 
@@ -609,6 +664,7 @@ class ResourceConstructionStepResult(BaseModel):
     resource_scaffold: ResourceScaffoldArtifact
     reference_contributions: list[ReferenceContribution] = Field(default_factory=list)
     deterministic_value_evidence: list[DeterministicValueEvidence] = Field(default_factory=list)
+    medication_agent_trace: MedicationRequestAgentTrace | None = None
     assumptions: list[str] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
     unresolved_fields: list[str] = Field(default_factory=list)
@@ -630,6 +686,7 @@ class ResourceConstructionEvidence(BaseModel):
     source_build_plan_basis: str
     source_schematic_stage_id: str
     planned_step_ids: list[str] = Field(default_factory=list)
+    agent_step_ids: list[str] = Field(default_factory=list)
     placeholder_traceability_summaries: list[PlaceholderTraceabilitySummary] = Field(default_factory=list)
     source_refs: list[str] = Field(default_factory=list)
 

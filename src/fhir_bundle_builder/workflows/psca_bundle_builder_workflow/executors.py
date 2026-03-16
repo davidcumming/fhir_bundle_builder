@@ -29,6 +29,7 @@ from .models import (
 )
 from .bundle_finalization_builder import build_psca_candidate_bundle_result
 from .build_plan_builder import build_psca_build_plan
+from .medication_request_agent import apply_medication_request_agent_to_construction_result
 from .repair_decision_builder import build_psca_repair_decision
 from .repair_execution_builder import build_psca_repair_execution_result
 from .repair_execution_builder import build_psca_workflow_effective_outcome
@@ -150,6 +151,7 @@ async def resource_construction(
     schematic = _get_artifact(ctx, "bundle_schematic")
     normalized_request = _get_artifact(ctx, "normalized_request")
     result = build_psca_resource_construction_result(message, schematic, normalized_request)
+    result = await apply_medication_request_agent_to_construction_result(result, normalized_request)
     _store_artifact(ctx, "resource_construction", result)
     await ctx.send_message(result)
 

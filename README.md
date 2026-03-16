@@ -108,6 +108,23 @@ devui ./entities --reload --port 8080 --no-open
 
 Then open [http://127.0.0.1:8080](http://127.0.0.1:8080).
 
+## MedicationRequest agent demo
+
+The core workflow now includes one opt-in real model-backed slice for `build-medicationrequest-1`.
+
+Required environment variables for that slice:
+
+- `OPENAI_API_KEY`
+- `FHIR_BUNDLE_BUILDER_MEDICATION_AGENT_MODEL`
+
+To trigger it in the existing `PS-CA Bundle Builder Skeleton` workflow:
+
+- launch Dev UI with the command above
+- load or copy the example input in [examples/psca_medication_agent_demo_input.json](/Users/davidcumming/coding_projects/fhir_bundle_builder/examples/psca_medication_agent_demo_input.json)
+- make sure `workflow_options.medication_request_generation_mode` is set to `agent_required`
+
+If agent mode is selected without the required model configuration, the run now fails clearly during `resource_construction` instead of silently falling back to deterministic MedicationRequest generation.
+
 ## Recommended demo scenarios
 
 For repeatable authored-input demos, use the two canonical scenarios documented in [docs/demo-scenarios.md](/Users/davidcumming/coding_projects/fhir_bundle_builder/docs/demo-scenarios.md):
@@ -276,6 +293,11 @@ The `resource_construction` stage now emits the first real scaffold-oriented con
 
 - construction mode metadata showing deterministic content-enriched construction
 - ordered per-step construction results aligned to the build plan
+- when `workflow_options.medication_request_generation_mode = agent_required`, `build-medicationrequest-1` now includes:
+  - a bounded real OpenAI-backed MedicationRequest agent invocation
+  - the raw model output
+  - the parsed JSON object
+  - the accepted normalized MedicationRequest scaffold used downstream
 - FHIR-shaped scaffolds with narrow deterministic content for core patient, composition, section-entry, and selected provider-facing support resources
 - deterministic local references such as:
   - `Patient/patient-1`

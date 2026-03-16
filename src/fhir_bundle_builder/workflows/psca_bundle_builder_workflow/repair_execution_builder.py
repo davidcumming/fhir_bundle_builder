@@ -5,6 +5,7 @@ from __future__ import annotations
 from fhir_bundle_builder.validation import StandardsValidator
 
 from .bundle_finalization_builder import build_psca_candidate_bundle_result
+from .medication_request_agent import apply_medication_request_agent_to_construction_result
 from .models import (
     BuildPlan,
     BundleSchematic,
@@ -151,6 +152,10 @@ async def build_psca_repair_execution_result(
                 normalized_request,
                 prior_result=resource_construction,
                 repair_directive=applied_repair_directive,
+            )
+            post_retry_resource_construction = await apply_medication_request_agent_to_construction_result(
+                post_retry_resource_construction,
+                normalized_request,
             )
             return await _build_executed_retry_result(
                 repair_decision=repair_decision,

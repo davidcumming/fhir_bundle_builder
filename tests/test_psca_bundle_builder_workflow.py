@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from fhir_bundle_builder.authoring import (
     PatientAuthoringInput,
     ProviderAuthoringInput,
@@ -11,6 +13,7 @@ from fhir_bundle_builder.authoring import (
     map_authored_provider_to_provider_context,
 )
 from fhir_bundle_builder.workflows.psca_bundle_builder_workflow import executors as workflow_executors
+from fhir_bundle_builder.workflows.psca_bundle_builder_workflow import medication_request_agent as medication_agent_module
 from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.bundle_finalization_builder import (
     build_psca_candidate_bundle_result as build_real_candidate_bundle_result,
 )
@@ -28,7 +31,12 @@ from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.models import (
     ProviderRoleRelationshipInput,
     SpecificationSelection,
     WorkflowBuildInput,
+    WorkflowOptionsInput,
     WorkflowSkeletonRunResult,
+)
+from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.openai_gateway import (
+    OpenAIGatewayConfig,
+    OpenAIJSONCompletionResponse,
 )
 from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.resource_construction_builder import (
     SELECTED_PROVIDER_ORGANIZATION_IDENTIFIER_SYSTEM,
@@ -1168,3 +1176,175 @@ async def test_psca_bundle_builder_workflow_accepts_authored_provider_context_ma
         == "oncologist"
     )
     assert final_output.validation_report.workflow_validation.status == "passed"
+
+
+class _WorkflowFakeMedicationGateway:
+    def __init__(self, config: OpenAIGatewayConfig) -> None:
+        self._config = config
+
+    @property
+    def model_name(self) -> str:
+        return self._config.model_name
+
+    async def create_json_completion(self, **_: object) -> OpenAIJSONCompletionResponse:
+        raw_text = (
+            '{"resourceType":"MedicationRequest","id":"medicationrequest-1","status":"draft",'
+            '"intent":"proposal","subject":{"reference":"Patient/patient-1"},'
+            '"medicationCodeableConcept":{"text":"Atorvastatin 20 MG oral tablet"}}'
+        )
+        return OpenAIJSONCompletionResponse(
+            response_id="resp_workflow_test_123",
+            raw_text=raw_text,
+            raw_response_json={"id": "resp_workflow_test_123", "choices": [{"message": {"content": raw_text}}]},
+        )
+
+
+async def test_psca_bundle_builder_workflow_runs_medication_request_agent_when_requested(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("OPENAI_API_KEY", "test-openai-key")
+    monkeypatch.setenv("FHIR_BUNDLE_BUILDER_MEDICATION_AGENT_MODEL", "gpt-test")
+    monkeypatch.setattr(
+        medication_agent_module,
+        "OpenAIChatCompletionsGateway",
+        _WorkflowFakeMedicationGateway,
+    )
+
+    message = WorkflowBuildInput(
+        specification=SpecificationSelection(),
+        patient_profile=ProfileReferenceInput(
+            profile_id="patient-smoke-test-agent",
+            display_name="Smoke Test Patient Agent",
+        ),
+        patient_context=PatientContextInput(
+            patient=PatientIdentityInput(
+                patient_id="patient-smoke-test-agent",
+                display_name="Smoke Test Patient Agent",
+                source_type="patient_management",
+                administrative_gender="female",
+                birth_date="1985-02-14",
+            ),
+            medications=[
+                PatientMedicationInput(
+                    medication_id="med-smoke-1",
+                    display_text="Atorvastatin 20 MG oral tablet",
+                )
+            ],
+            allergies=[
+                PatientAllergyInput(
+                    allergy_id="alg-smoke-1",
+                    display_text="Peanut allergy",
+                )
+            ],
+            conditions=[
+                PatientConditionInput(
+                    condition_id="cond-smoke-1",
+                    display_text="Type 2 diabetes mellitus",
+                )
+            ],
+        ),
+        provider_profile=ProfileReferenceInput(
+            profile_id="provider-smoke-test-agent",
+            display_name="Smoke Test Provider Agent",
+        ),
+        provider_context=ProviderContextInput(
+            provider=ProviderIdentityInput(
+                provider_id="provider-smoke-test-agent",
+                display_name="Smoke Test Provider Agent",
+                source_type="provider_management",
+            ),
+            organizations=[
+                ProviderOrganizationInput(
+                    organization_id="org-smoke-test-agent",
+                    display_name="Smoke Test Organization Agent",
+                )
+            ],
+            provider_role_relationships=[
+                ProviderRoleRelationshipInput(
+                    relationship_id="provider-role-smoke-agent",
+                    organization_id="org-smoke-test-agent",
+                    role_label="attending-physician",
+                )
+            ],
+        ),
+        request=BundleRequestInput(
+            request_text="Create a PS-CA workflow run with one agent-backed medication request.",
+            scenario_label="pytest-smoke-agent",
+        ),
+        workflow_options=WorkflowOptionsInput(
+            medication_request_generation_mode="agent_required",
+        ),
+    )
+
+    result = await workflow.run(message=message, include_status_events=True)
+    final_output = result.get_outputs()[0]
+
+    medication_step = next(
+        step
+        for step in final_output.resource_construction.step_results
+        if step.step_id == "build-medicationrequest-1"
+    )
+    assert final_output.normalized_request.workflow_defaults.medication_request_generation_mode == (
+        "agent_required"
+    )
+    assert final_output.resource_construction.evidence.agent_step_ids == ["build-medicationrequest-1"]
+    assert medication_step.medication_agent_trace is not None
+    assert medication_step.medication_agent_trace.status == "accepted"
+    assert medication_step.medication_agent_trace.provider == "openai"
+    assert medication_step.medication_agent_trace.model_name == "gpt-test"
+    assert (
+        medication_step.resource_scaffold.fhir_scaffold["medicationCodeableConcept"]["text"]
+        == "Atorvastatin 20 MG oral tablet"
+    )
+    medication_entry = next(
+        entry
+        for entry in final_output.candidate_bundle.candidate_bundle.fhir_bundle["entry"]
+        if entry["resource"]["id"] == "medicationrequest-1"
+    )
+    assert medication_entry["resource"]["medicationCodeableConcept"]["text"] == (
+        "Atorvastatin 20 MG oral tablet"
+    )
+    assert final_output.validation_report.workflow_validation.status == "passed"
+
+
+async def test_psca_bundle_builder_workflow_fails_clearly_when_agent_mode_lacks_model_config(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("FHIR_BUNDLE_BUILDER_MEDICATION_AGENT_MODEL", raising=False)
+
+    with pytest.raises(RuntimeError, match="OPENAI_API_KEY"):
+        await workflow.run(
+            message=WorkflowBuildInput(
+                specification=SpecificationSelection(),
+                patient_profile=ProfileReferenceInput(
+                    profile_id="patient-smoke-test-agent-fail",
+                    display_name="Smoke Test Patient Agent Fail",
+                ),
+                patient_context=PatientContextInput(
+                    patient=PatientIdentityInput(
+                        patient_id="patient-smoke-test-agent-fail",
+                        display_name="Smoke Test Patient Agent Fail",
+                        source_type="patient_management",
+                    ),
+                    medications=[
+                        PatientMedicationInput(
+                            medication_id="med-smoke-1",
+                            display_text="Atorvastatin 20 MG oral tablet",
+                        )
+                    ],
+                ),
+                provider_profile=ProfileReferenceInput(
+                    profile_id="provider-smoke-test-agent-fail",
+                    display_name="Smoke Test Provider Agent Fail",
+                ),
+                request=BundleRequestInput(
+                    request_text="Create a PS-CA workflow run with one agent-backed medication request.",
+                    scenario_label="pytest-smoke-agent-fail",
+                ),
+                workflow_options=WorkflowOptionsInput(
+                    medication_request_generation_mode="agent_required",
+                ),
+            ),
+            include_status_events=True,
+        )

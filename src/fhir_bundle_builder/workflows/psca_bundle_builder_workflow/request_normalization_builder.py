@@ -70,6 +70,7 @@ def build_psca_normalized_request(message: WorkflowBuildInput) -> NormalizedBuil
             specification_mode="normalized-asset-foundation",
             validation_mode="foundational_dual_channel",
             resource_construction_mode="deterministic_content_enriched_foundation",
+            medication_request_generation_mode=message.workflow_options.medication_request_generation_mode,
         ),
         run_label=f"{message.request.scenario_label}:{message.specification.package_id}:{message.specification.version}",
     )
