@@ -157,6 +157,7 @@ Use [docs/post-consolidation-checkpoint.md](/Users/davidcumming/coding_projects/
 - Two workflow entities:
   - `PS-CA Bundle Builder Skeleton`
   - `PS-CA Authored Bundle Demo Flow`
+  - `Psca Medication Agent Demo Workflow`
 - A structured top-level input form with:
   - for `PS-CA Bundle Builder Skeleton`:
     - `specification`
@@ -190,6 +191,10 @@ Use [docs/post-consolidation-checkpoint.md](/Users/davidcumming/coding_projects/
   - `validation`
   - `repair_decision`
   - `repair_execution`
+- A one-click agent-demo workflow is also available for local testing:
+  - `Psca Medication Agent Demo Workflow`
+  - it seeds the canonical MedicationRequest agent demo input automatically
+  - it then runs the same core stages so you can inspect the real model-backed `build-medicationrequest-1` step without manually pasting JSON
 - Structured outputs for every stage, plus a final nested run result yielded by `repair_execution`.
 - The final nested core workflow run result now preserves the original first-pass artifacts and also exposes an `effective_outcome` view that resolves the canonical final artifact set after the bounded retry pass.
 - In the authored demo flow, compact typed summaries now supplement the full artifacts so you can scan:

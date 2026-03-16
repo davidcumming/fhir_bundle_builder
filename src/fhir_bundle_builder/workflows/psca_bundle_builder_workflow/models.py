@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from fhir_bundle_builder.specifications.psca import PscaNormalizedAssetContext
 from fhir_bundle_builder.validation.models import (
@@ -244,30 +244,210 @@ class WorkflowOptionsInput(BaseModel):
     )
 
 
+def _default_patient_profile() -> ProfileReferenceInput:
+    return ProfileReferenceInput(
+        profile_id="patient-demo-agent",
+        display_name="Demo Agent Patient",
+        source_type="patient_management",
+    )
+
+
+def _default_patient_context() -> PatientContextInput:
+    return PatientContextInput(
+        patient=PatientIdentityInput(
+            patient_id="patient-demo-agent",
+            display_name="Demo Agent Patient",
+            source_type="patient_management",
+            administrative_gender="female",
+            birth_date="1985-02-14",
+        ),
+        conditions=[
+            PatientConditionInput(
+                condition_id="cond-demo-1",
+                display_text="Type 2 diabetes mellitus",
+            )
+        ],
+        medications=[
+            PatientMedicationInput(
+                medication_id="med-demo-1",
+                display_text="Atorvastatin 20 MG oral tablet",
+            )
+        ],
+        allergies=[
+            PatientAllergyInput(
+                allergy_id="alg-demo-1",
+                display_text="Peanut allergy",
+            )
+        ],
+    )
+
+
+def _default_provider_profile() -> ProfileReferenceInput:
+    return ProfileReferenceInput(
+        profile_id="provider-demo-agent",
+        display_name="Demo Agent Provider",
+        source_type="provider_management",
+    )
+
+
+def _default_provider_context() -> ProviderContextInput:
+    return ProviderContextInput(
+        provider=ProviderIdentityInput(
+            provider_id="provider-demo-agent",
+            display_name="Demo Agent Provider",
+            source_type="provider_management",
+        ),
+        organizations=[
+            ProviderOrganizationInput(
+                organization_id="org-demo-agent",
+                display_name="Demo Agent Cancer Clinic",
+            )
+        ],
+        provider_role_relationships=[
+            ProviderRoleRelationshipInput(
+                relationship_id="provider-role-demo-agent",
+                organization_id="org-demo-agent",
+                role_label="attending-physician",
+            )
+        ],
+    )
+
+
+def _default_request() -> BundleRequestInput:
+    return BundleRequestInput(
+        request_text="Create a PS-CA bundle with one real model-backed medication request artifact.",
+        bundle_intent="PS-CA document bundle skeleton",
+        scenario_label="demo-medication-agent",
+    )
+
+
+def _default_workflow_options() -> WorkflowOptionsInput:
+    return WorkflowOptionsInput(
+        include_example_bundle_inventory=True,
+        example_bundle_filename="Bundle1Example.json",
+        emit_placeholder_warnings=True,
+        medication_request_generation_mode="agent_required",
+    )
+
+
+_WORKFLOW_BUILD_INPUT_EXAMPLE = {
+    "specification": {
+        "package_id": "ca.infoway.io.psca",
+        "version": "2.1.1-DFT",
+        "fhir_version": "4.0.1",
+    },
+    "patient_profile": {
+        "profile_id": "patient-demo-agent",
+        "display_name": "Demo Agent Patient",
+        "source_type": "patient_management",
+    },
+    "patient_context": {
+        "patient": {
+            "patient_id": "patient-demo-agent",
+            "display_name": "Demo Agent Patient",
+            "source_type": "patient_management",
+            "administrative_gender": "female",
+            "birth_date": "1985-02-14",
+        },
+        "conditions": [
+            {
+                "condition_id": "cond-demo-1",
+                "display_text": "Type 2 diabetes mellitus",
+            }
+        ],
+        "medications": [
+            {
+                "medication_id": "med-demo-1",
+                "display_text": "Atorvastatin 20 MG oral tablet",
+            }
+        ],
+        "allergies": [
+            {
+                "allergy_id": "alg-demo-1",
+                "display_text": "Peanut allergy",
+            }
+        ],
+    },
+    "provider_profile": {
+        "profile_id": "provider-demo-agent",
+        "display_name": "Demo Agent Provider",
+        "source_type": "provider_management",
+    },
+    "provider_context": {
+        "provider": {
+            "provider_id": "provider-demo-agent",
+            "display_name": "Demo Agent Provider",
+            "source_type": "provider_management",
+        },
+        "organizations": [
+            {
+                "organization_id": "org-demo-agent",
+                "display_name": "Demo Agent Cancer Clinic",
+            }
+        ],
+        "provider_role_relationships": [
+            {
+                "relationship_id": "provider-role-demo-agent",
+                "organization_id": "org-demo-agent",
+                "role_label": "attending-physician",
+            }
+        ],
+    },
+    "request": {
+        "request_text": "Create a PS-CA bundle with one real model-backed medication request artifact.",
+        "bundle_intent": "PS-CA document bundle skeleton",
+        "scenario_label": "demo-medication-agent",
+    },
+    "workflow_options": {
+        "include_example_bundle_inventory": True,
+        "example_bundle_filename": "Bundle1Example.json",
+        "emit_placeholder_warnings": True,
+        "medication_request_generation_mode": "agent_required",
+    },
+}
+
+
 class WorkflowBuildInput(BaseModel):
     """Structured top-level workflow input."""
 
-    specification: SpecificationSelection = Field(default_factory=SpecificationSelection)
+    model_config = ConfigDict(json_schema_extra={"examples": [_WORKFLOW_BUILD_INPUT_EXAMPLE]})
+
+    specification: SpecificationSelection = Field(
+        default_factory=SpecificationSelection,
+        examples=[_WORKFLOW_BUILD_INPUT_EXAMPLE["specification"]],
+    )
     patient_profile: ProfileReferenceInput = Field(
         default_factory=lambda: ProfileReferenceInput(
             profile_id="patient-profile-stub",
             display_name="Default patient profile stub",
-        )
+        ),
+        examples=[_WORKFLOW_BUILD_INPUT_EXAMPLE["patient_profile"]],
     )
-    patient_context: PatientContextInput | None = None
+    patient_context: PatientContextInput | None = Field(
+        default=None,
+        examples=[_WORKFLOW_BUILD_INPUT_EXAMPLE["patient_context"]],
+    )
     provider_profile: ProfileReferenceInput = Field(
         default_factory=lambda: ProfileReferenceInput(
             profile_id="provider-profile-stub",
             display_name="Default provider profile stub",
-        )
+        ),
+        examples=[_WORKFLOW_BUILD_INPUT_EXAMPLE["provider_profile"]],
     )
-    provider_context: ProviderContextInput | None = None
+    provider_context: ProviderContextInput | None = Field(
+        default=None,
+        examples=[_WORKFLOW_BUILD_INPUT_EXAMPLE["provider_context"]],
+    )
     request: BundleRequestInput = Field(
         default_factory=lambda: BundleRequestInput(
             request_text="Create a placeholder PS-CA bundle workflow run for Dev UI inspection."
-        )
+        ),
+        examples=[_WORKFLOW_BUILD_INPUT_EXAMPLE["request"]],
     )
-    workflow_options: WorkflowOptionsInput = Field(default_factory=WorkflowOptionsInput)
+    workflow_options: WorkflowOptionsInput = Field(
+        default_factory=WorkflowOptionsInput,
+        examples=[_WORKFLOW_BUILD_INPUT_EXAMPLE["workflow_options"]],
+    )
 
 
 class StageArtifact(BaseModel):
