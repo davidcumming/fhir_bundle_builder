@@ -4,6 +4,8 @@ This repo now standardizes on two canonical end-to-end authored-input demo scena
 
 These scenarios are intentionally narrow. They are meant to make repeatable demos, onboarding, and smoke coverage easier to follow without introducing a scenario platform.
 
+Use [operator-guidance.md](./operator-guidance.md) for the current trust-boundary meaning of wrapper readiness/finality labels, thin provider context, and deferred external validation.
+
 ## Canonical scenarios
 
 ### `rich_reviewed_demo`
@@ -24,7 +26,11 @@ These scenarios are intentionally narrow. They are meant to make repeatable demo
   - patient/provider authored summaries
   - refinement overview showing edited fields were applied
   - preparation overview showing mapped patient items and rich provider path
-  - final summary showing selected provider-role relationship and passing validation
+  - final summary showing the selected provider-role relationship plus the current readiness/finality interpretation
+- How to interpret this scenario:
+  - this is the rich provider path demo, not a zero-limitation or externally certified scenario
+  - under the default local validator mode, the current final interpretation is still expected to land on `success_external_validation_deferred`
+  - current wrapper summaries may also still surface authored-gap or unmapped-fact limitations even though the provider path is rich
 
 ### `thin_provider_demo`
 
@@ -43,7 +49,11 @@ These scenarios are intentionally narrow. They are meant to make repeatable demo
   - provider overview showing thin provider path
   - unresolved provider gaps for missing organization and provider-role relationship
   - preparation overview showing unmapped provider fact counts
-  - final summary showing the workflow still passes without selected provider-role relationship
+  - final summary showing that the workflow still runs without a selected provider-role relationship
+- How to interpret this scenario:
+  - `thin provider path` is the expected honest outcome when the prompt does not support organization/relationship authoring
+  - the thin path is a limited-context state, not a failure state
+  - under the default local validator mode, the current final interpretation is still expected to land on `success_external_validation_deferred` rather than full external conformance success
 
 ## Where these live
 

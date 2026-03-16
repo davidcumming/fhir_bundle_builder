@@ -96,7 +96,10 @@ class AuthoredBundlePreparationOverview(BaseModel):
 
 
 class AuthoredBundleRunReadinessSummary(BaseModel):
-    """Compact pre-run readiness summary for the authored demo flow."""
+    """Compact pre-run readiness summary for the authored demo flow.
+
+    The typed readiness labels are the canonical wrapper vocabulary.
+    """
 
     readiness_level: RunReadinessLevel
     provider_path_mode: ProviderPathMode
@@ -109,7 +112,10 @@ class AuthoredBundleRunReadinessSummary(BaseModel):
 
 
 class AuthoredBundleRunInterpretationSummary(BaseModel):
-    """Compact final interpretation summary for the authored demo flow."""
+    """Compact final interpretation summary for the authored demo flow.
+
+    The typed interpretation labels are the canonical wrapper vocabulary.
+    """
 
     interpretation_level: RunInterpretationLevel
     provider_path_mode: ProviderPathMode

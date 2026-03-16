@@ -373,7 +373,7 @@ async def authored_record_refinement(
                 "Applied authored-record refinement with "
                 f"{refinement_overview.patient_edited_field_count} edited patient field(s) and "
                 f"{refinement_overview.provider_edited_field_count} edited provider field(s); "
-                f"effective provider path is now {provider_overview.provider_path_mode} with "
+                f"effective provider path is now the {provider_overview.provider_path_mode} provider path with "
                 f"{patient_overview.unresolved_gap_count} patient gap(s) and "
                 f"{provider_overview.unresolved_gap_count} provider gap(s) still visible."
             ),
@@ -530,9 +530,7 @@ async def bundle_builder_run(
                 {
                     "success_low_concern": "Run completed with low concern.",
                     "success_with_limitations": "Run completed with limitations.",
-                    "success_external_validation_deferred": (
-                        "Run completed but external validation remains deferred."
-                    ),
+                    "success_external_validation_deferred": "Run completed with deferred external validation.",
                     "failure_or_incomplete": "Run incomplete or failed.",
                 }[run_interpretation_summary.interpretation_level]
             ),

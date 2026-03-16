@@ -53,6 +53,7 @@ The workflow does not currently claim:
 
 - `docs/` contains architecture, workflow, and planning guidance.
 - `docs/demo-scenarios.md` contains the canonical authored-input demo scenarios for the Dev UI wrapper flow.
+- `docs/operator-guidance.md` explains how to interpret the current core workflow, wrapper summaries, and trust boundaries without overclaiming.
 - `fhir/ca.infoway.io.psca-2.1.1-dft/` contains the PS-CA source package already present in the repo.
 - `src/fhir_bundle_builder/authoring/` contains the bounded upstream patient/provider authoring foundations plus the thin authored-input orchestration harness.
 - `src/fhir_bundle_builder/workflows/psca_bundle_builder_workflow/` contains the workflow skeleton.
@@ -120,6 +121,20 @@ The corresponding canonical input builders live in:
 
 - `src/fhir_bundle_builder/workflows/psca_authored_bundle_demo_workflow/demo_scenarios.py`
 
+## Interpretation guidance
+
+Use [docs/operator-guidance.md](/Users/davidcumming/coding_projects/fhir_bundle_builder/docs/operator-guidance.md) when you need to understand:
+
+- what the deterministic core workflow currently guarantees
+- what the authored-input wrapper flow adds without changing core workflow behavior
+- what `thin provider path`, `ready_with_limitations`, and `success_external_validation_deferred` actually mean
+- when a run is good enough for demo/testing versus still limitation-bearing
+
+The wrapper flow supplements the core workflow with authoring, refinement, orchestration, and advisory summaries. It does not redefine the core workflow's artifacts or upgrade its current validation guarantees.
+The typed wrapper labels are canonical; stage prose and docs use sentence-case renderings of those labels for readability.
+
+Use [docs/post-consolidation-checkpoint.md](/Users/davidcumming/coding_projects/fhir_bundle_builder/docs/post-consolidation-checkpoint.md) for the current repo-maturity checkpoint, the recommended next branch, and the explicit "deferred for now" boundaries after the recent consolidation passes.
+
 ## What to expect in Dev UI
 
 - Two workflow entities:
@@ -167,6 +182,7 @@ The corresponding canonical input builders live in:
   - whether the prepared request is ready to run cleanly or ready with limitations
   - whether the final run completed with low concern, limitations, or deferred external validation
   - final validation status and candidate bundle size
+- Those wrapper summaries are advisory interpretations layered over the existing typed artifacts. They are not a blocking approval mechanism or a replacement for the nested workflow output.
 
 ## Retrieval-stage output
 
