@@ -108,6 +108,22 @@ devui ./entities --reload --port 8080 --no-open
 
 Then open [http://127.0.0.1:8080](http://127.0.0.1:8080).
 
+## Run the patient authoring page
+
+```bash
+source .venv/bin/activate
+PYTHONPATH=src uvicorn fhir_bundle_builder.web.patient_authoring_app:app --reload
+```
+
+Then open [http://127.0.0.1:8000/patient-authoring](http://127.0.0.1:8000/patient-authoring).
+
+## Test the patient authoring page
+
+```bash
+source .venv/bin/activate
+pytest tests/test_patient_authoring_web_app.py
+```
+
 ## MedicationRequest agent demo
 
 The core workflow now includes one opt-in real model-backed slice for `build-medicationrequest-1`.
