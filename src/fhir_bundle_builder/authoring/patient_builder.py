@@ -50,6 +50,32 @@ def get_patient_complexity_policy(level: PatientComplexityLevel) -> PatientCompl
     return _COMPLEXITY_POLICIES[level]
 
 
+def build_deterministic_patient_id(display_name: str, authoring_text: str) -> str:
+    """Build the stable authored patient id used by both demo and agent-backed flows."""
+
+    slug = re.sub(r"[^a-z0-9]+", "-", display_name.lower()).strip("-") or "authored-patient"
+    suffix = hashlib.sha1(authoring_text.encode("utf-8")).hexdigest()[:8]
+    return f"{slug}-{suffix}"
+
+
+def build_deterministic_patient_record_id(authoring_text: str, scenario_label: str) -> str:
+    """Build the stable authored record id used by both demo and agent-backed flows."""
+
+    suffix = hashlib.sha1(f"{scenario_label}:{authoring_text}".encode("utf-8")).hexdigest()[:10]
+    return f"patient-authored-record-{suffix}"
+
+
+def build_patient_authoring_gaps(
+    policy: PatientComplexityPolicy,
+    conditions: list[PatientAuthoredCondition],
+    medications: list[PatientAuthoredMedication],
+    allergies: list[PatientAuthoredAllergy],
+) -> list[PatientAuthoringGap]:
+    """Build explicit authored-content shortfalls against the bounded complexity policy."""
+
+    return _authoring_gaps(policy, conditions, medications, allergies)
+
+
 def build_patient_authored_record(authoring_input: PatientAuthoringInput) -> PatientAuthoredRecord:
     """Build one bounded authored patient record from natural-language input."""
 
@@ -66,8 +92,8 @@ def build_patient_authored_record(authoring_input: PatientAuthoringInput) -> Pat
     scenario_tags = _scenario_tags(lowered)
 
     display_name = extracted_name or "Authored Patient"
-    patient_id = _deterministic_patient_id(display_name, text)
-    record_id = _deterministic_record_id(text, authoring_input.scenario_label)
+    patient_id = build_deterministic_patient_id(display_name, text)
+    record_id = build_deterministic_patient_record_id(text, authoring_input.scenario_label)
 
     conditions = _bounded_conditions(lowered, policy.target_condition_count)
     medications = _bounded_medications(lowered, policy.target_medication_count)
@@ -297,13 +323,3 @@ def _authoring_gaps(
             )
     return gaps
 
-
-def _deterministic_patient_id(display_name: str, authoring_text: str) -> str:
-    slug = re.sub(r"[^a-z0-9]+", "-", display_name.lower()).strip("-") or "authored-patient"
-    suffix = hashlib.sha1(authoring_text.encode("utf-8")).hexdigest()[:8]
-    return f"{slug}-{suffix}"
-
-
-def _deterministic_record_id(authoring_text: str, scenario_label: str) -> str:
-    suffix = hashlib.sha1(f"{scenario_label}:{authoring_text}".encode("utf-8")).hexdigest()[:10]
-    return f"patient-authored-record-{suffix}"

@@ -112,16 +112,20 @@ Then open [http://127.0.0.1:8080](http://127.0.0.1:8080).
 
 ```bash
 source .venv/bin/activate
+export OPENAI_API_KEY=...
+export FHIR_BUNDLE_BUILDER_PATIENT_AUTHORING_MODEL=...
 PYTHONPATH=src uvicorn fhir_bundle_builder.web.patient_authoring_app:app --reload
 ```
 
 Then open [http://127.0.0.1:8000/patient-authoring](http://127.0.0.1:8000/patient-authoring).
 
+The page now uses a real OpenAI-backed patient authoring agent on submit. If `OPENAI_API_KEY` or `FHIR_BUNDLE_BUILDER_PATIENT_AUTHORING_MODEL` is missing, the page returns a visible configuration error and does not silently fall back to the deterministic patient builder.
+
 ## Test the patient authoring page
 
 ```bash
 source .venv/bin/activate
-pytest tests/test_patient_authoring_web_app.py
+PYTHONPATH=src pytest tests/test_patient_authoring_agent.py tests/test_patient_authoring_web_app.py
 ```
 
 ## MedicationRequest agent demo

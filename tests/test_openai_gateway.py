@@ -9,7 +9,9 @@ import pytest
 from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.openai_gateway import (
     OpenAIChatCompletionsGateway,
     OpenAIGatewayConfig,
+    OpenAIGatewayConfigurationError,
     OpenAIGatewayError,
+    load_patient_authoring_gateway_config_from_env,
 )
 
 
@@ -118,3 +120,20 @@ async def test_openai_gateway_surfaces_provider_error_body(monkeypatch: pytest.M
             schema_name="test_schema",
             schema={"type": "object"},
         )
+
+
+def test_patient_authoring_gateway_config_strips_quotes_and_rejects_non_ascii(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test-key”")
+    monkeypatch.setenv("FHIR_BUNDLE_BUILDER_PATIENT_AUTHORING_MODEL", "“gpt-5-mini”")
+    monkeypatch.setenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
+
+    config = load_patient_authoring_gateway_config_from_env()
+
+    assert config.api_key == "sk-test-key"
+    assert config.model_name == "gpt-5-mini"
+
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test-key\u201dwith-smart-quote")
+    with pytest.raises(OpenAIGatewayConfigurationError, match="non-ASCII value for OPENAI_API_KEY"):
+        load_patient_authoring_gateway_config_from_env()

@@ -1,4 +1,4 @@
-"""Thin FastAPI page for patient profile authoring inspection."""
+"""Thin FastAPI page for AI-assisted patient profile authoring inspection."""
 
 from __future__ import annotations
 
@@ -12,11 +12,16 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 
 from fhir_bundle_builder.authoring import (
     PatientAuthoredRecord,
+    PatientAuthoringAgentRunResult,
     PatientAuthoringInput,
     PatientAuthoringMapResult,
-    build_patient_authored_record,
+    author_patient_record,
     map_authored_patient_to_patient_context,
 )
+from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.openai_gateway import (
+    OpenAIGatewayConfigurationError,
+)
+from fhir_bundle_builder.authoring.patient_agent import PatientAuthoringAgentError
 
 ComplexityValue = Literal["low", "medium", "high"]
 _VALID_COMPLEXITIES: tuple[ComplexityValue, ...] = ("low", "medium", "high")
@@ -26,25 +31,34 @@ _VALID_COMPLEXITIES: tuple[ComplexityValue, ...] = ("low", "medium", "high")
 class PatientAuthoringPageResult:
     """Small render payload for the patient authoring page."""
 
-    authored_record: PatientAuthoredRecord
-    mapped_result: PatientAuthoringMapResult
+    agent_run: PatientAuthoringAgentRunResult
+    mapped_result: PatientAuthoringMapResult | None
+
+    @property
+    def accepted_record(self) -> PatientAuthoredRecord | None:
+        return self.agent_run.accepted_record
 
 
 app = FastAPI(title="FHIR Bundle Builder Patient Authoring")
 
 
-def run_patient_authoring_flow(narrative: str, complexity: ComplexityValue) -> PatientAuthoringPageResult:
-    """Run the bounded patient authoring flow for the page."""
+async def run_patient_authoring_flow(
+    narrative: str,
+    complexity: ComplexityValue,
+) -> PatientAuthoringPageResult:
+    """Run the OpenAI-backed patient authoring flow for the page."""
 
     authoring_input = PatientAuthoringInput(
         authoring_text=narrative,
         complexity_level=complexity,
         scenario_label="patient-authoring-web-ui",
     )
-    authored_record = build_patient_authored_record(authoring_input)
-    mapped_result = map_authored_patient_to_patient_context(authored_record)
+    agent_run = await author_patient_record(authoring_input)
+    mapped_result = None
+    if agent_run.accepted_record is not None:
+        mapped_result = map_authored_patient_to_patient_context(agent_run.accepted_record)
     return PatientAuthoringPageResult(
-        authored_record=authored_record,
+        agent_run=agent_run,
         mapped_result=mapped_result,
     )
 
@@ -69,17 +83,17 @@ def _render_key_value_list(rows: list[tuple[str, str | None]], empty_text: str) 
     )
 
 
-def _render_authored_record(result: PatientAuthoringPageResult | None) -> str:
-    if result is None:
-        return "<p>No authored patient profile yet.</p>"
+def _render_accepted_record(result: PatientAuthoringPageResult | None) -> str:
+    if result is None or result.accepted_record is None:
+        return "<p>No accepted structured patient profile yet.</p>"
 
-    record = result.authored_record
+    record = result.accepted_record
     background_html = _render_key_value_list(
         [
             ("Residence", record.background_facts.residence_text),
             ("Smoking Status", record.background_facts.smoking_status_text),
         ],
-        "No background facts were authored.",
+        "No background facts were accepted.",
     )
     patient_html = _render_key_value_list(
         [
@@ -91,28 +105,28 @@ def _render_authored_record(result: PatientAuthoringPageResult | None) -> str:
             ("Record ID", record.record_id),
             ("Scenario Label", record.scenario_label),
         ],
-        "No patient identity details were authored.",
+        "No patient identity details were accepted.",
     )
     conditions_html = _render_list(
         [
             escape(f"{condition.display_text} ({condition.source_mode})")
             for condition in record.conditions
         ],
-        "No conditions authored.",
+        "No conditions accepted.",
     )
     medications_html = _render_list(
         [
             escape(f"{medication.display_text} ({medication.source_mode})")
             for medication in record.medications
         ],
-        "No medications authored.",
+        "No medications accepted.",
     )
     allergies_html = _render_list(
         [
             escape(f"{allergy.display_text} ({allergy.source_mode})")
             for allergy in record.allergies
         ],
-        "No allergies authored.",
+        "No allergies accepted.",
     )
     gaps_html = _render_list(
         [
@@ -182,7 +196,7 @@ def _render_authored_record(result: PatientAuthoringPageResult | None) -> str:
 
 
 def _render_mapped_context(result: PatientAuthoringPageResult | None) -> str:
-    if result is None:
+    if result is None or result.mapped_result is None:
         return "<p>No mapped patient context yet.</p>"
 
     mapped = result.mapped_result
@@ -235,22 +249,85 @@ def _render_mapped_context(result: PatientAuthoringPageResult | None) -> str:
     """
 
 
-def _render_json_inspection(result: PatientAuthoringPageResult | None) -> str:
+def _render_raw_agent_output(result: PatientAuthoringPageResult | None) -> str:
     if result is None:
-        return "<p>No JSON inspection output yet.</p>"
+        return "<p>No raw agent output yet.</p>"
 
-    authored_json = escape(result.authored_record.model_dump_json(indent=2))
-    mapped_json = escape(result.mapped_result.model_dump_json(indent=2))
+    trace = result.agent_run.trace
+    metadata_html = _render_key_value_list(
+        [
+            ("Provider", trace.provider),
+            ("Model Name", trace.model_name),
+            ("Status", trace.status),
+            ("Provider Response ID", trace.provider_response_id),
+            ("Rejection Reason", trace.rejection_reason),
+        ],
+        "No raw agent metadata available.",
+    )
+    raw_text = escape(trace.raw_response_text) if trace.raw_response_text else "No raw agent output yet."
     return f"""
     <div class="subsection">
-      <h3>Authored Record JSON</h3>
-      <pre>{authored_json}</pre>
+      <h3>Trace Metadata</h3>
+      {metadata_html}
     </div>
     <div class="subsection">
-      <h3>Mapped Context JSON</h3>
-      <pre>{mapped_json}</pre>
+      <h3>Raw Model Text</h3>
+      <pre>{raw_text}</pre>
     </div>
     """
+
+
+def _render_json_block(title: str, payload: str | None, empty_text: str) -> str:
+    content = escape(payload) if payload is not None else escape(empty_text)
+    return f"""
+    <div class="subsection">
+      <h3>{escape(title)}</h3>
+      <pre>{content}</pre>
+    </div>
+    """
+
+
+def _render_json_inspection(result: PatientAuthoringPageResult | None) -> str:
+    if result is None:
+        return (
+            _render_json_block("Agent Trace JSON", None, "No agent trace JSON yet.")
+            + _render_json_block("Validation Outcome JSON", None, "No validation outcome JSON yet.")
+            + _render_json_block("Accepted Structured Patient Profile JSON", None, "No accepted patient profile JSON yet.")
+            + _render_json_block("Mapped Patient Context JSON", None, "No mapped patient context JSON yet.")
+        )
+
+    accepted_record_json = (
+        result.accepted_record.model_dump_json(indent=2)
+        if result.accepted_record is not None
+        else None
+    )
+    mapped_json = (
+        result.mapped_result.model_dump_json(indent=2)
+        if result.mapped_result is not None
+        else None
+    )
+    return (
+        _render_json_block(
+            "Agent Trace JSON",
+            result.agent_run.trace.model_dump_json(indent=2),
+            "No agent trace JSON yet.",
+        )
+        + _render_json_block(
+            "Validation Outcome JSON",
+            result.agent_run.validation_outcome.model_dump_json(indent=2),
+            "No validation outcome JSON yet.",
+        )
+        + _render_json_block(
+            "Accepted Structured Patient Profile JSON",
+            accepted_record_json,
+            "No accepted patient profile JSON yet.",
+        )
+        + _render_json_block(
+            "Mapped Patient Context JSON",
+            mapped_json,
+            "No mapped patient context JSON yet.",
+        )
+    )
 
 
 def render_patient_authoring_page(
@@ -265,7 +342,7 @@ def render_patient_authoring_page(
     error_items = errors or []
     safe_narrative = escape(narrative)
     selected_complexity = complexity if complexity in _VALID_COMPLEXITIES else "medium"
-    error_html = _render_list(error_items, "No validation errors.")
+    error_html = _render_list(error_items, "No validation or agent errors.")
     submitted_input_html = _render_key_value_list(
         [("Complexity", selected_complexity)],
         "No submitted input yet.",
@@ -396,12 +473,16 @@ def render_patient_authoring_page(
         </div>
       </section>
       <section class="{'errors' if error_items else ''}">
-        <h2>Validation Errors</h2>
+        <h2>Validation Errors / Agent Errors</h2>
         {error_html}
       </section>
       <section>
-        <h2>Authored Patient Profile</h2>
-        {_render_authored_record(result)}
+        <h2>Raw Agent Output</h2>
+        {_render_raw_agent_output(result)}
+      </section>
+      <section>
+        <h2>Accepted Structured Patient Profile</h2>
+        {_render_accepted_record(result)}
       </section>
       <section>
         <h2>Mapped Patient Context</h2>
@@ -456,13 +537,41 @@ async def post_patient_authoring_page(
             status_code=status.HTTP_400_BAD_REQUEST,
         )
 
-    result = run_patient_authoring_flow(trimmed_narrative, complexity)
+    try:
+        result = await run_patient_authoring_flow(trimmed_narrative, complexity)
+    except OpenAIGatewayConfigurationError as exc:
+        return HTMLResponse(
+            content=render_patient_authoring_page(
+                narrative=trimmed_narrative,
+                complexity=complexity,
+                errors=[str(exc)],
+            ),
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
+    except PatientAuthoringAgentError as exc:
+        return HTMLResponse(
+            content=render_patient_authoring_page(
+                narrative=trimmed_narrative,
+                complexity=complexity,
+                errors=[str(exc)],
+            ),
+            status_code=status.HTTP_502_BAD_GATEWAY,
+        )
+
+    response_errors = result.agent_run.validation_outcome.errors
+    response_status = (
+        status.HTTP_200_OK
+        if result.accepted_record is not None
+        else status.HTTP_502_BAD_GATEWAY
+    )
     return HTMLResponse(
         render_patient_authoring_page(
             narrative=trimmed_narrative,
             complexity=complexity,
+            errors=response_errors,
             result=result,
-        )
+        ),
+        status_code=response_status,
     )
 
 
@@ -474,4 +583,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

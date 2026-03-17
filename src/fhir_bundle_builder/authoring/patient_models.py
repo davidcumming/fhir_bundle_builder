@@ -2,15 +2,24 @@
 
 from __future__ import annotations
 
+from typing import Any
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints
+from typing_extensions import Annotated
 
 from fhir_bundle_builder.workflows.psca_bundle_builder_workflow.models import PatientContextInput
 
 PatientComplexityLevel = Literal["low", "medium", "high"]
-PatientAuthoringItemSourceMode = Literal["direct_extraction", "scenario_template", "manual_review_edit"]
+PatientAuthoringItemSourceMode = Literal[
+    "direct_extraction",
+    "scenario_template",
+    "manual_review_edit",
+    "agent_structured_output",
+]
 PatientAdministrativeGender = Literal["female", "male", "other", "unknown"]
+PatientAuthoringBuilderMode = Literal["demo_template_authoring", "openai_patient_authoring_agent"]
+NonEmptyTrimmedString = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 
 
 class PatientAuthoringInput(BaseModel):
@@ -88,7 +97,7 @@ class PatientAuthoringEvidence(BaseModel):
     """Inspectability fields for how the authored patient record was built."""
 
     source_authoring_text: str
-    builder_mode: Literal["demo_template_authoring"]
+    builder_mode: PatientAuthoringBuilderMode
     extracted_name: str | None = None
     extracted_gender: PatientAdministrativeGender | None = None
     extracted_age_years: int | None = None
@@ -122,3 +131,77 @@ class PatientAuthoringMapResult(BaseModel):
     mapped_condition_count: int
     mapped_medication_count: int
     mapped_allergy_count: int
+
+
+class PatientAuthoringAgentBoundedInput(BaseModel):
+    """Bounded structured input supplied to the patient authoring agent."""
+
+    authoring_text: str
+    complexity_level: PatientComplexityLevel
+    scenario_label: str
+    history_detail: Literal["brief", "standard", "rich"]
+    target_condition_count: int
+    target_medication_count: int
+    target_allergy_count: int
+
+
+class PatientAuthoringAgentPatientPayload(BaseModel):
+    """Structured patient demographics returned by the patient authoring agent."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    display_name: NonEmptyTrimmedString
+    administrative_gender: PatientAdministrativeGender | None = None
+    age_years: int | None = Field(default=None, ge=0, le=130)
+    birth_date: str | None = Field(default=None, pattern=r"^\d{4}-\d{2}-\d{2}$")
+
+
+class PatientAuthoringAgentBackgroundFactsPayload(BaseModel):
+    """Structured background facts returned by the patient authoring agent."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    residence_text: str | None = None
+    smoking_status_text: str | None = None
+
+
+class PatientAuthoringAgentItemPayload(BaseModel):
+    """One authored clinical list item returned by the patient authoring agent."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    display_text: NonEmptyTrimmedString
+    source_note: NonEmptyTrimmedString
+
+
+class PatientAuthoringAgentPayload(BaseModel):
+    """Strict structured payload accepted from the patient authoring agent."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    patient: PatientAuthoringAgentPatientPayload
+    background_facts: PatientAuthoringAgentBackgroundFactsPayload
+    conditions: list[PatientAuthoringAgentItemPayload] = Field(default_factory=list)
+    medications: list[PatientAuthoringAgentItemPayload] = Field(default_factory=list)
+    allergies: list[PatientAuthoringAgentItemPayload] = Field(default_factory=list)
+
+
+class PatientAuthoringValidationOutcome(BaseModel):
+    """Boundary-validation result for one patient authoring agent invocation."""
+
+    status: Literal["accepted", "rejected"]
+    errors: list[str] = Field(default_factory=list)
+
+
+class PatientAuthoringAgentTrace(BaseModel):
+    """Inspectable trace for the bounded patient authoring agent invocation."""
+
+    provider: Literal["openai"]
+    model_name: str
+    bounded_input: PatientAuthoringAgentBoundedInput
+    raw_response_text: str
+    parsed_response_json: dict[str, Any] | None = None
+    accepted_payload_json: dict[str, Any] | None = None
+    status: Literal["accepted", "rejected"]
+    rejection_reason: str | None = None
+    provider_response_id: str | None = None

@@ -9,6 +9,8 @@ from typing import Any
 
 import httpx
 
+_SURROUNDING_QUOTES = "\"'“”‘’"
+
 
 class OpenAIGatewayConfigurationError(RuntimeError):
     """Raised when the OpenAI gateway is required but not configured."""
@@ -37,29 +39,73 @@ class OpenAIJSONCompletionResponse:
     raw_response_json: dict[str, Any]
 
 
-def load_openai_gateway_config_from_env() -> OpenAIGatewayConfig:
-    """Load the minimal OpenAI gateway configuration from environment variables."""
+def load_openai_gateway_config_for_feature(
+    *,
+    model_env_var: str,
+    timeout_env_var: str,
+    feature_label: str,
+) -> OpenAIGatewayConfig:
+    """Load the shared OpenAI gateway config for one bounded feature."""
 
-    api_key = os.getenv("OPENAI_API_KEY", "").strip()
+    api_key = _load_clean_env_value("OPENAI_API_KEY")
     if not api_key:
         raise OpenAIGatewayConfigurationError(
-            "MedicationRequest agent mode requires OPENAI_API_KEY to be set."
+            f"{feature_label} requires OPENAI_API_KEY to be set."
         )
 
-    model_name = os.getenv("FHIR_BUNDLE_BUILDER_MEDICATION_AGENT_MODEL", "").strip()
+    model_name = _load_clean_env_value(model_env_var)
     if not model_name:
         raise OpenAIGatewayConfigurationError(
-            "MedicationRequest agent mode requires FHIR_BUNDLE_BUILDER_MEDICATION_AGENT_MODEL to be set."
+            f"{feature_label} requires {model_env_var} to be set."
         )
 
-    base_url = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1").strip() or "https://api.openai.com/v1"
-    timeout_seconds = float(os.getenv("FHIR_BUNDLE_BUILDER_MEDICATION_AGENT_TIMEOUT_SECONDS", "60"))
+    base_url = _load_clean_env_value("OPENAI_BASE_URL", "https://api.openai.com/v1") or "https://api.openai.com/v1"
+    timeout_seconds = float(_load_clean_env_value(timeout_env_var, "60") or "60")
+    _require_ascii("OPENAI_API_KEY", api_key, feature_label)
+    _require_ascii(model_env_var, model_name, feature_label)
+    _require_ascii("OPENAI_BASE_URL", base_url, feature_label)
     return OpenAIGatewayConfig(
         api_key=api_key,
         model_name=model_name,
         base_url=base_url.rstrip("/"),
         timeout_seconds=timeout_seconds,
     )
+
+
+def load_openai_gateway_config_from_env() -> OpenAIGatewayConfig:
+    """Load the minimal OpenAI gateway configuration from environment variables."""
+
+    return load_openai_gateway_config_for_feature(
+        model_env_var="FHIR_BUNDLE_BUILDER_MEDICATION_AGENT_MODEL",
+        timeout_env_var="FHIR_BUNDLE_BUILDER_MEDICATION_AGENT_TIMEOUT_SECONDS",
+        feature_label="MedicationRequest agent mode",
+    )
+
+
+def load_patient_authoring_gateway_config_from_env() -> OpenAIGatewayConfig:
+    """Load the OpenAI gateway config for the patient authoring page."""
+
+    return load_openai_gateway_config_for_feature(
+        model_env_var="FHIR_BUNDLE_BUILDER_PATIENT_AUTHORING_MODEL",
+        timeout_env_var="FHIR_BUNDLE_BUILDER_PATIENT_AUTHORING_TIMEOUT_SECONDS",
+        feature_label="Patient authoring agent mode",
+    )
+
+
+def _load_clean_env_value(name: str, default: str = "") -> str:
+    raw_value = os.getenv(name, default)
+    stripped = raw_value.strip()
+    return stripped.strip(_SURROUNDING_QUOTES)
+
+
+def _require_ascii(name: str, value: str, feature_label: str) -> None:
+    try:
+        value.encode("ascii")
+    except UnicodeEncodeError as exc:
+        raise OpenAIGatewayConfigurationError(
+            f"{feature_label} received a non-ASCII value for {name}. "
+            "Check for smart quotes or pasted punctuation in the environment variable."
+        ) from exc
 
 
 class OpenAIChatCompletionsGateway:
