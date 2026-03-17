@@ -143,6 +143,8 @@ class PatientAuthoringAgentBoundedInput(BaseModel):
     target_condition_count: int
     target_medication_count: int
     target_allergy_count: int
+    medication_evidence_present: bool = False
+    medication_evidence_hints: list[str] = Field(default_factory=list)
 
 
 class PatientAuthoringAgentPatientPayload(BaseModel):

@@ -62,6 +62,38 @@ async def test_patient_authoring_agent_accepts_valid_json_and_normalizes_record(
     assert result.trace.accepted_payload_json is not None
 
 
+async def test_patient_authoring_agent_preserves_vague_medication_evidence() -> None:
+    narrative = (
+        "I use an inhaler when my breathing gets bad and I take a few pills every morning "
+        "for my blood pressure."
+    )
+    result = await author_patient_record(
+        PatientAuthoringInput(
+            authoring_text=narrative,
+            complexity_level="medium",
+            scenario_label="pytest-patient-agent-vague-medications",
+        ),
+        gateway=_FakeGateway(
+            (
+                '{"patient":{"display_name":"Casey River","administrative_gender":null,"age_years":null,'
+                '"birth_date":null},"background_facts":{"residence_text":null,"smoking_status_text":null},'
+                '"conditions":[],"medications":[{"display_text":"Inhaler (unspecified)",'
+                '"source_note":"Narrative says the patient uses an inhaler when breathing gets bad."},'
+                '{"display_text":"Pills for blood pressure (unspecified)",'
+                '"source_note":"Narrative says the patient takes a few pills every morning for blood pressure."}],'
+                '"allergies":[]}'
+            )
+        ),
+    )
+
+    assert result.validation_outcome.status == "accepted"
+    assert result.accepted_record is not None
+    assert len(result.accepted_record.medications) >= 1
+    assert result.accepted_record.medications[0].display_text == "Inhaler (unspecified)"
+    assert "uses an inhaler" in result.accepted_record.medications[0].source_note
+    assert result.trace.accepted_payload_json is not None
+
+
 async def test_patient_authoring_agent_rejects_invalid_json_but_preserves_raw_output() -> None:
     result = await author_patient_record(
         PatientAuthoringInput(
@@ -99,3 +131,30 @@ async def test_patient_authoring_agent_rejects_schema_invalid_payload() -> None:
     assert any("patient.display_name" in error for error in result.validation_outcome.errors)
     assert result.trace.parsed_response_json is not None
     assert result.trace.accepted_payload_json is None
+
+
+async def test_patient_authoring_agent_rejects_lossy_empty_medications_when_narrative_has_medication_evidence() -> None:
+    narrative = (
+        "I use an inhaler when my breathing gets bad and I take a few pills every morning "
+        "for my blood pressure."
+    )
+    result = await author_patient_record(
+        PatientAuthoringInput(
+            authoring_text=narrative,
+            complexity_level="medium",
+            scenario_label="pytest-patient-agent-lossy-medications",
+        ),
+        gateway=_FakeGateway(
+            (
+                '{"patient":{"display_name":"Casey River","administrative_gender":null,"age_years":null,'
+                '"birth_date":null},"background_facts":{"residence_text":null,"smoking_status_text":null},'
+                '"conditions":[],"medications":[],"allergies":[]}'
+            )
+        ),
+    )
+
+    assert result.validation_outcome.status == "rejected"
+    assert result.accepted_record is None
+    assert any("omitted medications despite explicit medication-use evidence" in error for error in result.validation_outcome.errors)
+    assert result.trace.raw_response_text.startswith('{"patient":{"display_name":"Casey River"')
+    assert result.trace.status == "rejected"

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from typing import Any, Protocol
 
@@ -43,8 +44,42 @@ _SYSTEM_PROMPT = (
     "Return exactly one JSON object that matches the requested schema. "
     "Do not include markdown, prose, comments, code fences, or extra keys. "
     "Use only information supported by the narrative. "
+    "Preserve explicit medication-use evidence even when the exact drug or product name is unknown. "
+    "If the narrative says the patient uses, takes, or relies on a medication, still emit a medication item. "
+    "When identity is vague, preserve the best patient-reported wording in display_text with an unspecified qualifier, "
+    "for example Inhaler (unspecified), Blood pressure medication (unspecified), Oral medications (unspecified), "
+    "or Pills for blood pressure (unspecified). "
+    "Use source_note to explain the supporting narrative evidence for each medication item. "
+    "Only return an empty medications list when there is no medication evidence at all in the narrative. "
     "Do not invent record ids, patient ids, item ids, mapped context, complexity policy, "
     "validation state, raw trace fields, or unresolved gap fields."
+)
+
+_MEDICATION_EVIDENCE_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
+    (
+        re.compile(r"\b(?:use|uses|using|used)\s+(?:an?\s+)?inhaler\b"),
+        "Narrative explicitly says the patient uses an inhaler.",
+    ),
+    (
+        re.compile(
+            r"\b(?:take|takes|taking|taken)\s+(?:a\s+few\s+|some\s+|an?\s+|the\s+)?"
+            r"(?:pills?|medications?|medicine|medicines|meds?|tablets?|capsules?)\b"
+        ),
+        "Narrative explicitly says the patient takes pills or medication.",
+    ),
+    (
+        re.compile(
+            r"\b(?:blood pressure|breathing|heart|diabetes|pain|cholesterol)\s+"
+            r"(?:medication|medicine|medications|medicines|pills?)\b"
+        ),
+        "Narrative explicitly mentions a purpose-specific medication without a formal drug name.",
+    ),
+    (
+        re.compile(
+            r"\bon\s+(?:an?\s+)?(?:inhaler|medication|medicine|medications|medicines|meds?|pills?|tablets?|capsules?)\b"
+        ),
+        "Narrative explicitly says the patient is on medication.",
+    ),
 )
 
 
@@ -108,6 +143,7 @@ def build_patient_authoring_bounded_input(
     """Build the bounded structured input sent to the patient authoring agent."""
 
     policy = get_patient_complexity_policy(authoring_input.complexity_level)
+    medication_evidence_hints = detect_medication_evidence_hints(authoring_input.authoring_text)
     return PatientAuthoringAgentBoundedInput(
         authoring_text=authoring_input.authoring_text,
         complexity_level=authoring_input.complexity_level,
@@ -116,6 +152,8 @@ def build_patient_authoring_bounded_input(
         target_condition_count=policy.target_condition_count,
         target_medication_count=policy.target_medication_count,
         target_allergy_count=policy.target_allergy_count,
+        medication_evidence_present=bool(medication_evidence_hints),
+        medication_evidence_hints=medication_evidence_hints,
     )
 
 
@@ -172,6 +210,13 @@ async def invoke_patient_authoring_agent(
             "Patient authoring agent returned schema-invalid content.",
             parsed_response_json=parsed_json,
             errors=errors,
+        )
+
+    if bounded_input.medication_evidence_present and not payload.medications:
+        return _rejected_run_result(
+            base_trace,
+            "Patient authoring agent omitted medications despite explicit medication-use evidence in the narrative.",
+            parsed_response_json=parsed_json,
         )
 
     accepted_record = _normalize_payload_to_authored_record(
@@ -406,3 +451,14 @@ def _validation_error_messages(exc: ValidationError) -> list[str]:
         else:
             messages.append(message)
     return messages
+
+
+def detect_medication_evidence_hints(authoring_text: str) -> list[str]:
+    """Detect explicit medication-use evidence for prompt grounding and lossy-output rejection."""
+
+    lowered = authoring_text.lower()
+    hints: list[str] = []
+    for pattern, hint in _MEDICATION_EVIDENCE_PATTERNS:
+        if pattern.search(lowered):
+            hints.append(hint)
+    return hints

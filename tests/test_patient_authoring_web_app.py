@@ -108,6 +108,43 @@ async def test_valid_post_renders_agent_output_and_does_not_use_deterministic_bu
 
 
 @pytest.mark.asyncio
+async def test_valid_post_renders_vague_medications_when_agent_preserves_explicit_medication_evidence(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        "fhir_bundle_builder.authoring.patient_agent.build_patient_authoring_gateway_from_env",
+        lambda: _FakeGateway(
+            (
+                '{"patient":{"display_name":"Casey River","administrative_gender":null,"age_years":null,'
+                '"birth_date":null},"background_facts":{"residence_text":null,"smoking_status_text":null},'
+                '"conditions":[],"medications":[{"display_text":"Inhaler (unspecified)",'
+                '"source_note":"Narrative says the patient uses an inhaler when breathing gets bad."},'
+                '{"display_text":"Pills for blood pressure (unspecified)",'
+                '"source_note":"Narrative says the patient takes a few pills every morning for blood pressure."}],'
+                '"allergies":[]}'
+            )
+        ),
+    )
+
+    narrative = (
+        "I use an inhaler when my breathing gets bad and I take a few pills every morning "
+        "for my blood pressure."
+    )
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://testserver") as client:
+        response = await client.post(
+            "/patient-authoring",
+            data={"narrative": narrative, "complexity": "medium"},
+        )
+
+    assert response.status_code == 200
+    assert "Inhaler (unspecified)" in response.text
+    assert "Pills for blood pressure (unspecified)" in response.text
+    assert "Raw Agent Output" in response.text
+    assert "Accepted Structured Patient Profile" in response.text
+
+
+@pytest.mark.asyncio
 async def test_invalid_json_post_returns_502_and_shows_raw_output(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
